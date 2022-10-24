@@ -22,23 +22,19 @@ target_compile_definitions(larynx PUBLIC HAVE_PCAUDIO)
 set(PCAUDIO_LIBRARIES "pcaudio")
 endif()
 
-find_package(Boost 1.3.0 REQUIRED COMPONENTS program_options)
-
 set(ONNXRUNTIME_ROOTDIR "/usr/local/include/onnxruntime")
 
 target_link_libraries(larynx
                       onnxruntime
                       ${ESPEAK_NG_LIBRARIES}
-                      ${PCAUDIO_LIBRARIES}
-                      Boost::program_options)
+                      ${PCAUDIO_LIBRARIES})
 
 target_link_directories(larynx PUBLIC
                         ${ONNXRUNTIME_ROOTDIR}/lib)
 
 target_include_directories(larynx PUBLIC
                            ${ONNXRUNTIME_ROOTDIR}/include
-                           ${ESPEAK_NG_INCLUDE_DIRS}
-                           ${Boost_INCLUDE_DIRS})
+                           ${ESPEAK_NG_INCLUDE_DIRS})
 
 target_compile_options(larynx PUBLIC
                        ${ESPEAK_NG_CFLAGS_OTHER})

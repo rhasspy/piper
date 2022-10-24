@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/program_options.hpp>
-
 #ifdef HAVE_PCAUDIO
 // https://github.com/espeak-ng/pcaudiolib
 #include <pcaudiolib/audio.h>
@@ -17,12 +15,14 @@
 #include "api.hpp"
 
 using namespace std;
-namespace po = boost::program_options;
+
+enum OutputType { OUTPUT_FILE, OUTPUT_DIRECTORY, OUTPUT_STDOUT, OUTPUT_PLAY };
 
 struct RunConfig {
   filesystem::path modelPath;
   filesystem::path modelConfigPath;
-  optional<filesystem::path> outputDirectory;
+  OutputType outputType = OUTPUT_PLAY;
+  optional<filesystem::path> outputPath;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_PCAUDIO
   audio_object *my_audio = nullptr;
 
-  if (!runConfig.outputDirectory) {
+  if (runConfig.outputType == OUTPUT_PLAY) {
     // Output audio to the default audio device
     my_audio = create_audio_device_object(NULL, "larynx", "Text-to-Speech");
 
@@ -58,17 +58,19 @@ int main(int argc, char *argv[]) {
     }
   }
 #else
-  // Cannot play audio directly
-  if (!runConfig.outputDirectory) {
-    // Default to current directory
-    runConfig.outputDirectory = filesystem::current_path();
+  if (runConfig.outputType == OUTPUT_PLAY) {
+    // Cannot play audio directly
+    cerr << "WARNING: Larynx was not compiled with pcaudiolib. Output audio "
+            "will be written to the current directory."
+         << endl;
+    runConfig.outputType = OUTPUT_DIRECTORY;
+    runConfig.outputPath = filesystem::path(".");
   }
 #endif
 
-  if (runConfig.outputDirectory) {
-    runConfig.outputDirectory =
-        filesystem::absolute(runConfig.outputDirectory.value());
-    cerr << "Output directory: " << runConfig.outputDirectory.value() << endl;
+  if (runConfig.outputType == OUTPUT_DIRECTORY) {
+    runConfig.outputPath = filesystem::absolute(runConfig.outputPath.value());
+    cerr << "Output directory: " << runConfig.outputPath.value() << endl;
   }
 
   string line;
@@ -80,17 +82,24 @@ int main(int argc, char *argv[]) {
     const auto timestamp =
         chrono::duration_cast<chrono::seconds>(now.time_since_epoch()).count();
 
-    if (runConfig.outputDirectory) {
+    if (runConfig.outputType == OUTPUT_DIRECTORY) {
       stringstream outputName;
       outputName << timestamp << ".wav";
-      filesystem::path outputPath = runConfig.outputDirectory.value();
+      filesystem::path outputPath = runConfig.outputPath.value();
       outputPath.append(outputName.str());
 
-      // Output audio to WAV file
+      // Output audio to automatically-named WAV file in a directory
       ofstream audioFile(outputPath.string(), ios::binary);
       larynx::textToWavFile(voice, line, audioFile, result);
       cout << outputPath.string() << endl;
-    } else {
+    } else if (runConfig.outputType == OUTPUT_FILE) {
+      // Output audio to WAV file
+      ofstream audioFile(runConfig.outputPath.value().string(), ios::binary);
+      larynx::textToWavFile(voice, line, audioFile, result);
+    } else if (runConfig.outputType == OUTPUT_STDOUT) {
+      // Output WAV to stdout
+      larynx::textToWavFile(voice, line, cout, result);
+    } else if (runConfig.outputType == OUTPUT_PLAY) {
 #ifdef HAVE_PCAUDIO
       vector<int16_t> audioBuffer;
       larynx::textToAudio(voice, line, audioBuffer, result);
@@ -102,7 +111,7 @@ int main(int argc, char *argv[]) {
       }
       audio_object_flush(my_audio);
 #else
-      throw runtime_error("Should not happen");
+      throw runtime_error("Cannot play audio! Not compiled with pcaudiolib.");
 #endif
     }
 
@@ -120,33 +129,64 @@ int main(int argc, char *argv[]) {
   return EXIT_SUCCESS;
 }
 
+void printUsage(char *argv[]) {
+  cerr << endl;
+  cerr << "usage: " << argv[0] << " [options]" << endl;
+  cerr << endl;
+  cerr << "options:" << endl;
+  cerr << "   -h        --help              show this message and exit" << endl;
+  cerr << "   -m  FILE  --model       FILE  path to onnx model file" << endl;
+  cerr << "   -c  FILE  --config      FILE  path to model config file "
+          "(default: model path + .json)"
+       << endl;
+  cerr << "   -f  FILE  --output_file FILE  path to output WAV file ('-' for "
+          "stdout)"
+       << endl;
+  cerr << "   -d  DIR   --output_dir  DIR   path to output directory (default: "
+          "cwd)"
+       << endl;
+  cerr << endl;
+}
+
+void ensureArg(int argc, char *argv[], int argi) {
+  if ((argi + 1) >= argc) {
+    printUsage(argv);
+    exit(0);
+  }
+}
+
 // Parse command-line arguments
 void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
-  string modelPathStr;
-  string modelConfigPathStr;
-  string outputDirectoryStr;
+  optional<filesystem::path> modelConfigPath;
 
-  // TODO: Add --stdout
-  po::options_description options("Larynx options");
-  options.add_options()("help", "Print help message and exit")(
-      "model", po::value<string>(&modelPathStr)->required(),
-      "Path to onnx model file")(
-      "config", po::value<string>(&modelConfigPathStr),
-      "Path to JSON model config file (default: model path + .json)")(
-      "output_dir", po::value<string>(&outputDirectoryStr),
-      "Path to output directory (default: cwd)");
+  for (int i = 1; i < argc; i++) {
+    std::string arg = argv[i];
 
-  po::variables_map args;
-  po::store(po::parse_command_line(argc, argv, options), args);
-
-  if (args.count("help")) {
-    cout << options << "\n";
-    exit(EXIT_SUCCESS);
+    if (arg == "-m" || arg == "--model") {
+      ensureArg(argc, argv, i);
+      runConfig.modelPath = filesystem::path(argv[++i]);
+    } else if (arg == "-c" || arg == "--config") {
+      ensureArg(argc, argv, i);
+      modelConfigPath = filesystem::path(argv[++i]);
+    } else if (arg == "-f" || arg == "--output_file") {
+      ensureArg(argc, argv, i);
+      std::string filePath = argv[++i];
+      if (filePath == "-") {
+        runConfig.outputType = OUTPUT_STDOUT;
+        runConfig.outputPath = nullopt;
+      } else {
+        runConfig.outputType = OUTPUT_FILE;
+        runConfig.outputPath = filesystem::path(filePath);
+      }
+    } else if (arg == "-d" || arg == "--output_dir") {
+      ensureArg(argc, argv, i);
+      runConfig.outputType = OUTPUT_DIRECTORY;
+      runConfig.outputPath = filesystem::path(argv[++i]);
+    } else if (arg == "-h" || arg == "--help") {
+      printUsage(argv);
+      exit(0);
+    }
   }
-
-  po::notify(args);
-
-  runConfig.modelPath = filesystem::path(modelPathStr);
 
   // Verify model file exists
   ifstream modelFile(runConfig.modelPath.c_str(), ios::binary);
@@ -154,19 +194,16 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     throw runtime_error("Model file doesn't exist");
   }
 
-  if (modelConfigPathStr.empty()) {
-    modelConfigPathStr = modelPathStr + ".json";
+  if (!modelConfigPath) {
+    runConfig.modelConfigPath =
+        filesystem::path(runConfig.modelPath.string() + ".json");
+  } else {
+    runConfig.modelConfigPath = modelConfigPath.value();
   }
-
-  runConfig.modelConfigPath = filesystem::path(modelConfigPathStr);
 
   // Verify model config exists
   ifstream modelConfigFile(runConfig.modelConfigPath.c_str());
   if (!modelConfigFile.good()) {
     throw runtime_error("Model config doesn't exist");
-  }
-
-  if (!outputDirectoryStr.empty()) {
-    runConfig.outputDirectory = filesystem::path(outputDirectoryStr);
   }
 }
