@@ -8,7 +8,6 @@ import torch
 from torch import FloatTensor, LongTensor
 from torch.utils.data import Dataset
 
-
 _LOGGER = logging.getLogger("vits.dataset")
 
 

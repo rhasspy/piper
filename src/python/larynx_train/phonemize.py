@@ -148,7 +148,7 @@ def phonemize(text: str, phonemizer: Phonemizer) -> List[str]:
 def phonemes_to_ids(
     phonemes: Iterable[str],
     phoneme_id_map: Optional[Mapping[str, Iterable[int]]] = None,
-    missing_phonemes: Optional[Counter[str]] = None,
+    missing_phonemes: "Optional[Counter[str]]" = None,
 ) -> List[int]:
     if phoneme_id_map is None:
         phoneme_id_map = DEFAULT_PHONEME_ID_MAP
