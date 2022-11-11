@@ -149,18 +149,33 @@ def phonemes_to_ids(
     phonemes: Iterable[str],
     phoneme_id_map: Optional[Mapping[str, Iterable[int]]] = None,
     missing_phonemes: "Optional[Counter[str]]" = None,
+    pad: Optional[str] = "_",
+    bos: Optional[str] = "^",
+    eos: Optional[str] = "$",
 ) -> List[int]:
     if phoneme_id_map is None:
         phoneme_id_map = DEFAULT_PHONEME_ID_MAP
 
     phoneme_ids: List[int] = []
 
+    if bos:
+        phoneme_ids.extend(phoneme_id_map[bos])
+
+    if pad:
+        phoneme_ids.extend(phoneme_id_map[pad])
+
     for phoneme in phonemes:
         mapped_phoneme_ids = phoneme_id_map.get(phoneme)
         if mapped_phoneme_ids:
             phoneme_ids.extend(mapped_phoneme_ids)
+
+            if pad:
+                phoneme_ids.extend(phoneme_id_map[pad])
         elif missing_phonemes is not None:
             # Make note of missing phonemes
             missing_phonemes[phoneme] += 1
+
+    if eos:
+        phoneme_ids.extend(phoneme_id_map[eos])
 
     return phoneme_ids
