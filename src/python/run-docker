@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+nvidia-docker run \
+  -it \
+  -w "$PWD" \
+  --user $(id -u):$(id -g) \
+  --ipc=host \
+  -v "${HOME}/opt:${HOME}/opt" \
+  -v /media/data:/media/data:ro \
+  -v /media/12tb:/media/12tb:ro \
+  -v /media/cache:/media/cache:ro \
+  -v /etc/hostname:/etc/hostname:ro \
+  -v /etc/localtime:/etc/localtime:ro \
+  larynx2-train \
+  "$@"

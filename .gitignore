@@ -14,3 +14,4 @@ htmlcov
 *.so
 
 .venv/
+lightning_logs/
