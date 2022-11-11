@@ -8,9 +8,4 @@ tmp/
 build
 htmlcov
 
-/data/
-/build/
-/local/
-*.so
-
 .venv/

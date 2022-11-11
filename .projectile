@@ -1,1 +1,3 @@
 - /build/
+- /src/python/.venv/
+- /local/
