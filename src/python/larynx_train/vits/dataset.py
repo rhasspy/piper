@@ -67,15 +67,19 @@ class LarynxDataset(Dataset):
 
     def __init__(
         self,
-        dataset_paths: List[Union[str, Path]],  # settings: LarynxDatasetSettings
+        dataset_paths: List[Union[str, Path]],
+        max_phoneme_ids: Optional[int] = None,
     ):
-        # self.settings = settings
         self.utterances: List[Utterance] = []
 
         for dataset_path in dataset_paths:
             dataset_path = Path(dataset_path)
             _LOGGER.debug("Loading dataset: %s", dataset_path)
-            self.utterances.extend(LarynxDataset.load_dataset(dataset_path))
+            self.utterances.extend(
+                LarynxDataset.load_dataset(
+                    dataset_path, max_phoneme_ids=max_phoneme_ids
+                )
+            )
 
     def __len__(self):
         return len(self.utterances)
@@ -93,7 +97,11 @@ class LarynxDataset(Dataset):
         )
 
     @staticmethod
-    def load_dataset(dataset_path: Path) -> Iterable[Utterance]:
+    def load_dataset(
+        dataset_path: Path, max_phoneme_ids: Optional[int] = None,
+    ) -> Iterable[Utterance]:
+        num_skipped = 0
+
         with open(dataset_path, "r", encoding="utf-8") as dataset_file:
             for line_idx, line in enumerate(dataset_file):
                 line = line.strip()
@@ -101,14 +109,20 @@ class LarynxDataset(Dataset):
                     continue
 
                 try:
-                    yield LarynxDataset.load_utterance(line)
+                    utt = LarynxDataset.load_utterance(line)
+                    if (max_phoneme_ids is None) or (
+                        len(utt.phoneme_ids) <= max_phoneme_ids
+                    ):
+                        yield utt
+                    else:
+                        num_skipped += 1
                 except Exception:
                     _LOGGER.exception(
-                        "Error on line %s of %s: %s",
-                        line_idx + 1,
-                        dataset_path,
-                        line,
+                        "Error on line %s of %s: %s", line_idx + 1, dataset_path, line,
                     )
+
+        if num_skipped > 0:
+            _LOGGER.warning("Skipped %s utterance(s)", num_skipped)
 
     @staticmethod
     def load_utterance(line: str) -> Utterance:
