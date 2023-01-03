@@ -78,6 +78,8 @@ def main():
         speakers.add(utt.speaker or "")
         num_utterances += 1
 
+    assert num_utterances > 0, "No utterances found"
+
     is_multispeaker = len(speakers) > 1
     speaker_ids: Dict[str, int] = {}
 
@@ -224,8 +226,6 @@ def ljspeech_dataset(dataset_dir: Path) -> Iterable[Utterance]:
     if not wav_dir.is_dir():
         wav_dir = dataset_dir / "wavs"
 
-    assert wav_dir.is_dir(), f"Missing {wav_dir}"
-
     with open(metadata_path, "r", encoding="utf-8") as csv_file:
         reader = csv.reader(csv_file, delimiter="|")
         for row in reader:
@@ -237,12 +237,23 @@ def ljspeech_dataset(dataset_dir: Path) -> Iterable[Utterance]:
             else:
                 filename, speaker, text = row[0], row[1], row[-1]
 
-            wav_path = wav_dir / filename
+            # Try file name relative to metadata
+            wav_path = metadata_path.parent / filename
+
             if not wav_path.exists():
+                # Try with .wav
+                wav_path = metadata_path.parent / f"{filename}.wav"
+
+            if not wav_path.exists():
+                # Try wav/ or wavs/
+                wav_path = wav_dir / filename
+
+            if not wav_path.exists():
+                # Try with .wav
                 wav_path = wav_dir / f"{filename}.wav"
 
             if not wav_path.exists():
-                _LOGGER.warning("Missing %s", wav_path)
+                _LOGGER.warning("Missing %s", filename)
                 continue
 
             yield Utterance(text=text, audio_path=wav_path, speaker=speaker)
