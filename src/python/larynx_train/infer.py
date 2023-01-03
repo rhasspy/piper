@@ -43,16 +43,17 @@ def main():
             continue
 
         utt = json.loads(line)
-        # utt_id = utt["id"]
         utt_id = str(i)
         phoneme_ids = utt["phoneme_ids"]
+        speaker_id = utt.get("speaker_id")
 
         text = torch.LongTensor(phoneme_ids).unsqueeze(0)
         text_lengths = torch.LongTensor([len(phoneme_ids)])
         scales = [0.667, 1.0, 0.8]
+        sid = torch.LongTensor([speaker_id]) if speaker_id is not None else None
 
         start_time = time.perf_counter()
-        audio = model(text, text_lengths, scales).detach().numpy()
+        audio = model(text, text_lengths, scales, sid=sid).detach().numpy()
         audio = audio_float_to_int16(audio)
         end_time = time.perf_counter()
 

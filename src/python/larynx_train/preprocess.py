@@ -147,6 +147,9 @@ def main():
         for _ in range(num_utterances):
             utt = queue_out.get()
             if utt is not None:
+                if utt.speaker is not None:
+                    utt.speaker_id = speaker_ids[utt.speaker]
+
                 # JSONL
                 json.dump(
                     dataclasses.asdict(utt),
@@ -207,6 +210,7 @@ class Utterance:
     text: str
     audio_path: Path
     speaker: Optional[str] = None
+    speaker_id: Optional[int] = None
     phonemes: Optional[List[str]] = None
     phoneme_ids: Optional[List[int]] = None
     audio_norm_path: Optional[Path] = None
