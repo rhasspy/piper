@@ -98,7 +98,8 @@ class LarynxDataset(Dataset):
 
     @staticmethod
     def load_dataset(
-        dataset_path: Path, max_phoneme_ids: Optional[int] = None,
+        dataset_path: Path,
+        max_phoneme_ids: Optional[int] = None,
     ) -> Iterable[Utterance]:
         num_skipped = 0
 
@@ -118,7 +119,10 @@ class LarynxDataset(Dataset):
                         num_skipped += 1
                 except Exception:
                     _LOGGER.exception(
-                        "Error on line %s of %s: %s", line_idx + 1, dataset_path, line,
+                        "Error on line %s of %s: %s",
+                        line_idx + 1,
+                        dataset_path,
+                        line,
                     )
 
         if num_skipped > 0:
