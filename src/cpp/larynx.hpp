@@ -1,5 +1,5 @@
-#ifndef API_H_
-#define API_H_
+#ifndef LARYNX_H_
+#define LARYNX_H_
 
 #include <iostream>
 #include <string>
@@ -22,6 +22,7 @@ struct Voice {
   json configRoot;
   PhonemizeConfig phonemizeConfig;
   SynthesisConfig synthesisConfig;
+  ModelConfig modelConfig;
   ModelSession session;
 };
 
@@ -42,12 +43,24 @@ void terminate() {
 }
 
 // Load Onnx model and JSON config file
-void loadVoice(string modelPath, string modelConfigPath, Voice &voice) {
+void loadVoice(string modelPath, string modelConfigPath, Voice &voice,
+               optional<SpeakerId> &speakerId) {
   ifstream modelConfigFile(modelConfigPath.c_str());
   voice.configRoot = json::parse(modelConfigFile);
 
   parsePhonemizeConfig(voice.configRoot, voice.phonemizeConfig);
   parseSynthesisConfig(voice.configRoot, voice.synthesisConfig);
+  parseModelConfig(voice.configRoot, voice.modelConfig);
+
+  if (voice.modelConfig.numSpeakers > 1) {
+    // Multispeaker model
+    if (speakerId) {
+      voice.synthesisConfig.speakerId = speakerId;
+    } else {
+      // Default speaker
+      voice.synthesisConfig.speakerId = 0;
+    }
+  }
 
   loadModel(modelPath, voice.session);
 
@@ -83,8 +96,8 @@ void textToWavFile(Voice &voice, string text, ostream &audioFile,
   audioFile.write((const char *)audioBuffer.data(),
                   sizeof(int16_t) * audioBuffer.size());
 
-} /* textToAudio */
+} /* textToWavFile */
 
 } // namespace larynx
 
-#endif // API_H_
+#endif // LARYNX_H_

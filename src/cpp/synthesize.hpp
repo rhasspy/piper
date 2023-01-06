@@ -53,6 +53,15 @@ void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
       Ort::Value::CreateTensor<float>(memoryInfo, scales.data(), scales.size(),
                                       scalesShape.data(), scalesShape.size()));
 
+  if (synthesisConfig.speakerId) {
+    // Add speaker id
+    vector<int64_t> speakerId{(int64_t)synthesisConfig.speakerId.value()};
+    vector<int64_t> speakerIdShape{1};
+    inputTensors.push_back(Ort::Value::CreateTensor<int64_t>(
+        memoryInfo, speakerId.data(), speakerId.size(), speakerIdShape.data(),
+        speakerIdShape.size()));
+  }
+
   // Infer
   auto startTime = chrono::steady_clock::now();
   auto outputTensors =

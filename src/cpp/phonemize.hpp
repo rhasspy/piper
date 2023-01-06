@@ -10,9 +10,9 @@
 #include <vector>
 
 #include <espeak-ng/speak_lib.h>
-#include <utf8.h>
 
 #include "config.hpp"
+#include "utf8.h"
 
 using namespace std;
 

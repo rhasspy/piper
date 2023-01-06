@@ -12,7 +12,7 @@
 #include <pcaudiolib/audio.h>
 #endif
 
-#include "api.hpp"
+#include "larynx.hpp"
 
 using namespace std;
 
@@ -23,6 +23,7 @@ struct RunConfig {
   filesystem::path modelConfigPath;
   OutputType outputType = OUTPUT_PLAY;
   optional<filesystem::path> outputPath;
+  optional<larynx::SpeakerId> speakerId;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
   larynx::Voice voice;
   auto startTime = chrono::steady_clock::now();
   loadVoice(runConfig.modelPath.string(), runConfig.modelConfigPath.string(),
-            voice);
+            voice, runConfig.speakerId);
   auto endTime = chrono::steady_clock::now();
   auto loadSeconds = chrono::duration<double>(endTime - startTime).count();
   cerr << "Load time: " << loadSeconds << " sec" << endl;
@@ -122,9 +123,11 @@ int main(int argc, char *argv[]) {
 
   larynx::terminate();
 
+#ifdef HAVE_PCAUDIO
   audio_object_close(my_audio);
   audio_object_destroy(my_audio);
   my_audio = nullptr;
+#endif
 
   return EXIT_SUCCESS;
 }
@@ -145,6 +148,7 @@ void printUsage(char *argv[]) {
   cerr << "   -d  DIR   --output_dir  DIR   path to output directory (default: "
           "cwd)"
        << endl;
+  cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
   cerr << endl;
 }
 
@@ -182,6 +186,9 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       ensureArg(argc, argv, i);
       runConfig.outputType = OUTPUT_DIRECTORY;
       runConfig.outputPath = filesystem::path(argv[++i]);
+    } else if (arg == "-s" || arg == "--speaker") {
+      ensureArg(argc, argv, i);
+      runConfig.speakerId = (larynx::SpeakerId)stoi(argv[++i]);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);

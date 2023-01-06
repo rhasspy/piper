@@ -11,6 +11,7 @@ htmlcov
 /data/
 /build/
 /local/
+/dist/
 *.so
 
 .venv/

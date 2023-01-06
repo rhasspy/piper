@@ -17,9 +17,13 @@ pkg_check_modules(ESPEAK_NG REQUIRED espeak-ng<2)
 
 # https://github.com/espeak-ng/pcaudiolib
 check_include_file_cxx("pcaudiolib/audio.h" PCAUDIO_INCLUDE_FOUND)
+
 if(PCAUDIO_INCLUDE_FOUND)
-target_compile_definitions(larynx PUBLIC HAVE_PCAUDIO)
-set(PCAUDIO_LIBRARIES "pcaudio")
+  option(USE_PCAUDIO "Build with pcaudiolib" ON)
+  if(USE_PCAUDIO)
+    target_compile_definitions(larynx PUBLIC HAVE_PCAUDIO)
+    set(PCAUDIO_LIBRARIES "pcaudio")
+  endif()
 endif()
 
 set(ONNXRUNTIME_ROOTDIR "/usr/local/include/onnxruntime")

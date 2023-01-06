@@ -19,6 +19,7 @@ namespace larynx {
 
 typedef char32_t Phoneme;
 typedef int64_t PhonemeId;
+typedef int64_t SpeakerId;
 
 const string DefaultVoice = "en-gb-x-rp";
 
@@ -52,7 +53,11 @@ struct SynthesisConfig {
   int sampleRate = 22050;
   int sampleWidth = 2; // 16-bit
   int channels = 1;    // mono
-  filesystem::path outputPath;
+  optional<SpeakerId> speakerId;
+};
+
+struct ModelConfig {
+  int numSpeakers;
 };
 
 bool isSingleCodepoint(string s) {
@@ -84,14 +89,14 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     }
 
     auto phonemeMapValue = configRoot["phoneme_map"];
-    for (auto& fromPhonemeItem : phonemeMapValue.items()) {
+    for (auto &fromPhonemeItem : phonemeMapValue.items()) {
       string fromPhoneme = fromPhonemeItem.key();
       if (!isSingleCodepoint(fromPhoneme)) {
         throw runtime_error("Phonemes must be one codepoint (phoneme map)");
       }
 
       auto fromCodepoint = getCodepoint(fromPhoneme);
-      for (auto& toPhonemeValue : fromPhonemeItem.value()) {
+      for (auto &toPhonemeValue : fromPhonemeItem.value()) {
         string toPhoneme = toPhonemeValue.get<string>();
         if (!isSingleCodepoint(toPhoneme)) {
           throw runtime_error("Phonemes must be one codepoint (phoneme map)");
@@ -106,14 +111,14 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
   // phoneme to [id] map
   if (configRoot.contains("phoneme_id_map")) {
     auto phonemeIdMapValue = configRoot["phoneme_id_map"];
-    for (auto& fromPhonemeItem : phonemeIdMapValue.items()) {
+    for (auto &fromPhonemeItem : phonemeIdMapValue.items()) {
       string fromPhoneme = fromPhonemeItem.key();
       if (!isSingleCodepoint(fromPhoneme)) {
         throw runtime_error("Phonemes must be one codepoint (phoneme id map)");
       }
 
       auto fromCodepoint = getCodepoint(fromPhoneme);
-      for (auto& toIdValue : fromPhonemeItem.value()) {
+      for (auto &toIdValue : fromPhonemeItem.value()) {
         PhonemeId toId = toIdValue.get<PhonemeId>();
         phonemizeConfig.phonemeIdMap[fromCodepoint].push_back(toId);
       }
@@ -133,6 +138,12 @@ void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
   }
 
 } /* parseSynthesisConfig */
+
+void parseModelConfig(json &configRoot, ModelConfig &modelConfig) {
+
+  modelConfig.numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
+
+} /* parseModelConfig */
 
 } // namespace larynx
 
