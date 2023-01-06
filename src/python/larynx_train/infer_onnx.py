@@ -36,17 +36,17 @@ def main():
     model = onnxruntime.InferenceSession(str(args.model), sess_options=sess_options)
     _LOGGER.info("Loaded model from %s", args.model)
 
-    text_empty = np.zeros((1, 300), dtype=np.int64)
-    text_lengths_empty = np.array([text_empty.shape[1]], dtype=np.int64)
-    scales = np.array(
-        [args.noise_scale, args.length_scale, args.noise_scale_w],
-        dtype=np.float32,
-    )
-    bias_audio = model.run(
-        None,
-        {"input": text_empty, "input_lengths": text_lengths_empty, "scales": scales},
-    )[0].squeeze((0, 1))
-    bias_spec, _ = transform(bias_audio)
+    # text_empty = np.zeros((1, 300), dtype=np.int64)
+    # text_lengths_empty = np.array([text_empty.shape[1]], dtype=np.int64)
+    # scales = np.array(
+    #     [args.noise_scale, args.length_scale, args.noise_scale_w],
+    #     dtype=np.float32,
+    # )
+    # bias_audio = model.run(
+    #     None,
+    #     {"input": text_empty, "input_lengths": text_lengths_empty, "scales": scales},
+    # )[0].squeeze((0, 1))
+    # bias_spec, _ = transform(bias_audio)
 
     for i, line in enumerate(sys.stdin):
         line = line.strip()
@@ -57,6 +57,7 @@ def main():
         # utt_id = utt["id"]
         utt_id = str(i)
         phoneme_ids = utt["phoneme_ids"]
+        speaker_id = utt.get("speaker_id")
 
         text = np.expand_dims(np.array(phoneme_ids, dtype=np.int64), 0)
         text_lengths = np.array([text.shape[1]], dtype=np.int64)
@@ -64,12 +65,22 @@ def main():
             [args.noise_scale, args.length_scale, args.noise_scale_w],
             dtype=np.float32,
         )
+        sid = None
+
+        if speaker_id is not None:
+            sid = np.array([speaker_id], dtype=np.int64)
 
         start_time = time.perf_counter()
         audio = model.run(
-            None, {"input": text, "input_lengths": text_lengths, "scales": scales}
+            None,
+            {
+                "input": text,
+                "input_lengths": text_lengths,
+                "scales": scales,
+                "sid": sid,
+            },
         )[0].squeeze((0, 1))
-        audio = denoise(audio, bias_spec, 10)
+        # audio = denoise(audio, bias_spec, 10)
         audio = audio_float_to_int16(audio.squeeze())
         end_time = time.perf_counter()
 
