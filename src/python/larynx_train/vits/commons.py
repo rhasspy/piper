@@ -1,5 +1,6 @@
 import logging
 import math
+from typing import Optional
 
 import torch
 from torch.nn import functional as F
@@ -90,7 +91,7 @@ def cat_timing_signal_1d(x, min_timescale=1.0, max_timescale=1.0e4, axis=1):
     return torch.cat([x, signal.to(dtype=x.dtype, device=x.device)], axis)
 
 
-def subsequent_mask(length):
+def subsequent_mask(length: int):
     mask = torch.tril(torch.ones(length, length)).unsqueeze(0).unsqueeze(0)
     return mask
 
@@ -105,7 +106,7 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     return acts
 
 
-def sequence_mask(length, max_length=None):
+def sequence_mask(length, max_length: Optional[int] = None):
     if max_length is None:
         max_length = length.max()
     x = torch.arange(max_length, dtype=length.dtype, device=length.device)

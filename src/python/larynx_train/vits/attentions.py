@@ -60,14 +60,16 @@ class Encoder(nn.Module):
     def forward(self, x, x_mask):
         attn_mask = x_mask.unsqueeze(2) * x_mask.unsqueeze(-1)
         x = x * x_mask
-        for i in range(self.n_layers):
-            y = self.attn_layers[i](x, x, attn_mask)
+        for attn_layer, norm_layer_1, ffn_layer, norm_layer_2 in zip(
+            self.attn_layers, self.norm_layers_1, self.ffn_layers, self.norm_layers_2
+        ):
+            y = attn_layer(x, x, attn_mask)
             y = self.drop(y)
-            x = self.norm_layers_1[i](x + y)
+            x = norm_layer_1(x + y)
 
-            y = self.ffn_layers[i](x, x_mask)
+            y = ffn_layer(x, x_mask)
             y = self.drop(y)
-            x = self.norm_layers_2[i](x + y)
+            x = norm_layer_2(x + y)
         x = x * x_mask
         return x
 
@@ -181,7 +183,7 @@ class MultiHeadAttention(nn.Module):
         self.block_length = block_length
         self.proximal_bias = proximal_bias
         self.proximal_init = proximal_init
-        self.attn = None
+        self.attn = torch.zeros(1)
 
         self.k_channels = channels // n_heads
         self.conv_q = nn.Conv1d(channels, channels, 1)
@@ -222,7 +224,7 @@ class MultiHeadAttention(nn.Module):
 
     def attention(self, query, key, value, mask=None):
         # reshape [b, d, t] -> [b, n_h, t, d_k]
-        b, d, t_s, t_t = (*key.size(), query.size(2))
+        b, d, t_s, t_t = (key.size(0), key.size(1), key.size(2), query.size(2))
         query = query.view(b, self.n_heads, self.k_channels, t_t).transpose(2, 3)
         key = key.view(b, self.n_heads, self.k_channels, t_s).transpose(2, 3)
         value = value.view(b, self.n_heads, self.k_channels, t_s).transpose(2, 3)
@@ -287,7 +289,7 @@ class MultiHeadAttention(nn.Module):
         ret = torch.matmul(x, y.unsqueeze(0).transpose(-2, -1))
         return ret
 
-    def _get_relative_embeddings(self, relative_embeddings, length):
+    def _get_relative_embeddings(self, relative_embeddings, length: int):
         # max_relative_position = 2 * self.window_size + 1
         # Pad first before slice to avoid using cond ops.
         pad_length = max(length - (self.window_size + 1), 0)
@@ -345,7 +347,7 @@ class MultiHeadAttention(nn.Module):
         x_final = x_flat.view([batch, heads, length, 2 * length])[:, :, :, 1:]
         return x_final
 
-    def _attention_bias_proximal(self, length):
+    def _attention_bias_proximal(self, length: int):
         """Bias for self-attention to encourage attention to close positions.
         Args:
           length: an integer scalar.
@@ -365,7 +367,7 @@ class FFN(nn.Module):
         filter_channels: int,
         kernel_size: int,
         p_dropout: float = 0.0,
-        activation: typing.Optional[str] = None,
+        activation: str = "",
         causal: bool = False,
     ):
         super().__init__()
@@ -377,23 +379,31 @@ class FFN(nn.Module):
         self.activation = activation
         self.causal = causal
 
-        if causal:
-            self.padding = self._causal_padding
-        else:
-            self.padding = self._same_padding
-
         self.conv_1 = nn.Conv1d(in_channels, filter_channels, kernel_size)
         self.conv_2 = nn.Conv1d(filter_channels, out_channels, kernel_size)
         self.drop = nn.Dropout(p_dropout)
 
     def forward(self, x, x_mask):
-        x = self.conv_1(self.padding(x * x_mask))
+        if self.causal:
+            padding1 = self._causal_padding(x * x_mask)
+        else:
+            padding1 = self._same_padding(x * x_mask)
+
+        x = self.conv_1(padding1)
+
         if self.activation == "gelu":
             x = x * torch.sigmoid(1.702 * x)
         else:
             x = torch.relu(x)
         x = self.drop(x)
-        x = self.conv_2(self.padding(x * x_mask))
+
+        if self.causal:
+            padding2 = self._causal_padding(x * x_mask)
+        else:
+            padding2 = self._same_padding(x * x_mask)
+
+        x = self.conv_2(padding2)
+
         return x * x_mask
 
     def _causal_padding(self, x):

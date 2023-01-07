@@ -10,8 +10,6 @@ from torch.nn.utils import remove_weight_norm, weight_norm
 from .commons import fused_add_tanh_sigmoid_multiply, get_padding, init_weights
 from .transforms import piecewise_rational_quadratic_transform
 
-LRELU_SLOPE = 0.1
-
 
 class LayerNorm(nn.Module):
     def __init__(self, channels: int, eps: float = 1e-5):
@@ -227,6 +225,7 @@ class ResBlock1(torch.nn.Module):
         dilation: typing.Tuple[int] = (1, 3, 5),
     ):
         super(ResBlock1, self).__init__()
+        self.LRELU_SLOPE = 0.1
         self.convs1 = nn.ModuleList(
             [
                 weight_norm(
@@ -301,11 +300,11 @@ class ResBlock1(torch.nn.Module):
 
     def forward(self, x, x_mask=None):
         for c1, c2 in zip(self.convs1, self.convs2):
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = F.leaky_relu(x, self.LRELU_SLOPE)
             if x_mask is not None:
                 xt = xt * x_mask
             xt = c1(xt)
-            xt = F.leaky_relu(xt, LRELU_SLOPE)
+            xt = F.leaky_relu(xt, self.LRELU_SLOPE)
             if x_mask is not None:
                 xt = xt * x_mask
             xt = c2(xt)
@@ -326,6 +325,7 @@ class ResBlock2(torch.nn.Module):
         self, channels: int, kernel_size: int = 3, dilation: typing.Tuple[int] = (1, 3)
     ):
         super(ResBlock2, self).__init__()
+        self.LRELU_SLOPE = 0.1
         self.convs = nn.ModuleList(
             [
                 weight_norm(
@@ -354,7 +354,7 @@ class ResBlock2(torch.nn.Module):
 
     def forward(self, x, x_mask=None):
         for c in self.convs:
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = F.leaky_relu(x, self.LRELU_SLOPE)
             if x_mask is not None:
                 xt = xt * x_mask
             xt = c(xt)
