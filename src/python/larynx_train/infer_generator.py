@@ -12,15 +12,15 @@ from .vits.lightning import VitsModel
 from .vits.utils import audio_float_to_int16
 from .vits.wavfile import write as write_wav
 
-_LOGGER = logging.getLogger("larynx_train.infer_torchscript")
+_LOGGER = logging.getLogger("larynx_train.infer_generator")
 
 
 def main():
     """Main entry point"""
     logging.basicConfig(level=logging.DEBUG)
-    parser = argparse.ArgumentParser(prog="larynx_train.infer_torchscript")
+    parser = argparse.ArgumentParser(prog="larynx_train.infer_generator")
     parser.add_argument(
-        "--model", required=True, help="Path to torchscript checkpoint (.ts)"
+        "--model", required=True, help="Path to generator (.pt)"
     )
     parser.add_argument("--output-dir", required=True, help="Path to write WAV files")
     parser.add_argument("--sample-rate", type=int, default=22050)
@@ -29,7 +29,7 @@ def main():
     args.output_dir = Path(args.output_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = torch.jit.load(args.model)
+    model = torch.load(args.model)
 
     # Inference only
     model.eval()
@@ -54,9 +54,9 @@ def main():
                 text,
                 text_lengths,
                 sid,
-                torch.FloatTensor([0.667]),
-                torch.FloatTensor([1.0]),
-                torch.FloatTensor([0.8]),
+                # torch.FloatTensor([0.667]),
+                # torch.FloatTensor([1.0]),
+                # torch.FloatTensor([0.8]),
             )[0]
             .detach()
             .numpy()
