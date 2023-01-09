@@ -12,15 +12,15 @@ from .vits.lightning import VitsModel
 from .vits.utils import audio_float_to_int16
 from .vits.wavfile import write as write_wav
 
-_LOGGER = logging.getLogger("larynx_train.infer")
+_LOGGER = logging.getLogger("larynx_train.infer_torchscript")
 
 
 def main():
     """Main entry point"""
     logging.basicConfig(level=logging.DEBUG)
-    parser = argparse.ArgumentParser(prog="larynx_train.infer")
+    parser = argparse.ArgumentParser(prog="larynx_train.infer_torchscript")
     parser.add_argument(
-        "--checkpoint", required=True, help="Path to model checkpoint (.ckpt)"
+        "--model", required=True, help="Path to torchscript checkpoint (.ts)"
     )
     parser.add_argument("--output-dir", required=True, help="Path to write WAV files")
     parser.add_argument("--sample-rate", type=int, default=22050)
@@ -29,13 +29,13 @@ def main():
     args.output_dir = Path(args.output_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = VitsModel.load_from_checkpoint(args.checkpoint)
+    model = torch.jit.load(args.model)
 
     # Inference only
-    model.eval()
+    # model.eval()
 
-    with torch.no_grad():
-        model.model_g.dec.remove_weight_norm()
+    # with torch.no_grad():
+    #     model.model_g.dec.remove_weight_norm()
 
     for i, line in enumerate(sys.stdin):
         line = line.strip()
@@ -49,11 +49,22 @@ def main():
 
         text = torch.LongTensor(phoneme_ids).unsqueeze(0)
         text_lengths = torch.LongTensor([len(phoneme_ids)])
-        scales = [0.667, 1.0, 0.8]
+        # scales = [0.667, 1.0, 0.8]
         sid = torch.LongTensor([speaker_id]) if speaker_id is not None else None
 
         start_time = time.perf_counter()
-        audio = model(text, text_lengths, scales, sid=sid).detach().numpy()
+        audio = (
+            model(
+                text,
+                text_lengths,
+                sid,
+                torch.FloatTensor([0.667]),
+                torch.FloatTensor([1.0]),
+                torch.FloatTensor([0.8]),
+            )[0]
+            .detach()
+            .numpy()
+        )
         audio = audio_float_to_int16(audio)
         end_time = time.perf_counter()
 
