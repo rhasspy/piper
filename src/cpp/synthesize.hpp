@@ -56,7 +56,7 @@ void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
   if (synthesisConfig.speakerId) {
     // Add speaker id
     vector<int64_t> speakerId{(int64_t)synthesisConfig.speakerId.value()};
-    vector<int64_t> speakerIdShape{1};
+    vector<int64_t> speakerIdShape{(int64_t)speakerId.size()};
     inputTensors.push_back(Ort::Value::CreateTensor<int64_t>(
         memoryInfo, speakerId.data(), speakerId.size(), speakerIdShape.data(),
         speakerIdShape.size()));
