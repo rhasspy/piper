@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ADD_EXECUTABLE(larynx main.cpp)
 
-string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
+string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
 string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 
 find_package(PkgConfig)
@@ -30,10 +30,12 @@ set(ONNXRUNTIME_ROOTDIR "/usr/local/include/onnxruntime")
 
 target_link_libraries(larynx
                       onnxruntime
+                      -static-libgcc -static-libstdc++
                       ${ESPEAK_NG_LIBRARIES}
                       ${PCAUDIO_LIBRARIES})
 
 target_link_directories(larynx PUBLIC
+                        ${ESPEAK_NG_LIBRARY_DIRS}
                         ${ONNXRUNTIME_ROOTDIR}/lib)
 
 target_include_directories(larynx PUBLIC

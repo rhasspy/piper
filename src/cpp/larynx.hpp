@@ -1,6 +1,7 @@
 #ifndef LARYNX_H_
 #define LARYNX_H_
 
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -26,11 +27,18 @@ struct Voice {
   ModelSession session;
 };
 
-void initialize() {
+void initialize(std::filesystem::path cwd) {
+  const char *dataPath = NULL;
+
+  auto cwdDataPath = cwd.append("espeak-ng-data");
+  if (std::filesystem::is_directory(cwdDataPath)) {
+    dataPath = cwdDataPath.c_str();
+  }
+
   // Set up espeak-ng for calling espeak_TextToPhonemes
   int result = espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS,
                                  /*buflength*/ 0,
-                                 /*path*/ NULL,
+                                 /*path*/ dataPath,
                                  /*options*/ 0);
   if (result < 0) {
     throw runtime_error("Failed to initialize eSpeak-ng");

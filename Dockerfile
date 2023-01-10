@@ -12,12 +12,24 @@ RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
     apt-get update && \
     apt-get install --yes --no-install-recommends \
         build-essential \
-        cmake \
-        pkg-config \
-        libespeak-ng-dev \
-        libpcaudio-dev
+        autoconf automake libtool pkg-config cmake
 
 WORKDIR /build
+
+# Build minimal version of espeak-ng
+ADD lib/espeak-ng-1.51.tar.gz ./
+RUN cd espeak-ng-1.51 && \
+    ./autogen.sh && \
+    ./configure \
+        --without-pcaudiolib \
+        --without-klatt \
+        --without-speechplayer \
+        --without-mbrola \
+        --without-sonic \
+        --prefix=/usr && \
+    make -j8 src/espeak-ng src/speak-ng && \
+    make && \
+    make install
 
 # Copy onnxruntime library
 COPY lib/ ./lib/
@@ -29,11 +41,19 @@ RUN mkdir -p /usr/local/include/onnxruntime && \
 # Build larynx binary
 COPY Makefile ./
 COPY src/cpp/ ./src/cpp/
-RUN make release
+RUN make no-pcaudio
+
+# Build .tar.gz to keep symlinks
+WORKDIR /dist
+RUN mkdir -p larynx && \
+    cp -d /usr/lib/libespeak-ng.so* ./larynx/ && \
+    cp -dR /usr/share/espeak-ng-data ./larynx/ && \
+    cp -d /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./larynx/ && \
+    cp /build/build/larynx ./larynx/ && \
+    tar -czf larynx.tar.gz larynx/
 
 # -----------------------------------------------------------------------------
 
 FROM scratch
 
-COPY --from=build /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./
-COPY --from=build /build/build/larynx ./
+COPY --from=build /dist/larynx.tar.gz ./

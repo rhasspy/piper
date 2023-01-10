@@ -35,7 +35,8 @@ int main(int argc, char *argv[]) {
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
-  larynx::initialize();
+  auto exePath = filesystem::path(argv[0]);
+  larynx::initialize(exePath.parent_path());
 
   larynx::Voice voice;
   auto startTime = chrono::steady_clock::now();
