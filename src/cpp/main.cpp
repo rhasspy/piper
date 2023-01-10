@@ -24,6 +24,9 @@ struct RunConfig {
   OutputType outputType = OUTPUT_PLAY;
   optional<filesystem::path> outputPath;
   optional<larynx::SpeakerId> speakerId;
+  optional<float> noiseScale;
+  optional<float> lengthScale;
+  optional<float> noiseW;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -41,6 +44,19 @@ int main(int argc, char *argv[]) {
   auto endTime = chrono::steady_clock::now();
   auto loadSeconds = chrono::duration<double>(endTime - startTime).count();
   cerr << "Load time: " << loadSeconds << " sec" << endl;
+
+  // Scales
+  if (runConfig.noiseScale) {
+    voice.synthesisConfig.noiseScale = runConfig.noiseScale.value();
+  }
+
+  if (runConfig.lengthScale) {
+    voice.synthesisConfig.lengthScale = runConfig.lengthScale.value();
+  }
+
+  if (runConfig.noiseW) {
+    voice.synthesisConfig.noiseW = runConfig.noiseW.value();
+  }
 
 #ifdef HAVE_PCAUDIO
   audio_object *my_audio = nullptr;
@@ -149,6 +165,12 @@ void printUsage(char *argv[]) {
           "cwd)"
        << endl;
   cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
+  cerr << "   --noise-scale           NUM   generator noise (default: 0.667)"
+       << endl;
+  cerr << "   --length-scale          NUM   phoneme length (default: 1.0)"
+       << endl;
+  cerr << "   --noise-w               NUM   phonene width noise (default: 0.8)"
+       << endl;
   cerr << endl;
 }
 
@@ -188,7 +210,16 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.outputPath = filesystem::path(argv[++i]);
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
-      runConfig.speakerId = (larynx::SpeakerId)stoi(argv[++i]);
+      runConfig.speakerId = (larynx::SpeakerId)stol(argv[++i]);
+    } else if (arg == "--noise-scale") {
+      ensureArg(argc, argv, i);
+      runConfig.noiseScale = stof(argv[++i]);
+    } else if (arg == "--length-scale") {
+      ensureArg(argc, argv, i);
+      runConfig.lengthScale = stof(argv[++i]);
+    } else if (arg == "--noise-w") {
+      ensureArg(argc, argv, i);
+      runConfig.noiseW = stof(argv[++i]);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);
