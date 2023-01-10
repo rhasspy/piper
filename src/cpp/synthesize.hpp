@@ -53,10 +53,12 @@ void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
       Ort::Value::CreateTensor<float>(memoryInfo, scales.data(), scales.size(),
                                       scalesShape.data(), scalesShape.size()));
 
+  // Add speaker id.
+  // NOTE: These must be kept outside the "if" below to avoid being deallocated.
+  vector<int64_t> speakerId{(int64_t)synthesisConfig.speakerId.value_or(0)};
+  vector<int64_t> speakerIdShape{(int64_t)speakerId.size()};
+
   if (synthesisConfig.speakerId) {
-    // Add speaker id
-    vector<int64_t> speakerId{(int64_t)synthesisConfig.speakerId.value()};
-    vector<int64_t> speakerIdShape{(int64_t)speakerId.size()};
     inputTensors.push_back(Ort::Value::CreateTensor<int64_t>(
         memoryInfo, speakerId.data(), speakerId.size(), speakerIdShape.data(),
         speakerIdShape.size()));

@@ -188,7 +188,7 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.outputPath = filesystem::path(argv[++i]);
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
-      runConfig.speakerId = (larynx::SpeakerId)stoll(argv[++i]);
+      runConfig.speakerId = (larynx::SpeakerId)stoi(argv[++i]);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);

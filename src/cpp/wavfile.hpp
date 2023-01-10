@@ -27,7 +27,7 @@ struct WavHeader {
 
 // Write WAV file header only
 void writeWavHeader(int sampleRate, int sampleWidth, int channels,
-                    uint32_t numSamples, ostream &audioFile) {
+                    uint32_t numSamples, std::ostream &audioFile) {
   WavHeader header;
   header.chunkSize = numSamples + sizeof(WavHeader) - 8;
   header.sampleRate = sampleRate;
