@@ -4,22 +4,22 @@ A fast, local neural text to speech system.
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./larynx --model blizzard_lessac-medium.onnx --output_file welcome.wav
+  ./larynx --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
 ```
 
 ## Voices
 
-* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-english.tar.gz)
-* [German](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-german.tar.gz)
-* [Danish](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-danish.tar.gz)
-* [Norweigian](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-norweigian.tar.gz)
-* [Nepali](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-nepali.tar.gz)
-* [Vietnamese](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-vietnamese.tar.gz)
+* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-english.tar.gz) (22Khz, single speaker)
+* [German](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-german.tar.gz) (16Khz, single speaker)
+* [Danish](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-danish.tar.gz) (22Khz, multispeaker)
+* [Norweigian](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-norweigian.tar.gz) (22Khz, single speaker)
+* [Nepali](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-nepali.tar.gz) (16Khz, multispeaker)
+* [Vietnamese](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-vietnamese.tar.gz) (16Khz, multispeaker)
 
 
 ## Purpose
 
-Larynx is meant to sound as good as [CoquiTTS](https://github.com/coqui-ai/TTS), but run reasonbly fast on the Raspberry Pi 4.
+Larynx is meant to sound as good as [CoquiTTS](https://github.com/coqui-ai/TTS), but run reasonably fast on the Raspberry Pi 4.
 
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
@@ -37,7 +37,7 @@ If you want to build from source, see the [Makefile](Makefile) and [C++ source](
 ## Usage
 
 1. [Download a voice](#voices) and extract the `.onnx` and `.onnx.json` files
-2. Run the `larynx` binary with text on stdin, `--model /path/to/your-voice.onnx`, and `--output_file output.wav`
+2. Run the `larynx` binary with text on standard input, `--model /path/to/your-voice.onnx`, and `--output_file output.wav`
 
 For example:
 
