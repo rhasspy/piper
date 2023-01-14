@@ -12,8 +12,6 @@ const string instanceName{"larynx"};
 
 struct ModelSession {
   Ort::Session onnx;
-  vector<char *> inputNames;
-  vector<char *> outputNames;
   Ort::AllocatorWithDefaultOptions allocator;
   Ort::SessionOptions options;
   Ort::Env env;
@@ -48,19 +46,6 @@ void loadModel(string modelPath, ModelSession &session) {
   session.onnx = Ort::Session(session.env, modelPath.c_str(), session.options);
   auto endTime = chrono::steady_clock::now();
   auto loadDuration = chrono::duration<double>(endTime - startTime);
-
-  size_t numInputNodes = session.onnx.GetInputCount();
-  size_t numOutputNodes = session.onnx.GetOutputCount();
-
-  for (size_t i = 0; i < numInputNodes; i++) {
-    session.inputNames.push_back(
-        session.onnx.GetInputName(i, session.allocator));
-  }
-
-  for (size_t i = 0; i < numOutputNodes; i++) {
-    session.outputNames.push_back(
-        session.onnx.GetOutputName(i, session.allocator));
-  }
 }
 
 } // namespace larynx

@@ -1,6 +1,7 @@
 #ifndef SYNTHESIZE_H_
 #define SYNTHESIZE_H_
 
+#include <array>
 #include <chrono>
 #include <limits>
 #include <memory>
@@ -64,12 +65,16 @@ void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
         speakerIdShape.size()));
   }
 
+  // From export_onnx.py
+  array<const char *, 4> inputNames = {"input", "input_lengths", "scales",
+                                       "sid"};
+  array<const char *, 1> outputNames = {"output"};
+
   // Infer
   auto startTime = chrono::steady_clock::now();
-  auto outputTensors =
-      session.onnx.Run(Ort::RunOptions{nullptr}, session.inputNames.data(),
-                       inputTensors.data(), inputTensors.size(),
-                       session.outputNames.data(), session.outputNames.size());
+  auto outputTensors = session.onnx.Run(
+      Ort::RunOptions{nullptr}, inputNames.data(), inputTensors.data(),
+      inputTensors.size(), outputNames.data(), outputNames.size());
   auto endTime = chrono::steady_clock::now();
 
   if ((outputTensors.size() != 1) || (!outputTensors.front().IsTensor())) {

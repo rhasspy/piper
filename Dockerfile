@@ -36,7 +36,7 @@ COPY lib/ ./lib/
 RUN mkdir -p /usr/local/include/onnxruntime && \
     tar -C /usr/local/include/onnxruntime \
         --strip-components 1 \
-        -xvf "lib/onnxruntime-${TARGETARCH}${TARGETVARIANT}.tgz"
+        -xvf "lib/onnxruntime-linux-${TARGETARCH}${TARGETVARIANT}.tgz"
 
 # Build larynx binary
 COPY Makefile ./
@@ -50,10 +50,10 @@ RUN mkdir -p larynx && \
     cp -dR /usr/share/espeak-ng-data ./larynx/ && \
     cp -d /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./larynx/ && \
     cp /build/build/larynx ./larynx/ && \
-    tar -czf larynx.tar.gz larynx/
+    tar -czf "larynx_${TARGETARCH}${TARGETVARIANT}.tar.gz" larynx/
 
 # -----------------------------------------------------------------------------
 
 FROM scratch
 
-COPY --from=build /dist/larynx.tar.gz ./
+COPY --from=build /dist/larynx_*.tar.gz ./
