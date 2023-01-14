@@ -9,7 +9,7 @@ echo 'Welcome to the world of speech synthesis!' | \
 
 ## Voices
 
-* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-english.tar.gz) (22Khz, single speaker)
+* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-english.tar.gz) (16Khz, single speaker)
 * [German](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-german.tar.gz) (16Khz, single speaker)
 * [Danish](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-danish.tar.gz) (22Khz, multispeaker)
 * [Norwegian](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-norweigian.tar.gz) (22Khz, single speaker)
