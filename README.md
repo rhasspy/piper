@@ -9,12 +9,12 @@ echo 'Welcome to the world of speech synthesis!' | \
 
 ## Voices
 
-* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-english.tar.gz) (22Khz, single speaker)
-* [German](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-german.tar.gz) (16Khz, single speaker)
-* [Danish](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-danish.tar.gz) (22Khz, multispeaker)
-* [Norweigian](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-norweigian.tar.gz) (22Khz, single speaker)
-* [Nepali](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-nepali.tar.gz) (16Khz, multispeaker)
-* [Vietnamese](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/voice-vietnamese.tar.gz) (16Khz, multispeaker)
+* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-english.tar.gz) (22Khz, single speaker)
+* [German](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-german.tar.gz) (16Khz, single speaker)
+* [Danish](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-danish.tar.gz) (22Khz, multispeaker)
+* [Norweigian](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-norweigian.tar.gz) (22Khz, single speaker)
+* [Nepali](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-nepali.tar.gz) (16Khz, multispeaker)
+* [Vietnamese](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-vietnamese.tar.gz) (16Khz, multispeaker)
 
 
 ## Purpose
@@ -28,8 +28,8 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Download a release:
 
-* [amd64](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/larynx_amd64.tar.gz) (desktop Linux)
-* [arm64](https://github.com/rhasspy/larynx2/releases/download/v0.0.1/larynx_arm64.tar.gz) (Raspberry Pi 4)
+* [amd64](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/larynx_amd64.tar.gz) (desktop Linux)
+* [arm64](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/larynx_arm64.tar.gz) (Raspberry Pi 4)
 
 If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Last tested with [onnxruntime](https://github.com/microsoft/onnxruntime) 1.13.1.
 
