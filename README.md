@@ -58,12 +58,15 @@ See [src/python](src/python)
 Start by creating a virtual environment:
 
 ``` sh
+cd larynx2/src/python
 python3 -m venv .venv
 source .venv/bin/activate
 pip3 install --upgrade pip
 pip3 install --upgrade wheel setuptools
 pip3 install -r requirements.txt
 ```
+
+Run the `build_monotonic_align.sh` script in the `src/python` directory to build the extension.
 
 Ensure you have [espeak-ng](https://github.com/espeak-ng/espeak-ng/) installed (`sudo apt-get install espeak-ng`).
 
