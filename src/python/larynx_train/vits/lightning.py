@@ -124,6 +124,10 @@ class VitsModel(pl.LightningModule):
         num_test_examples: int,
         max_phoneme_ids: Optional[int] = None,
     ):
+        if self.hparams.dataset is None:
+            _LOGGER.debug("No dataset to load")
+            return
+
         full_dataset = LarynxDataset(
             self.hparams.dataset, max_phoneme_ids=max_phoneme_ids
         )
