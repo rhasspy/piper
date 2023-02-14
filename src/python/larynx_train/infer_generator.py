@@ -8,7 +8,6 @@ from pathlib import Path
 
 import torch
 
-from .vits.lightning import VitsModel
 from .vits.utils import audio_float_to_int16
 from .vits.wavfile import write as write_wav
 
@@ -19,9 +18,7 @@ def main():
     """Main entry point"""
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(prog="larynx_train.infer_generator")
-    parser.add_argument(
-        "--model", required=True, help="Path to generator (.pt)"
-    )
+    parser.add_argument("--model", required=True, help="Path to generator (.pt)")
     parser.add_argument("--output-dir", required=True, help="Path to write WAV files")
     parser.add_argument("--sample-rate", type=int, default=22050)
     args = parser.parse_args()

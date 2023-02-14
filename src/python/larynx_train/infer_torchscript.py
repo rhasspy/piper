@@ -8,7 +8,6 @@ from pathlib import Path
 
 import torch
 
-from .vits.lightning import VitsModel
 from .vits.utils import audio_float_to_int16
 from .vits.wavfile import write as write_wav
 

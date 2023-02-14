@@ -10,7 +10,7 @@ from collections import Counter
 from dataclasses import dataclass
 from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional
 
 from espeak_phonemizer import Phonemizer
 
@@ -20,7 +20,7 @@ from .phonemize import DEFAULT_PHONEME_ID_MAP, phonemes_to_ids, phonemize
 _LOGGER = logging.getLogger("preprocess")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--input-dir", required=True, help="Directory with audio dataset"
@@ -124,9 +124,11 @@ def main():
     if (args.max_workers is None) or (args.max_workers < 1):
         args.max_workers = os.cpu_count()
 
+    assert args.max_workers is not None
+
     batch_size = int(num_utterances / (args.max_workers * 2))
-    queue_in = JoinableQueue()
-    queue_out = Queue()
+    queue_in: "Queue[Iterable[Utterance]]" = JoinableQueue()
+    queue_out: "Queue[Optional[Utterance]]" = Queue()
 
     # Start workers
     processes = [
