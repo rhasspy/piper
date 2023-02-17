@@ -1,0 +1,13 @@
+FROM debian:buster
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+COPY local/en-us/ljspeech/low/en-us-ljspeech-low.onnx \
+    local/en-us/ljspeech/low/en-us-ljspeech-low.onnx.json ./
+
+ADD dist/linux_${TARGETARCH}${TARGETVARIANT}/larynx_${TARGETARCH}${TARGETVARIANT}.tar.gz ./
+
+RUN cd larynx/ && echo 'This is a test.' | ./larynx -m ../en-us-ljspeech-low.onnx -f test.wav
+RUN if [ ! -f larynx/test.wav ]; then exit 1; fi
+RUN size="$(wc -c < larynx/test.wav)"; \
+    if [ "${size}" -lt "1000" ]; then echo "File size is ${size} bytes"; exit 1; fi

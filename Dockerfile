@@ -1,18 +1,15 @@
-FROM debian:bullseye as build
+FROM quay.io/pypa/manylinux_2_28_x86_64 as build-amd64
+
+FROM quay.io/pypa/manylinux_2_28_aarch64 as build-arm64
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+FROM build-${TARGETARCH}${TARGETVARIANT} as build
 ARG TARGETARCH
 ARG TARGETVARIANT
 
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
-
-RUN echo "Dir::Cache var/cache/apt/${TARGETARCH}${TARGETVARIANT};" > /etc/apt/apt.conf.d/01cache
-
-RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
-    mkdir -p /var/cache/apt/${TARGETARCH}${TARGETVARIANT}/archives/partial && \
-    apt-get update && \
-    apt-get install --yes --no-install-recommends \
-        build-essential \
-        autoconf automake libtool pkg-config cmake
 
 WORKDIR /build
 
@@ -43,10 +40,13 @@ COPY Makefile ./
 COPY src/cpp/ ./src/cpp/
 RUN make no-pcaudio
 
+# Do a test run
+RUN /build/build/larynx --help
+
 # Build .tar.gz to keep symlinks
 WORKDIR /dist
 RUN mkdir -p larynx && \
-    cp -d /usr/lib/libespeak-ng.so* ./larynx/ && \
+    cp -d /usr/lib64/libespeak-ng.so* ./larynx/ && \
     cp -dR /usr/share/espeak-ng-data ./larynx/ && \
     cp -d /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./larynx/ && \
     cp /build/build/larynx ./larynx/ && \

@@ -1,4 +1,4 @@
-.PHONY: release debug clean docker
+.PHONY: release debug clean test
 
 release:
 	mkdir -p build
@@ -17,3 +17,6 @@ clean:
 
 docker:
 	docker buildx build . --platform 'linux/amd64,linux/arm64' --output 'type=local,dest=dist'
+
+test:
+	docker buildx build -f Dockerfile.test . --platform 'linux/amd64,linux/arm64'
