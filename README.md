@@ -9,17 +9,25 @@ echo 'Welcome to the world of speech synthesis!' | \
 
 ## Voices
 
-* [U.S. English](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-english.tar.gz) (16Khz, single speaker)
-* [German](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-german.tar.gz) (16Khz, single speaker)
-* [Danish](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-danish.tar.gz) (22Khz, multispeaker)
-* [Norwegian](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-norwegian.tar.gz) (22Khz, single speaker)
-* [Nepali](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-nepali.tar.gz) (16Khz, multispeaker)
-* [Vietnamese](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/voice-vietnamese.tar.gz) (16Khz, multispeaker)
+Download voices from [the release](https://github.com/rhasspy/larynx2/releases/tag/v0.0.2).
+
+Supported languages:
+
+* Danish (da)
+* French (fr)
+* German (de)
+* Italian (it)
+* Kazakh (kk)
+* Nepali (ne)
+* Norwegian (no)
+* Ukrainian (uk)
+* U.S. English (en-us)
+* Vietnamese (vi)
 
 
 ## Purpose
 
-Larynx is meant to sound as good as [CoquiTTS](https://github.com/coqui-ai/TTS), but run reasonably fast on the Raspberry Pi 4.
+Larynx is meant to sound good and run reasonably fast on the Raspberry Pi 4.
 
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
