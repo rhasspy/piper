@@ -41,7 +41,9 @@ class Larynx:
         self.model = onnxruntime.InferenceSession(
             str(model_path),
             sess_options=onnxruntime.SessionOptions(),
-            providers=None if not use_cuda else ["CUDAExecutionProvider"],
+            providers=["CPUExecutionProvider"]
+            if not use_cuda
+            else ["CUDAExecutionProvider"],
         )
 
     def synthesize(
@@ -78,6 +80,11 @@ class Larynx:
             [noise_scale, length_scale, noise_w],
             dtype=np.float32,
         )
+
+        if (self.config.num_speakers > 1) and (speaker_id is not None):
+            # Default speaker
+            speaker_id = 0
+
         sid = None
 
         if speaker_id is not None:
