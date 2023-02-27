@@ -1,0 +1,2 @@
+espeak-phonemizer>=1.1.0,<2
+onnxruntime~=1.11.0
