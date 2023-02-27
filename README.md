@@ -13,6 +13,7 @@ Download voices from [the release](https://github.com/rhasspy/larynx2/releases/t
 
 Supported languages:
 
+* Catalan (ca)
 * Danish (da)
 * French (fr)
 * German (de)
@@ -127,4 +128,26 @@ head -n5 /path/to/training_dir/dataset.jsonl | \
     --sample-rate 22050 \
     --output-dir wavs
 ```
+
+
+## Running in Python
+
+See [src/python_run](src/python_run)
+
+Run `scripts/setup.sh` to create a virtual environment and install the requirements. Then run:
+
+``` sh
+echo 'Welcome to the world of speech synthesis!' | scripts/larynx \
+  --model /path/to/voice.onnx \
+  --output_file welcome.wav
+```
+
+If you'd like to use a GPU, install the `onnxruntime-gpu` package:
+
+
+``` sh
+.venv/bin/pip3 install onnxruntime-gpu
+```
+
+and then run `scripts/larynx` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
 
