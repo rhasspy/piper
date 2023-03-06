@@ -10,7 +10,7 @@ from .vits.lightning import VitsModel
 
 _LOGGER = logging.getLogger("larynx_train.export_onnx")
 
-OPSET_VERSION = 16
+OPSET_VERSION = 15
 
 
 def main():
