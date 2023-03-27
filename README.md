@@ -1,13 +1,17 @@
 ![Piper logo](etc/logo.png)
 
-A fast, local neural text to speech system.
+A fast, local neural text to speech system that is meant to sound good and run reasonably fast on the Raspberry Pi 4.
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
   ./piper --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
 ```
 
+Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
+
 ## Voices
+
+Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
 Download voices from [the release](https://github.com/rhasspy/piper/releases/tag/v0.0.2).
 
@@ -26,13 +30,6 @@ Supported languages:
 * Ukrainian (uk)
 * U.S. English (en-us)
 * Vietnamese (vi)
-
-
-## Purpose
-
-Piper (formally Larynx 2) is meant to sound good and run reasonably fast on the Raspberry Pi 4.
-
-Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
 
 ## Installation
