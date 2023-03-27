@@ -7,8 +7,8 @@
 
 using namespace std;
 
-namespace larynx {
-const string instanceName{"larynx"};
+namespace piper {
+const string instanceName{"piper"};
 
 struct ModelSession {
   Ort::Session onnx;
@@ -48,6 +48,6 @@ void loadModel(string modelPath, ModelSession &session) {
   auto loadDuration = chrono::duration<double>(endTime - startTime);
 }
 
-} // namespace larynx
+} // namespace piper
 
 #endif // MODEL_H_

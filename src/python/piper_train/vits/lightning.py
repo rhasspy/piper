@@ -9,7 +9,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset, random_split
 
 from .commons import slice_segments
-from .dataset import Batch, LarynxDataset, UtteranceCollate
+from .dataset import Batch, PiperDataset, UtteranceCollate
 from .losses import discriminator_loss, feature_loss, generator_loss, kl_loss
 from .mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from .models import MultiPeriodDiscriminator, SynthesizerTrn
@@ -128,7 +128,7 @@ class VitsModel(pl.LightningModule):
             _LOGGER.debug("No dataset to load")
             return
 
-        full_dataset = LarynxDataset(
+        full_dataset = PiperDataset(
             self.hparams.dataset, max_phoneme_ids=max_phoneme_ids
         )
         valid_set_size = int(len(full_dataset) * validation_split)

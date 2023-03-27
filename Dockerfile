@@ -23,6 +23,7 @@ RUN cd espeak-ng-1.51 && \
         --without-speechplayer \
         --without-mbrola \
         --without-sonic \
+        --with-extdict-cmn \
         --prefix=/usr && \
     make -j8 src/espeak-ng src/speak-ng && \
     make && \
@@ -35,25 +36,25 @@ RUN mkdir -p /usr/local/include/onnxruntime && \
         --strip-components 1 \
         -xvf "lib/onnxruntime-linux-${TARGETARCH}${TARGETVARIANT}.tgz"
 
-# Build larynx binary
+# Build piper binary
 COPY Makefile ./
 COPY src/cpp/ ./src/cpp/
 RUN make no-pcaudio
 
 # Do a test run
-RUN /build/build/larynx --help
+RUN /build/build/piper --help
 
 # Build .tar.gz to keep symlinks
 WORKDIR /dist
-RUN mkdir -p larynx && \
-    cp -d /usr/lib64/libespeak-ng.so* ./larynx/ && \
-    cp -dR /usr/share/espeak-ng-data ./larynx/ && \
-    cp -d /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./larynx/ && \
-    cp /build/build/larynx ./larynx/ && \
-    tar -czf "larynx_${TARGETARCH}${TARGETVARIANT}.tar.gz" larynx/
+RUN mkdir -p piper && \
+    cp -d /usr/lib64/libespeak-ng.so* ./piper/ && \
+    cp -dR /usr/share/espeak-ng-data ./piper/ && \
+    cp -d /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./piper/ && \
+    cp /build/build/piper ./piper/ && \
+    tar -czf "piper_${TARGETARCH}${TARGETVARIANT}.tar.gz" piper/
 
 # -----------------------------------------------------------------------------
 
 FROM scratch
 
-COPY --from=build /dist/larynx_*.tar.gz ./
+COPY --from=build /dist/piper_*.tar.gz ./

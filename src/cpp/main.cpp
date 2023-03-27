@@ -12,7 +12,7 @@
 #include <pcaudiolib/audio.h>
 #endif
 
-#include "larynx.hpp"
+#include "piper.hpp"
 
 using namespace std;
 
@@ -23,7 +23,7 @@ struct RunConfig {
   filesystem::path modelConfigPath;
   OutputType outputType = OUTPUT_PLAY;
   optional<filesystem::path> outputPath;
-  optional<larynx::SpeakerId> speakerId;
+  optional<piper::SpeakerId> speakerId;
   optional<float> noiseScale;
   optional<float> lengthScale;
   optional<float> noiseW;
@@ -36,9 +36,9 @@ int main(int argc, char *argv[]) {
   parseArgs(argc, argv, runConfig);
 
   auto exePath = filesystem::path(argv[0]);
-  larynx::initialize(exePath.parent_path());
+  piper::initialize(exePath.parent_path());
 
-  larynx::Voice voice;
+  piper::Voice voice;
   auto startTime = chrono::steady_clock::now();
   loadVoice(runConfig.modelPath.string(), runConfig.modelConfigPath.string(),
             voice, runConfig.speakerId);
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 
   if (runConfig.outputType == OUTPUT_PLAY) {
     // Output audio to the default audio device
-    my_audio = create_audio_device_object(NULL, "larynx", "Text-to-Speech");
+    my_audio = create_audio_device_object(NULL, "piper", "Text-to-Speech");
 
     // TODO: Support 32-bit sample widths
     auto audioFormat = AUDIO_OBJECT_FORMAT_S16LE;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 #else
   if (runConfig.outputType == OUTPUT_PLAY) {
     // Cannot play audio directly
-    cerr << "WARNING: Larynx was not compiled with pcaudiolib. Output audio "
+    cerr << "WARNING: Piper was not compiled with pcaudiolib. Output audio "
             "will be written to the current directory."
          << endl;
     runConfig.outputType = OUTPUT_DIRECTORY;
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
   }
 
   string line;
-  larynx::SynthesisResult result;
+  piper::SynthesisResult result;
   while (getline(cin, line)) {
 
     // Path to output WAV file
@@ -108,19 +108,19 @@ int main(int argc, char *argv[]) {
 
       // Output audio to automatically-named WAV file in a directory
       ofstream audioFile(outputPath.string(), ios::binary);
-      larynx::textToWavFile(voice, line, audioFile, result);
+      piper::textToWavFile(voice, line, audioFile, result);
       cout << outputPath.string() << endl;
     } else if (runConfig.outputType == OUTPUT_FILE) {
       // Output audio to WAV file
       ofstream audioFile(runConfig.outputPath.value().string(), ios::binary);
-      larynx::textToWavFile(voice, line, audioFile, result);
+      piper::textToWavFile(voice, line, audioFile, result);
     } else if (runConfig.outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
-      larynx::textToWavFile(voice, line, cout, result);
+      piper::textToWavFile(voice, line, cout, result);
     } else if (runConfig.outputType == OUTPUT_PLAY) {
 #ifdef HAVE_PCAUDIO
       vector<int16_t> audioBuffer;
-      larynx::textToAudio(voice, line, audioBuffer, result);
+      piper::textToAudio(voice, line, audioBuffer, result);
 
       int error = audio_object_write(my_audio, (const char *)audioBuffer.data(),
                                      sizeof(int16_t) * audioBuffer.size());
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
          << " sec, audio=" << result.audioSeconds << " sec)" << endl;
   }
 
-  larynx::terminate();
+  piper::terminate();
 
 #ifdef HAVE_PCAUDIO
   audio_object_close(my_audio);
@@ -211,7 +211,7 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.outputPath = filesystem::path(argv[++i]);
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
-      runConfig.speakerId = (larynx::SpeakerId)stol(argv[++i]);
+      runConfig.speakerId = (piper::SpeakerId)stol(argv[++i]);
     } else if (arg == "--noise-scale") {
       ensureArg(argc, argv, i);
       runConfig.noiseScale = stof(argv[++i]);

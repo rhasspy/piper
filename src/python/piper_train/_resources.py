@@ -13,7 +13,7 @@ except (ImportError, AttributeError):
 
     files = importlib_resources.files
 
-_PACKAGE = "larynx_train"
+_PACKAGE = "piper_train"
 _DIR = Path(typing.cast(os.PathLike, files(_PACKAGE)))
 
 __version__ = (_DIR / "VERSION").read_text(encoding="utf-8").strip()

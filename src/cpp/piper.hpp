@@ -1,5 +1,5 @@
-#ifndef LARYNX_H_
-#define LARYNX_H_
+#ifndef PIPER_H_
+#define PIPER_H_
 
 #include <filesystem>
 #include <iostream>
@@ -17,7 +17,7 @@
 
 using json = nlohmann::json;
 
-namespace larynx {
+namespace piper {
 
 struct Voice {
   json configRoot;
@@ -106,6 +106,6 @@ void textToWavFile(Voice &voice, string text, ostream &audioFile,
 
 } /* textToWavFile */
 
-} // namespace larynx
+} // namespace piper
 
-#endif // LARYNX_H_
+#endif // PIPER_H_

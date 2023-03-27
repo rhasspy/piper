@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-namespace larynx {
+namespace piper {
 
 struct WavHeader {
   uint8_t RIFF[4] = {'R', 'I', 'F', 'F'};
@@ -39,6 +39,6 @@ void writeWavHeader(int sampleRate, int sampleWidth, int channels,
 
 } /* writeWavHeader */
 
-} // namespace larynx
+} // namespace piper
 
 #endif // WAVFILE_H_

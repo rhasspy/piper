@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.13)
 
 include(CheckIncludeFileCXX)
 
-project(larynx C CXX)
+project(piper C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-ADD_EXECUTABLE(larynx main.cpp)
+ADD_EXECUTABLE(piper main.cpp)
 
 string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
 string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
@@ -21,26 +21,26 @@ check_include_file_cxx("pcaudiolib/audio.h" PCAUDIO_INCLUDE_FOUND)
 if(PCAUDIO_INCLUDE_FOUND)
   option(USE_PCAUDIO "Build with pcaudiolib" ON)
   if(USE_PCAUDIO)
-    target_compile_definitions(larynx PUBLIC HAVE_PCAUDIO)
+    target_compile_definitions(piper PUBLIC HAVE_PCAUDIO)
     set(PCAUDIO_LIBRARIES "pcaudio")
   endif()
 endif()
 
 set(ONNXRUNTIME_ROOTDIR "/usr/local/include/onnxruntime")
 
-target_link_libraries(larynx
+target_link_libraries(piper
                       onnxruntime
                       -static-libgcc -static-libstdc++
                       ${ESPEAK_NG_LIBRARIES}
                       ${PCAUDIO_LIBRARIES})
 
-target_link_directories(larynx PUBLIC
+target_link_directories(piper PUBLIC
                         ${ESPEAK_NG_LIBRARY_DIRS}
                         ${ONNXRUNTIME_ROOTDIR}/lib)
 
-target_include_directories(larynx PUBLIC
+target_include_directories(piper PUBLIC
                            ${ONNXRUNTIME_ROOTDIR}/include
                            ${ESPEAK_NG_INCLUDE_DIRS})
 
-target_compile_options(larynx PUBLIC
+target_compile_options(piper PUBLIC
                        ${ESPEAK_NG_CFLAGS_OTHER})

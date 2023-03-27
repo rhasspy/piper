@@ -17,7 +17,7 @@ if [ -d "${venv}" ]; then
     source "${venv}/bin/activate"
 fi
 
-python_files=("${base_dir}/larynx_train")
+python_files=("${base_dir}/piper_train")
 
 # Format code
 black "${python_files[@]}"

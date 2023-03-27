@@ -10,5 +10,5 @@ docker run \
   -v "${HOME}:${HOME}" \
   -v /etc/hostname:/etc/hostname:ro \
   -v /etc/localtime:/etc/localtime:ro \
-  larynx2-train \
+  piper-train \
   "$@"

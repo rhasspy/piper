@@ -15,7 +15,7 @@ _PAD = "_"
 
 
 @dataclass
-class LarynxConfig:
+class PiperConfig:
     num_symbols: int
     num_speakers: int
     sample_rate: int
@@ -26,7 +26,7 @@ class LarynxConfig:
     phoneme_id_map: Mapping[str, Sequence[int]]
 
 
-class Larynx:
+class Piper:
     def __init__(
         self,
         model_path: Union[str, Path],
@@ -114,12 +114,12 @@ class Larynx:
             return wav_io.getvalue()
 
 
-def load_config(config_path: Union[str, Path]) -> LarynxConfig:
+def load_config(config_path: Union[str, Path]) -> PiperConfig:
     with open(config_path, "r", encoding="utf-8") as config_file:
         config_dict = json.load(config_file)
         inference = config_dict.get("inference", {})
 
-        return LarynxConfig(
+        return PiperConfig(
             num_symbols=config_dict["num_symbols"],
             num_speakers=config_dict["num_speakers"],
             sample_rate=config_dict["audio"]["sample_rate"],

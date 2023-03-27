@@ -1,15 +1,15 @@
-# Larynx
+![Piper logo](etc/logo.png)
 
 A fast, local neural text to speech system.
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./larynx --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
+  ./piper --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
 ```
 
 ## Voices
 
-Download voices from [the release](https://github.com/rhasspy/larynx2/releases/tag/v0.0.2).
+Download voices from [the release](https://github.com/rhasspy/piper/releases/tag/v0.0.2).
 
 Supported languages:
 
@@ -30,7 +30,7 @@ Supported languages:
 
 ## Purpose
 
-Larynx is meant to sound good and run reasonably fast on the Raspberry Pi 4.
+Piper (formally Larynx 2) is meant to sound good and run reasonably fast on the Raspberry Pi 4.
 
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
@@ -39,8 +39,8 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Download a release:
 
-* [amd64](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/larynx_amd64.tar.gz) (desktop Linux)
-* [arm64](https://github.com/rhasspy/larynx2/releases/download/v0.0.2/larynx_arm64.tar.gz) (Raspberry Pi 4)
+* [amd64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_amd64.tar.gz) (desktop Linux)
+* [arm64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_arm64.tar.gz) (Raspberry Pi 4)
 
 If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Last tested with [onnxruntime](https://github.com/microsoft/onnxruntime) 1.13.1.
 
@@ -48,18 +48,18 @@ If you want to build from source, see the [Makefile](Makefile) and [C++ source](
 ## Usage
 
 1. [Download a voice](#voices) and extract the `.onnx` and `.onnx.json` files
-2. Run the `larynx` binary with text on standard input, `--model /path/to/your-voice.onnx`, and `--output_file output.wav`
+2. Run the `piper` binary with text on standard input, `--model /path/to/your-voice.onnx`, and `--output_file output.wav`
 
 For example:
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./larynx --model blizzard_lessac-medium.onnx --output_file welcome.wav
+  ./piper --model blizzard_lessac-medium.onnx --output_file welcome.wav
 ```
 
 For multi-speaker models, use `--speaker <number>` to change speakers (default: 0).
 
-See `larynx --help` for more options.
+See `piper --help` for more options.
 
 
 ## Training
@@ -69,7 +69,7 @@ See [src/python](src/python)
 Start by creating a virtual environment:
 
 ``` sh
-cd larynx2/src/python
+cd piper/src/python
 python3 -m venv .venv
 source .venv/bin/activate
 pip3 install --upgrade pip
@@ -84,7 +84,7 @@ Ensure you have [espeak-ng](https://github.com/espeak-ng/espeak-ng/) installed (
 Next, preprocess your dataset:
 
 ``` sh
-python3 -m larynx_train.preprocess \
+python3 -m piper_train.preprocess \
   --language en-us \
   --input-dir /path/to/ljspeech/ \
   --output-dir /path/to/training_dir/ \
@@ -97,7 +97,7 @@ Datasets must either be in the [LJSpeech](https://keithito.com/LJ-Speech-Dataset
 Finally, you can train:
 
 ``` sh
-python3 -m larynx_train \
+python3 -m piper_train \
     --dataset-dir /path/to/training_dir/ \
     --accelerator 'gpu' \
     --devices 1 \
@@ -108,7 +108,7 @@ python3 -m larynx_train \
     --precision 32
 ```
 
-Training uses [PyTorch Lightning](https://www.pytorchlightning.ai/). Run `tensorboard --logdir /path/to/training_dir/lightning_logs` to monitor. See `python3 -m larynx_train --help` for many additional options.
+Training uses [PyTorch Lightning](https://www.pytorchlightning.ai/). Run `tensorboard --logdir /path/to/training_dir/lightning_logs` to monitor. See `python3 -m piper_train --help` for many additional options.
 
 It is highly recommended to train with the following `Dockerfile`:
 
@@ -121,11 +121,11 @@ RUN pip3 install \
 ENV NUMBA_CACHE_DIR=.numba_cache
 ```
 
-See the various `infer_*` and `export_*` scripts in [src/python/larynx_train](src/python/larynx_train) to test and export your voice from the checkpoint in `lightning_logs`. The `dataset.jsonl` file in your training directory can be used with `python3 -m larynx_train.infer` for quick testing:
+See the various `infer_*` and `export_*` scripts in [src/python/piper_train](src/python/piper_train) to test and export your voice from the checkpoint in `lightning_logs`. The `dataset.jsonl` file in your training directory can be used with `python3 -m piper_train.infer` for quick testing:
 
 ``` sh
 head -n5 /path/to/training_dir/dataset.jsonl | \
-  python3 -m larynx_train.infer \
+  python3 -m piper_train.infer \
     --checkpoint lightning_logs/path/to/checkpoint.ckpt \
     --sample-rate 22050 \
     --output-dir wavs
@@ -139,7 +139,7 @@ See [src/python_run](src/python_run)
 Run `scripts/setup.sh` to create a virtual environment and install the requirements. Then run:
 
 ``` sh
-echo 'Welcome to the world of speech synthesis!' | scripts/larynx \
+echo 'Welcome to the world of speech synthesis!' | scripts/piper \
   --model /path/to/voice.onnx \
   --output_file welcome.wav
 ```
@@ -151,5 +151,5 @@ If you'd like to use a GPU, install the `onnxruntime-gpu` package:
 .venv/bin/pip3 install onnxruntime-gpu
 ```
 
-and then run `scripts/larynx` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
+and then run `scripts/piper` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
 

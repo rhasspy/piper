@@ -14,7 +14,7 @@
 
 using namespace std;
 
-namespace larynx {
+namespace piper {
 
 // Maximum value for 16-bit signed WAV sample
 const float MAX_WAV_VALUE = 32767.0f;
@@ -126,6 +126,6 @@ void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
     Ort::OrtRelease(inputTensors[i].release());
   }
 }
-} // namespace larynx
+} // namespace piper
 
 #endif // SYNTHESIZE_H_

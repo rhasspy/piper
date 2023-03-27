@@ -44,16 +44,7 @@ class Batch:
     speaker_ids: Optional[LongTensor] = None
 
 
-# @dataclass
-# class LarynxDatasetSettings:
-#     sample_rate: int
-#     is_multispeaker: bool
-# espeak_voice: Optional[str] = None
-# phoneme_map: Dict[str, Optional[List[str]]] = field(default_factory=dict)
-# phoneme_id_map: Dict[str, List[int]] = DEFAULT_PHONEME_ID_MAP
-
-
-class LarynxDataset(Dataset):
+class PiperDataset(Dataset):
     """
     Dataset format:
 
@@ -76,9 +67,7 @@ class LarynxDataset(Dataset):
             dataset_path = Path(dataset_path)
             _LOGGER.debug("Loading dataset: %s", dataset_path)
             self.utterances.extend(
-                LarynxDataset.load_dataset(
-                    dataset_path, max_phoneme_ids=max_phoneme_ids
-                )
+                PiperDataset.load_dataset(dataset_path, max_phoneme_ids=max_phoneme_ids)
             )
 
     def __len__(self):
@@ -110,7 +99,7 @@ class LarynxDataset(Dataset):
                     continue
 
                 try:
-                    utt = LarynxDataset.load_utterance(line)
+                    utt = PiperDataset.load_utterance(line)
                     if (max_phoneme_ids is None) or (
                         len(utt.phoneme_ids) <= max_phoneme_ids
                     ):

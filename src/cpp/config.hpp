@@ -15,7 +15,7 @@
 using namespace std;
 using json = nlohmann::json;
 
-namespace larynx {
+namespace piper {
 
 typedef char32_t Phoneme;
 typedef int64_t PhonemeId;
@@ -145,6 +145,6 @@ void parseModelConfig(json &configRoot, ModelConfig &modelConfig) {
 
 } /* parseModelConfig */
 
-} // namespace larynx
+} // namespace piper
 
 #endif // CONFIG_H_

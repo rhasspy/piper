@@ -2,22 +2,19 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional
 
 import torch
 
 from .vits.lightning import VitsModel
 
-_LOGGER = logging.getLogger("larynx_train.export_torchscript")
+_LOGGER = logging.getLogger("piper_train.export_generator")
 
 
 def main():
     """Main entry point"""
-    torch.manual_seed(1234)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("checkpoint", help="Path to model checkpoint (.ckpt)")
-    parser.add_argument("output", help="Path to output model (.onnx)")
+    parser.add_argument("output", help="Path to output model (.pt)")
 
     parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to the console"
@@ -40,9 +37,6 @@ def main():
     model = VitsModel.load_from_checkpoint(args.checkpoint, dataset=None)
     model_g = model.model_g
 
-    num_symbols = model_g.n_vocab
-    num_speakers = model_g.n_speakers
-
     # Inference only
     model_g.eval()
 
@@ -51,29 +45,9 @@ def main():
 
     model_g.forward = model_g.infer
 
-    dummy_input_length = 50
-    sequences = torch.randint(
-        low=0, high=num_symbols, size=(1, dummy_input_length), dtype=torch.long
-    )
-    sequence_lengths = torch.LongTensor([sequences.size(1)])
+    torch.save(model_g, args.output)
 
-    sid: Optional[int] = None
-    if num_speakers > 1:
-        sid = torch.LongTensor([0])
-
-    dummy_input = (
-        sequences,
-        sequence_lengths,
-        sid,
-        torch.FloatTensor([0.667]),
-        torch.FloatTensor([1.0]),
-        torch.FloatTensor([0.8]),
-    )
-
-    jitted_model = torch.jit.trace(model_g, dummy_input)
-    torch.jit.save(jitted_model, str(args.output))
-
-    _LOGGER.info("Saved TorchScript model to %s", args.output)
+    _LOGGER.info("Exported model to %s", args.output)
 
 
 # -----------------------------------------------------------------------------

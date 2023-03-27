@@ -5,7 +5,7 @@ import time
 from functools import partial
 from pathlib import Path
 
-from . import Larynx
+from . import Piper
 
 _FILE = Path(__file__)
 _DIR = _FILE.parent
@@ -34,7 +34,7 @@ def main() -> None:
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    voice = Larynx(args.model, config_path=args.config, use_cuda=args.cuda)
+    voice = Piper(args.model, config_path=args.config, use_cuda=args.cuda)
     synthesize = partial(
         voice.synthesize,
         speaker_id=args.speaker,

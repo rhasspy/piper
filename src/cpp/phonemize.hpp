@@ -16,7 +16,7 @@
 
 using namespace std;
 
-namespace larynx {
+namespace piper {
 
 // Text to phonemes using eSpeak-ng
 void phonemize(PhonemizeConfig &phonemizeConfig) {
@@ -103,6 +103,6 @@ void phonemes2ids(PhonemizeConfig &phonemizeConfig,
 
 } /* phonemes2ids */
 
-} // namespace larynx
+} // namespace piper
 
 #endif // PHONEMIZE_H_

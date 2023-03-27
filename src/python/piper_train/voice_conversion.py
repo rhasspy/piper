@@ -11,7 +11,7 @@ from .vits.lightning import VitsModel
 from .vits.mel_processing import spectrogram_torch
 from .vits.wavfile import write as write_wav
 
-_LOGGER = logging.getLogger("larynx_train.voice_converstion")
+_LOGGER = logging.getLogger("piper_train.voice_converstion")
 
 
 def main():

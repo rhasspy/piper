@@ -13,13 +13,13 @@ import onnxruntime
 from .vits.utils import audio_float_to_int16
 from .vits.wavfile import write as write_wav
 
-_LOGGER = logging.getLogger("larynx_train.infer_onnx")
+_LOGGER = logging.getLogger("piper_train.infer_onnx")
 
 
 def main():
     """Main entry point"""
     logging.basicConfig(level=logging.DEBUG)
-    parser = argparse.ArgumentParser(prog="larynx_train.infer_onnx")
+    parser = argparse.ArgumentParser(prog="piper_train.infer_onnx")
     parser.add_argument("--model", required=True, help="Path to model (.onnx)")
     parser.add_argument("--output-dir", required=True, help="Path to write WAV files")
     parser.add_argument("--sample-rate", type=int, default=22050)

@@ -6,7 +6,7 @@ import setuptools
 from setuptools import setup
 
 this_dir = Path(__file__).parent
-module_dir = this_dir / "larynx_train"
+module_dir = this_dir / "piper_train"
 
 # -----------------------------------------------------------------------------
 
@@ -29,23 +29,23 @@ with open(version_path, "r", encoding="utf-8") as version_file:
 # -----------------------------------------------------------------------------
 
 setup(
-    name="larynx_train",
+    name="piper_train",
     version=version,
     description="A fast and local neural text to speech system",
     long_description=long_description,
-    url="http://github.com/rhasspy/larynx",
+    url="http://github.com/rhasspy/piper",
     author="Michael Hansen",
     author_email="mike@rhasspy.org",
     license="MIT",
     packages=setuptools.find_packages(),
     package_data={
-        "larynx_train": ["VERSION", "py.typed"],
+        "piper_train": ["VERSION", "py.typed"],
     },
     install_requires=requirements,
     extras_require={':python_version<"3.9"': ["importlib_resources"]},
     entry_points={
         "console_scripts": [
-            "larynx-train = larynx_train.__main__:main",
+            "piper-train = piper_train.__main__:main",
         ]
     },
     classifiers=[
