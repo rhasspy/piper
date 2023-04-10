@@ -2,6 +2,7 @@
 import argparse
 import json
 import time
+import statistics
 import sys
 
 import torch
@@ -45,7 +46,12 @@ def main() -> None:
         )
 
     json.dump(
-        {"load_sec": load_sec, "synthesize_rtf": synthesize_rtf},
+        {
+            "load_sec": load_sec,
+            "rtf_mean": statistics.mean(synthesize_rtf),
+            "rtf_stdev": statistics.stdev(synthesize_rtf),
+            "synthesize_rtf": synthesize_rtf,
+        },
         sys.stdout,
     )
 
