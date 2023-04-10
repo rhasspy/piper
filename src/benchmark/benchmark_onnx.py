@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 import json
 import time
 import statistics
@@ -12,6 +13,8 @@ _NOISE_SCALE = 0.667
 _LENGTH_SCALE = 1.0
 _NOISE_W = 0.8
 
+_LOGGER = logging.getLogger(__name__)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -20,6 +23,7 @@ def main() -> None:
     )
     parser.add_argument("-c", "--config", help="Path to model config file (.json)")
     args = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG)
 
     if not args.config:
         args.config = f"{args.model}.json"
@@ -105,8 +109,16 @@ def synthesize(session, phoneme_ids, speaker_id, sample_rate) -> float:
 
     audio_sec = (len(audio) / 2) / sample_rate
     infer_sec = (end_time - start_time) / 1e9
+    rtf = infer_sec / audio_sec
 
-    return infer_sec / audio_sec
+    _LOGGER.debug(
+        "Real-time factor: %s (infer=%s sec, audio=%s sec)",
+        rtf,
+        infer_sec,
+        audio_sec,
+    )
+
+    return rtf
 
 
 if __name__ == "__main__":
