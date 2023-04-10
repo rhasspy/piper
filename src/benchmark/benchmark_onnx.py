@@ -107,7 +107,7 @@ def synthesize(session, phoneme_ids, speaker_id, sample_rate) -> float:
     )[0].squeeze()
     end_time = time.monotonic_ns()
 
-    audio_sec = (len(audio) / 2) / sample_rate
+    audio_sec = len(audio) / sample_rate
     infer_sec = (end_time - start_time) / 1e9
     rtf = infer_sec / audio_sec
 
