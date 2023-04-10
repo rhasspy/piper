@@ -26,7 +26,7 @@ if(PCAUDIO_INCLUDE_FOUND)
   endif()
 endif()
 
-set(ONNXRUNTIME_ROOTDIR "/usr/local/include/onnxruntime")
+set(ONNXRUNTIME_ROOTDIR ${CMAKE_CURRENT_LIST_DIR}/../../lib/${CMAKE_HOST_SYSTEM_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR})
 
 target_link_libraries(piper
                       onnxruntime

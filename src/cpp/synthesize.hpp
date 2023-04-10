@@ -119,11 +119,11 @@ void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
 
   // Clean up
   for (size_t i = 0; i < outputTensors.size(); i++) {
-    Ort::OrtRelease(outputTensors[i].release());
+    Ort::detail::OrtRelease(outputTensors[i].release());
   }
 
   for (size_t i = 0; i < inputTensors.size(); i++) {
-    Ort::OrtRelease(inputTensors[i].release());
+    Ort::detail::OrtRelease(inputTensors[i].release());
   }
 }
 } // namespace piper
