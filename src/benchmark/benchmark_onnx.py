@@ -2,6 +2,7 @@
 import argparse
 import json
 import time
+import statistics
 import sys
 
 import onnxruntime
@@ -10,13 +11,14 @@ import numpy as np
 _NOISE_SCALE = 0.667
 _LENGTH_SCALE = 1.0
 _NOISE_W = 0.8
-_SPEAKER_ID = 0
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model", required=True, help="Path to Onnx model file")
-    parser.add_argument("-c", "--config", help="Path to model config file")
+    parser.add_argument(
+        "-m", "--model", required=True, help="Path to Onnx model file (.onnx)"
+    )
+    parser.add_argument("-c", "--config", help="Path to model config file (.json)")
     args = parser.parse_args()
 
     if not args.config:
@@ -29,7 +31,25 @@ def main() -> None:
     utterances = [json.loads(line) for line in sys.stdin]
 
     start_time = time.monotonic_ns()
-    session = onnxruntime.InferenceSession(args.model)
+
+    session_options = onnxruntime.SessionOptions()
+    session_options.graph_optimization_level = (
+        onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+    )
+    # session_options.enable_cpu_mem_arena = False
+    # session_options.enable_mem_pattern = False
+    session_options.enable_mem_reuse = False
+    # session_options.enable_profiling = False
+    # session_options.execution_mode = onnxruntime.ExecutionMode.ORT_PARALLEL
+    # session_options.execution_order = onnxruntime.ExecutionOrder.PRIORITY_BASED
+
+    session = onnxruntime.InferenceSession(
+        args.model,
+        sess_options=session_options,
+    )
+    # session.intra_op_num_threads = 1
+    # session.inter_op_num_threads = 1
+
     end_time = time.monotonic_ns()
 
     load_sec = (end_time - start_time) / 1e9
@@ -47,7 +67,12 @@ def main() -> None:
         )
 
     json.dump(
-        {"load_sec": load_sec, "synthesize_rtf": synthesize_rtf},
+        {
+            "load_sec": load_sec,
+            "rtf_mean": statistics.mean(synthesize_rtf),
+            "rtf_stdev": statistics.stdev(synthesize_rtf),
+            "rtfs": synthesize_rtf,
+        },
         sys.stdout,
     )
 

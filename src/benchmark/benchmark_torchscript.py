@@ -6,11 +6,15 @@ import sys
 
 import torch
 
+_NOISE_SCALE = 0.667
+_LENGTH_SCALE = 1.0
+_NOISE_W = 0.8
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-m", "--model", required=True, help="Path to generator file (.pt)"
+        "-m", "--model", required=True, help="Path to Torchscript file (.ts)"
     )
     parser.add_argument("-c", "--config", help="Path to model config file (.json)")
     args = parser.parse_args()
@@ -25,7 +29,7 @@ def main() -> None:
     utterances = [json.loads(line) for line in sys.stdin]
 
     start_time = time.monotonic_ns()
-    model = torch.load(args.model)
+    model = torch.jit.load(args.model)
     end_time = time.monotonic_ns()
 
     model.eval()
@@ -61,6 +65,9 @@ def synthesize(model, phoneme_ids, speaker_id, sample_rate) -> float:
             text,
             text_lengths,
             sid,
+            torch.FloatTensor([_NOISE_SCALE]),
+            torch.FloatTensor([_LENGTH_SCALE]),
+            torch.FloatTensor([_NOISE_W]),
         )[0]
         .detach()
         .numpy()

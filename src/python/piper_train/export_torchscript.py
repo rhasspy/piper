@@ -57,9 +57,7 @@ def main():
     )
     sequence_lengths = torch.LongTensor([sequences.size(1)])
 
-    sid: Optional[int] = None
-    if num_speakers > 1:
-        sid = torch.LongTensor([0])
+    sid = torch.LongTensor([0])
 
     dummy_input = (
         sequences,
