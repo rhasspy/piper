@@ -19,7 +19,7 @@ struct ModelSession {
   ModelSession() : onnx(nullptr){};
 };
 
-void loadModel(string modelPath, ModelSession &session) {
+void loadModel(filesystem::path modelPath, ModelSession &session) {
 
   session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
                          instanceName.c_str());
