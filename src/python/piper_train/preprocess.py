@@ -292,11 +292,22 @@ def ljspeech_dataset(
 def mycroft_dataset(
     dataset_dir: Path, is_single_speaker: bool, speaker_id: Optional[int] = None
 ) -> Iterable[Utterance]:
-    for info_path in dataset_dir.glob("*.info"):
-        wav_path = info_path.with_suffix(".wav")
-        if wav_path.exists():
-            text = info_path.read_text(encoding="utf-8").strip()
-            yield Utterance(text=text, audio_path=wav_path, speaker_id=speaker_id)
+    speaker_id = 0
+    for metadata_path in dataset_dir.glob("**/*-metadata.txt"):
+        speaker = metadata_path.parent.name if not is_single_speaker else None
+        with open(metadata_path, "r", encoding="utf-8") as csv_file:
+            # filename|text|length
+            reader = csv.reader(csv_file, delimiter="|")
+            for row in reader:
+                filename, text = row[0], row[1]
+                wav_path = metadata_path.parent / filename
+                yield Utterance(
+                    text=text,
+                    audio_path=wav_path,
+                    speaker=speaker,
+                    speaker_id=speaker_id if not is_single_speaker else None,
+                )
+        speaker_id += 1
 
 
 # -----------------------------------------------------------------------------
