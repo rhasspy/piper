@@ -98,7 +98,8 @@ int main(int argc, char *argv[]) {
     // Path to output WAV file
     const auto now = chrono::system_clock::now();
     const auto timestamp =
-        chrono::duration_cast<chrono::seconds>(now.time_since_epoch()).count();
+        chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
+            .count();
 
     if (runConfig.outputType == OUTPUT_DIRECTORY) {
       stringstream outputName;
