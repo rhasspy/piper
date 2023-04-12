@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger("piper_train.export_onnx")
 OPSET_VERSION = 15
 
 
-def main():
+def main() -> None:
     """Main entry point"""
     torch.manual_seed(1234)
 
@@ -76,7 +76,7 @@ def main():
     )
     sequence_lengths = torch.LongTensor([sequences.size(1)])
 
-    sid: Optional[int] = None
+    sid: Optional[torch.LongTensor] = None
     if num_speakers > 1:
         sid = torch.LongTensor([0])
 
@@ -89,7 +89,7 @@ def main():
         model=model_g,
         args=dummy_input,
         f=str(args.output),
-        verbose=True,
+        verbose=False,
         opset_version=OPSET_VERSION,
         input_names=["input", "input_lengths", "scales", "sid"],
         output_names=["output"],
