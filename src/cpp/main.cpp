@@ -1,10 +1,13 @@
 #include <chrono>
+#include <condition_variable>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #ifdef HAVE_PCAUDIO
@@ -16,7 +19,13 @@
 
 using namespace std;
 
-enum OutputType { OUTPUT_FILE, OUTPUT_DIRECTORY, OUTPUT_STDOUT, OUTPUT_PLAY };
+enum OutputType {
+  OUTPUT_FILE,
+  OUTPUT_DIRECTORY,
+  OUTPUT_STDOUT,
+  OUTPUT_PLAY,
+  OUTPUT_RAW
+};
 
 struct RunConfig {
   filesystem::path modelPath;
@@ -30,6 +39,15 @@ struct RunConfig {
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
+void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
+                   condition_variable &cvAudio, bool &audioReady,
+                   bool &audioFinished);
+
+#ifdef HAVE_PCAUDIO
+void playProc(audio_object *my_audio, vector<int16_t> &sharedAudioBuffer,
+              mutex &mutAudio, condition_variable &cvAudio, bool &audioReady,
+              bool &audioFinished);
+#endif
 
 int main(int argc, char *argv[]) {
   RunConfig runConfig;
@@ -118,17 +136,78 @@ int main(int argc, char *argv[]) {
     } else if (runConfig.outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
       piper::textToWavFile(voice, line, cout, result);
+    } else if (runConfig.outputType == OUTPUT_RAW) {
+      // Raw output to stdout
+      mutex mutAudio;
+      condition_variable cvAudio;
+      bool audioReady = false;
+      bool audioFinished = false;
+      vector<int16_t> audioBuffer;
+      vector<int16_t> sharedAudioBuffer;
+
+      thread rawOutputThread(rawOutputProc, ref(sharedAudioBuffer),
+                             ref(mutAudio), ref(cvAudio), ref(audioReady),
+                             ref(audioFinished));
+      auto audioCallback = [&audioBuffer, &sharedAudioBuffer, &mutAudio,
+                            &cvAudio, &audioReady]() {
+        // Signal thread that audio is ready
+        {
+          unique_lock lockAudio(mutAudio);
+          copy(audioBuffer.begin(), audioBuffer.end(),
+               back_inserter(sharedAudioBuffer));
+          audioReady = true;
+          cvAudio.notify_one();
+        }
+      };
+      piper::textToAudio(voice, line, audioBuffer, result, audioCallback);
+
+      // Signal thread that there is no more audio
+      {
+        unique_lock lockAudio(mutAudio);
+        audioReady = true;
+        audioFinished = true;
+        cvAudio.notify_one();
+      }
+
+      // Wait for audio output to finish
+      cerr << "Waiting for audio..." << endl;
+      rawOutputThread.join();
     } else if (runConfig.outputType == OUTPUT_PLAY) {
 #ifdef HAVE_PCAUDIO
+      mutex mutAudio;
+      condition_variable cvAudio;
+      bool audioReady = false;
+      bool audioFinished = false;
       vector<int16_t> audioBuffer;
-      piper::textToAudio(voice, line, audioBuffer, result);
+      vector<int16_t> sharedAudioBuffer;
 
-      int error = audio_object_write(my_audio, (const char *)audioBuffer.data(),
-                                     sizeof(int16_t) * audioBuffer.size());
-      if (error != 0) {
-        throw runtime_error(audio_object_strerror(my_audio, error));
+      thread playThread(playProc, my_audio, ref(sharedAudioBuffer),
+                        ref(mutAudio), ref(cvAudio), ref(audioReady),
+                        ref(audioFinished));
+      auto audioCallback = [&audioBuffer, &sharedAudioBuffer, &mutAudio,
+                            &cvAudio, &audioReady]() {
+        // Signal thread that audio is ready
+        {
+          unique_lock lockAudio(mutAudio);
+          copy(audioBuffer.begin(), audioBuffer.end(),
+               back_inserter(sharedAudioBuffer));
+          audioReady = true;
+          cvAudio.notify_one();
+        }
+      };
+      piper::textToAudio(voice, line, audioBuffer, result, audioCallback);
+
+      // Signal thread that there is no more audio
+      {
+        unique_lock lockAudio(mutAudio);
+        audioReady = true;
+        audioFinished = true;
+        cvAudio.notify_one();
       }
-      audio_object_flush(my_audio);
+
+      // Wait for audio output to finish
+      cerr << "Waiting for audio..." << endl;
+      playThread.join();
 #else
       throw runtime_error("Cannot play audio! Not compiled with pcaudiolib.");
 #endif
@@ -150,6 +229,74 @@ int main(int argc, char *argv[]) {
   return EXIT_SUCCESS;
 }
 
+void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
+                   condition_variable &cvAudio, bool &audioReady,
+                   bool &audioFinished) {
+  vector<int16_t> internalAudioBuffer;
+  while (true) {
+    {
+      unique_lock lockAudio{mutAudio};
+      cvAudio.wait(lockAudio, [&audioReady] { return audioReady; });
+
+      if (sharedAudioBuffer.empty() && audioFinished) {
+        break;
+      }
+
+      copy(sharedAudioBuffer.begin(), sharedAudioBuffer.end(),
+           back_inserter(internalAudioBuffer));
+
+      sharedAudioBuffer.clear();
+
+      if (!audioFinished) {
+        audioReady = false;
+      }
+    }
+
+    cout.write((const char *)internalAudioBuffer.data(),
+               sizeof(int16_t) * internalAudioBuffer.size());
+    cout.flush();
+    internalAudioBuffer.clear();
+  }
+
+} // rawOutputProc
+
+#ifdef HAVE_PCAUDIO
+void playProc(audio_object *my_audio, vector<int16_t> &sharedAudioBuffer,
+              mutex &mutAudio, condition_variable &cvAudio, bool &audioReady,
+              bool &audioFinished) {
+  vector<int16_t> internalAudioBuffer;
+  while (true) {
+    {
+      unique_lock lockAudio{mutAudio};
+      cvAudio.wait(lockAudio, [&audioReady] { return audioReady; });
+
+      if (sharedAudioBuffer.empty() && audioFinished) {
+        break;
+      }
+
+      copy(sharedAudioBuffer.begin(), sharedAudioBuffer.end(),
+           back_inserter(internalAudioBuffer));
+
+      sharedAudioBuffer.clear();
+
+      if (!audioFinished) {
+        audioReady = false;
+      }
+    }
+
+    int error =
+        audio_object_write(my_audio, (const char *)internalAudioBuffer.data(),
+                           sizeof(int16_t) * internalAudioBuffer.size());
+    if (error != 0) {
+      throw runtime_error(audio_object_strerror(my_audio, error));
+    }
+    audio_object_flush(my_audio);
+    internalAudioBuffer.clear();
+  }
+
+} // playProc
+#endif
+
 void printUsage(char *argv[]) {
   cerr << endl;
   cerr << "usage: " << argv[0] << " [options]" << endl;
@@ -165,6 +312,9 @@ void printUsage(char *argv[]) {
        << endl;
   cerr << "   -d  DIR   --output_dir  DIR   path to output directory (default: "
           "cwd)"
+       << endl;
+  cerr << "   --output_raw                  output raw audio to stdout as it "
+          "becomes available"
        << endl;
   cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
   cerr << "   --noise-scale           NUM   generator noise (default: 0.667)"
@@ -210,6 +360,8 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       ensureArg(argc, argv, i);
       runConfig.outputType = OUTPUT_DIRECTORY;
       runConfig.outputPath = filesystem::path(argv[++i]);
+    } else if (arg == "--output_raw") {
+      runConfig.outputType = OUTPUT_RAW;
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
       runConfig.speakerId = (piper::SpeakerId)stol(argv[++i]);

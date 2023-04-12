@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -19,13 +20,10 @@ using namespace std;
 namespace piper {
 
 // Text to phonemes using eSpeak-ng
-void phonemize(PhonemizeConfig &phonemizeConfig) {
+void phonemize(string text, PhonemizeConfig &phonemizeConfig,
+               vector<vector<Phoneme>> &phonemes) {
   if (!phonemizeConfig.eSpeak) {
     throw runtime_error("Missing eSpeak config");
-  }
-
-  if (!phonemizeConfig.phonemes) {
-    phonemizeConfig.phonemes.emplace();
   }
 
   auto voice = phonemizeConfig.eSpeak->voice;
@@ -34,12 +32,17 @@ void phonemize(PhonemizeConfig &phonemizeConfig) {
     throw runtime_error("Failed to set eSpeak-ng voice");
   }
 
-  string text(phonemizeConfig.text);
+  // Modified by eSpeak
+  string textCopy(text);
+
+  utf8::iterator textIter(textCopy.begin(), textCopy.begin(), textCopy.end());
+  utf8::iterator textIterEnd(textCopy.end(), textCopy.begin(), textCopy.end());
   vector<char32_t> textClauseBreakers;
 
-  utf8::iterator textIter(text.begin(), text.begin(), text.end());
-  utf8::iterator textIterEnd(text.end(), text.begin(), text.end());
-
+  // Identify clause breakers in the sentence, since eSpeak removes them during
+  // phonemization.
+  //
+  // This will unfortunately do the wrong thing with abbreviations, etc.
   while (textIter != textIterEnd) {
     auto codepoint = *textIter;
     if (phonemizeConfig.eSpeak->clauseBreakers.contains(codepoint)) {
@@ -49,7 +52,8 @@ void phonemize(PhonemizeConfig &phonemizeConfig) {
     textIter++;
   }
 
-  const char *inputTextPointer = text.c_str();
+  vector<Phoneme> *sentencePhonemes = nullptr;
+  const char *inputTextPointer = textCopy.c_str();
   size_t clauseBreakerIndex = 0;
 
   while (inputTextPointer != NULL) {
@@ -63,11 +67,21 @@ void phonemize(PhonemizeConfig &phonemizeConfig) {
     utf8::iterator phonemeEnd(clausePhonemes.end(), clausePhonemes.begin(),
                               clausePhonemes.end());
 
-    phonemizeConfig.phonemes->insert(phonemizeConfig.phonemes->end(),
-                                     phonemeIter, phonemeEnd);
+    if (!sentencePhonemes) {
+      // Start new sentence
+      phonemes.emplace_back();
+      sentencePhonemes = &phonemes[phonemes.size() - 1];
+    }
+
+    sentencePhonemes->insert(sentencePhonemes->end(), phonemeIter, phonemeEnd);
     if (clauseBreakerIndex < textClauseBreakers.size()) {
-      phonemizeConfig.phonemes->push_back(
-          textClauseBreakers[clauseBreakerIndex]);
+      auto clauseBreaker = textClauseBreakers[clauseBreakerIndex];
+      sentencePhonemes->push_back(clauseBreaker);
+      if (phonemizeConfig.eSpeak->sentenceBreakers.contains(clauseBreaker)) {
+        // End of sentence
+        sentencePhonemes = nullptr;
+      }
+
       clauseBreakerIndex++;
     }
   }
@@ -75,31 +89,30 @@ void phonemize(PhonemizeConfig &phonemizeConfig) {
 } /* phonemize */
 
 // Phonemes to ids using JSON map
-void phonemes2ids(PhonemizeConfig &phonemizeConfig,
-                  SynthesisConfig &synthesisConfig) {
-  if (!phonemizeConfig.phonemes) {
-    throw runtime_error("No phonemes present");
+void phonemes2ids(vector<Phoneme> &phonemes, PhonemizeConfig &phonemizeConfig,
+                  vector<PhonemeId> &phonemeIds) {
+  if (phonemes.empty()) {
+    throw runtime_error("No phonemes");
   }
 
-  synthesisConfig.phonemeIds.push_back(phonemizeConfig.idBos);
+  phonemeIds.push_back(phonemizeConfig.idBos);
   if (phonemizeConfig.interspersePad) {
-    synthesisConfig.phonemeIds.push_back(phonemizeConfig.idPad);
+    phonemeIds.push_back(phonemizeConfig.idPad);
   }
 
-  for (auto phoneme = phonemizeConfig.phonemes->begin();
-       phoneme != phonemizeConfig.phonemes->end(); phoneme++) {
+  for (auto phoneme = phonemes.begin(); phoneme != phonemes.end(); phoneme++) {
     if (phonemizeConfig.phonemeIdMap.contains(*phoneme)) {
       for (auto id : phonemizeConfig.phonemeIdMap[*phoneme]) {
-        synthesisConfig.phonemeIds.push_back(id);
+        phonemeIds.push_back(id);
 
         if (phonemizeConfig.interspersePad) {
-          synthesisConfig.phonemeIds.push_back(phonemizeConfig.idPad);
+          phonemeIds.push_back(phonemizeConfig.idPad);
         }
       }
     }
   }
 
-  synthesisConfig.phonemeIds.push_back(phonemizeConfig.idEos);
+  phonemeIds.push_back(phonemizeConfig.idEos);
 
 } /* phonemes2ids */
 

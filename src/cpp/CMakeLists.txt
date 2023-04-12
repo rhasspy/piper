@@ -30,6 +30,7 @@ set(ONNXRUNTIME_ROOTDIR ${CMAKE_CURRENT_LIST_DIR}/../../lib/${CMAKE_HOST_SYSTEM_
 
 target_link_libraries(piper
                       onnxruntime
+                      pthread
                       -static-libgcc -static-libstdc++
                       ${ESPEAK_NG_LIBRARIES}
                       ${PCAUDIO_LIBRARIES})

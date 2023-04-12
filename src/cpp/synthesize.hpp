@@ -26,22 +26,21 @@ struct SynthesisResult {
 };
 
 // Phoneme ids to WAV audio
-void synthesize(SynthesisConfig &synthesisConfig, ModelSession &session,
-                vector<int16_t> &audioBuffer, SynthesisResult &result) {
+void synthesize(vector<PhonemeId> &phonemeIds, SynthesisConfig &synthesisConfig,
+                ModelSession &session, vector<int16_t> &audioBuffer,
+                SynthesisResult &result) {
   auto memoryInfo = Ort::MemoryInfo::CreateCpu(
       OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
   // Allocate
-  vector<int64_t> phonemeIdLengths{(int64_t)synthesisConfig.phonemeIds.size()};
+  vector<int64_t> phonemeIdLengths{(int64_t)phonemeIds.size()};
   vector<float> scales{synthesisConfig.noiseScale, synthesisConfig.lengthScale,
                        synthesisConfig.noiseW};
 
   vector<Ort::Value> inputTensors;
-  vector<int64_t> phonemeIdsShape{1,
-                                  (int64_t)synthesisConfig.phonemeIds.size()};
+  vector<int64_t> phonemeIdsShape{1, (int64_t)phonemeIds.size()};
   inputTensors.push_back(Ort::Value::CreateTensor<int64_t>(
-      memoryInfo, synthesisConfig.phonemeIds.data(),
-      synthesisConfig.phonemeIds.size(), phonemeIdsShape.data(),
+      memoryInfo, phonemeIds.data(), phonemeIds.size(), phonemeIdsShape.data(),
       phonemeIdsShape.size()));
 
   vector<int64_t> phomemeIdLengthsShape{(int64_t)phonemeIdLengths.size()};

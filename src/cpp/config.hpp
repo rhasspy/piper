@@ -21,19 +21,22 @@ typedef char32_t Phoneme;
 typedef int64_t PhonemeId;
 typedef int64_t SpeakerId;
 
-const string DefaultVoice = "en-gb-x-rp";
+const string DefaultVoice = "en-us";
 
 enum eSpeakMode { Text, TextWithPhonemes, SSML };
 
 struct eSpeakConfig {
   string voice = DefaultVoice;
   eSpeakMode mode = Text;
+
+  // Characters that eSpeak uses to break apart paragraphs/sentences
   set<Phoneme> clauseBreakers{U'.', U'?', U'!', U',', U';', U':'};
+
+  // Characters that piper will use to split utterances
+  set<Phoneme> sentenceBreakers{U'.', U'?', U'!'};
 };
 
 struct PhonemizeConfig {
-  string text;
-  optional<vector<Phoneme>> phonemes;
   optional<map<Phoneme, vector<Phoneme>>> phonemeMap;
   map<Phoneme, vector<PhonemeId>> phonemeIdMap;
 
@@ -46,7 +49,6 @@ struct PhonemizeConfig {
 };
 
 struct SynthesisConfig {
-  vector<PhonemeId> phonemeIds;
   float noiseScale = 0.667f;
   float lengthScale = 1.0f;
   float noiseW = 0.8f;
@@ -54,6 +56,7 @@ struct SynthesisConfig {
   int sampleWidth = 2; // 16-bit
   int channels = 1;    // mono
   optional<SpeakerId> speakerId;
+  float sentenceSilenceSeconds = 0.2f;
 };
 
 struct ModelConfig {

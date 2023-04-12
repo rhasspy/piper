@@ -76,15 +76,51 @@ void loadVoice(string modelPath, string modelConfigPath, Voice &voice,
 
 // Phonemize text and synthesize audio
 void textToAudio(Voice &voice, string text, vector<int16_t> &audioBuffer,
-                 SynthesisResult &result) {
-  voice.phonemizeConfig.text = text;
-  voice.phonemizeConfig.phonemes.reset();
-  phonemize(voice.phonemizeConfig);
+                 SynthesisResult &result,
+                 const function<void()> &audioCallback) {
 
-  voice.synthesisConfig.phonemeIds.clear();
-  phonemes2ids(voice.phonemizeConfig, voice.synthesisConfig);
+  size_t sentenceSilenceSamples = 0;
+  if (voice.synthesisConfig.sentenceSilenceSeconds > 0) {
+    sentenceSilenceSamples = (size_t)(
+        voice.synthesisConfig.sentenceSilenceSeconds *
+        voice.synthesisConfig.sampleRate * voice.synthesisConfig.channels);
+  }
 
-  synthesize(voice.synthesisConfig, voice.session, audioBuffer, result);
+  // Phonemes for each sentence
+  vector<vector<Phoneme>> phonemes;
+  phonemize(text, voice.phonemizeConfig, phonemes);
+
+  vector<PhonemeId> phonemeIds;
+  for (auto phonemesIter = phonemes.begin(); phonemesIter != phonemes.end();
+       ++phonemesIter) {
+    vector<Phoneme> &sentencePhonemes = *phonemesIter;
+    SynthesisResult sentenceResult;
+    phonemes2ids(sentencePhonemes, voice.phonemizeConfig, phonemeIds);
+    synthesize(phonemeIds, voice.synthesisConfig, voice.session, audioBuffer,
+               sentenceResult);
+
+    // Add end of sentence silence
+    if (sentenceSilenceSamples > 0) {
+      for (size_t i = 0; i < sentenceSilenceSamples; i++) {
+        audioBuffer.push_back(0);
+      }
+    }
+
+    if (audioCallback) {
+      // Call back must copy audio since it is cleared afterwards.
+      audioCallback();
+      audioBuffer.clear();
+    }
+
+    result.audioSeconds += sentenceResult.audioSeconds;
+    result.inferSeconds += sentenceResult.inferSeconds;
+
+    phonemeIds.clear();
+  }
+
+  if (result.audioSeconds > 0) {
+    result.realTimeFactor = result.inferSeconds / result.audioSeconds;
+  }
 
 } /* textToAudio */
 
@@ -93,7 +129,7 @@ void textToWavFile(Voice &voice, string text, ostream &audioFile,
                    SynthesisResult &result) {
 
   vector<int16_t> audioBuffer;
-  textToAudio(voice, text, audioBuffer, result);
+  textToAudio(voice, text, audioBuffer, result, NULL);
 
   // Write WAV
   auto synthesisConfig = voice.synthesisConfig;
