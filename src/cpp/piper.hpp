@@ -30,7 +30,7 @@ struct Voice {
 void initialize(std::filesystem::path cwd) {
   const char *dataPath = NULL;
 
-  auto cwdDataPath = cwd.append("espeak-ng-data");
+  auto cwdDataPath = std::filesystem::absolute(cwd.append("espeak-ng-data"));
   if (std::filesystem::is_directory(cwdDataPath)) {
     dataPath = cwdDataPath.c_str();
   }

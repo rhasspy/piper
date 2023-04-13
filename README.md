@@ -39,7 +39,9 @@ Download a release:
 * [amd64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_amd64.tar.gz) (desktop Linux)
 * [arm64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_arm64.tar.gz) (Raspberry Pi 4)
 
-If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Last tested with [onnxruntime](https://github.com/microsoft/onnxruntime) 1.13.1.
+If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Piper depends on a patched `espeak-ng` in [lib](lib).
+
+Last tested with [onnxruntime](https://github.com/microsoft/onnxruntime) 1.14.1.
 
 
 ## Usage

@@ -15,6 +15,13 @@
 #include "config.hpp"
 #include "utf8.h"
 
+#define CLAUSE_INTONATION_FULL_STOP   0x00000000
+#define CLAUSE_INTONATION_COMMA       0x00001000
+#define CLAUSE_INTONATION_QUESTION    0x00002000
+#define CLAUSE_INTONATION_EXCLAMATION 0x00003000
+
+#define CLAUSE_TYPE_SENTENCE          0x00080000
+
 using namespace std;
 
 namespace piper {
@@ -54,13 +61,15 @@ void phonemize(string text, PhonemizeConfig &phonemizeConfig,
 
   vector<Phoneme> *sentencePhonemes = nullptr;
   const char *inputTextPointer = textCopy.c_str();
-  size_t clauseBreakerIndex = 0;
+  int terminator = 0;
 
   while (inputTextPointer != NULL) {
+    // Modified espeak-ng API to get access to clause terminator
     string clausePhonemes(
-        espeak_TextToPhonemes((const void **)&inputTextPointer,
+        espeak_TextToPhonemes2((const void **)&inputTextPointer,
                               /*textmode*/ espeakCHARS_AUTO,
-                              /*phonememode = IPA*/ 0x02));
+                              /*phonememode = IPA*/ 0x02,
+                               &terminator));
 
     utf8::iterator phonemeIter(clausePhonemes.begin(), clausePhonemes.begin(),
                                clausePhonemes.end());
@@ -74,17 +83,25 @@ void phonemize(string text, PhonemizeConfig &phonemizeConfig,
     }
 
     sentencePhonemes->insert(sentencePhonemes->end(), phonemeIter, phonemeEnd);
-    if (clauseBreakerIndex < textClauseBreakers.size()) {
-      auto clauseBreaker = textClauseBreakers[clauseBreakerIndex];
-      sentencePhonemes->push_back(clauseBreaker);
-      if (phonemizeConfig.eSpeak->sentenceBreakers.contains(clauseBreaker)) {
+
+    // Add appropriate puntuation depending on terminator type
+    int intonation = terminator & 0x0000F000;
+    if (intonation == CLAUSE_INTONATION_FULL_STOP) {
+      sentencePhonemes->push_back(phonemizeConfig.eSpeak->fullStop);
+    } else if (intonation == CLAUSE_INTONATION_COMMA) {
+      sentencePhonemes->push_back(phonemizeConfig.eSpeak->comma);
+    } else if (intonation == CLAUSE_INTONATION_QUESTION) {
+      sentencePhonemes->push_back(phonemizeConfig.eSpeak->question);
+    } else if (intonation == CLAUSE_INTONATION_EXCLAMATION) {
+      sentencePhonemes->push_back(phonemizeConfig.eSpeak->exclamation);
+    }
+
+    if ((terminator & CLAUSE_TYPE_SENTENCE) == CLAUSE_TYPE_SENTENCE) {
         // End of sentence
         sentencePhonemes = nullptr;
-      }
-
-      clauseBreakerIndex++;
     }
-  }
+
+  }  // while inputTextPointer != NULL
 
 } /* phonemize */
 

@@ -32,8 +32,10 @@ struct eSpeakConfig {
   // Characters that eSpeak uses to break apart paragraphs/sentences
   set<Phoneme> clauseBreakers{U'.', U'?', U'!', U',', U';', U':'};
 
-  // Characters that piper will use to split utterances
-  set<Phoneme> sentenceBreakers{U'.', U'?', U'!'};
+  Phoneme fullStop = U'.';
+  Phoneme comma = U',';
+  Phoneme question = U'?';
+  Phoneme exclamation = U'!';
 };
 
 struct PhonemizeConfig {

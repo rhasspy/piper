@@ -1,4 +1,5 @@
 *
 !Makefile
 !src/cpp/
-!lib/
+!lib/onnxruntime*.tgz
+!lib/espeak-ng*.tar.gz

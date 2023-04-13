@@ -14,8 +14,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /build
 
 # Build minimal version of espeak-ng
-ADD lib/espeak-ng-1.51.tar.gz ./
-RUN cd espeak-ng-1.51 && \
+ADD lib/espeak-ng-1.52-patched.tar.gz ./
+RUN cd espeak-ng && \
     ./autogen.sh && \
     ./configure \
         --without-pcaudiolib \
@@ -30,9 +30,10 @@ RUN cd espeak-ng-1.51 && \
     make install
 
 # Copy onnxruntime library
-COPY lib/ ./lib/
-RUN mkdir -p /usr/local/include/onnxruntime && \
-    tar -C /usr/local/include/onnxruntime \
+COPY lib/onnxruntime-linux-*.tgz ./lib/
+RUN export ONNX_DIR="./lib/Linux-$(uname -m)" && \
+    mkdir -p "${ONNX_DIR}" && \
+    tar -C "${ONNX_DIR}" \
         --strip-components 1 \
         -xvf "lib/onnxruntime-linux-${TARGETARCH}${TARGETVARIANT}.tgz"
 
@@ -49,7 +50,7 @@ WORKDIR /dist
 RUN mkdir -p piper && \
     cp -d /usr/lib64/libespeak-ng.so* ./piper/ && \
     cp -dR /usr/share/espeak-ng-data ./piper/ && \
-    cp -d /usr/local/include/onnxruntime/lib/libonnxruntime.so.* ./piper/ && \
+    find /build/lib/ -name 'libonnxruntime.so.*' -exec cp -d {} ./piper/ \; && \
     cp /build/build/piper ./piper/ && \
     tar -czf "piper_${TARGETARCH}${TARGETVARIANT}.tar.gz" piper/
 

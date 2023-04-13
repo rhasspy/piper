@@ -53,7 +53,8 @@ int main(int argc, char *argv[]) {
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
-  auto exePath = filesystem::path(argv[0]);
+  // NOTE: This won't work for Windows (need GetModuleFileName)
+  auto exePath = filesystem::canonical("/proc/self/exe");
   piper::initialize(exePath.parent_path());
 
   piper::Voice voice;
