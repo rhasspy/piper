@@ -7,6 +7,8 @@ echo 'Welcome to the world of speech synthesis!' | \
   ./piper --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
 ```
 
+[Listen to voice samples](https://rhasspy.github.io/piper-samples)
+
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
 ## Voices
@@ -15,21 +17,24 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 
 Download voices from [the release](https://github.com/rhasspy/piper/releases/tag/v0.0.2).
 
-Supported languages:
+Supported languages (16):
 
 * Catalan (ca)
 * Danish (da)
-* Dutch (nl)
-* French (fr)
 * German (de)
+* U.S. English (en-us)
+* Spanish (es)
+* Finnish (fi)
+* French (fr)
 * Italian (it)
 * Kazakh (kk)
 * Nepali (ne)
+* Dutch (nl)
 * Norwegian (no)
-* Spanish (es)
+* Polish (pl)
 * Ukrainian (uk)
-* U.S. English (en-us)
 * Vietnamese (vi)
+* Chinese (zh-cn)
 
 
 ## Installation
@@ -39,8 +44,9 @@ Download a release:
 * [amd64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_amd64.tar.gz) (desktop Linux)
 * [arm64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_arm64.tar.gz) (Raspberry Pi 4)
 
-If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Piper depends on a patched `espeak-ng` in [lib](lib).
+If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Piper depends on a patched `espeak-ng` in [lib](lib), which includes a way to get access to the "terminator" used to end each clause/sentence.
 
+The ONNX runtime is expected in `lib/Linux-$(uname -m)`, so `lib/Linux-x86_64`, etc. You can change this path in `src/cpp/CMakeLists.txt` if necessary.
 Last tested with [onnxruntime](https://github.com/microsoft/onnxruntime) 1.14.1.
 
 
