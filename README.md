@@ -17,7 +17,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 
 Download voices from [the release](https://github.com/rhasspy/piper/releases/tag/v0.0.2).
 
-Supported languages (16):
+Supported languages:
 
 * Catalan (ca)
 * Danish (da)
@@ -32,6 +32,7 @@ Supported languages (16):
 * Dutch (nl)
 * Norwegian (no)
 * Polish (pl)
+* Brazilian Portuguese (pt-br)
 * Ukrainian (uk)
 * Vietnamese (vi)
 * Chinese (zh-cn)
