@@ -22,6 +22,7 @@ Supported languages:
 * Catalan (ca)
 * Danish (da)
 * German (de)
+* British English (en-gb)
 * U.S. English (en-us)
 * Spanish (es)
 * Finnish (fi)
