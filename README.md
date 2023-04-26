@@ -27,6 +27,7 @@ Supported languages:
 * Spanish (es)
 * Finnish (fi)
 * French (fr)
+* Greek (el-gr)
 * Italian (it)
 * Kazakh (kk)
 * Nepali (ne)
