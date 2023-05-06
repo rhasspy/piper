@@ -126,6 +126,10 @@ void phonemes2ids(vector<Phoneme> &phonemes, PhonemizeConfig &phonemizeConfig,
           phonemeIds.push_back(phonemizeConfig.idPad);
         }
       }
+    } else {
+      string phonemeStr;
+      utf8::append(*phoneme, phonemeStr);
+      cerr << "[WARN] No id for phoneme: " << phonemeStr << endl;
     }
   }
 
