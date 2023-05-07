@@ -1,3 +1,6 @@
+import argparse
+import json
+import sys
 import unicodedata
 from collections import Counter
 from typing import Dict, Iterable, List, Mapping, Optional
@@ -199,3 +202,36 @@ def phonemes_to_ids(
         phoneme_ids.extend(phoneme_id_map[eos])
 
     return phoneme_ids
+
+
+# -----------------------------------------------------------------------------
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("language")
+    args = parser.parse_args()
+
+    phonemizer = Phonemizer(args.language)
+
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+
+        phonemes = phonemize(line, phonemizer)
+        phoneme_ids = phonemes_to_ids(phonemes)
+        json.dump(
+            {
+                "text": line,
+                "phonemes": phonemes,
+                "phoneme_ids": phoneme_ids,
+            },
+            sys.stdout,
+            ensure_ascii=False,
+        )
+        print("")
+
+
+if __name__ == "__main__":
+    main()
