@@ -4,6 +4,7 @@ from typing import Dict, Iterable, List, Mapping, Optional
 
 from espeak_phonemizer import Phonemizer
 
+MAX_PHONEMES = 256
 DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "_": [0],
     "^": [1],
@@ -135,6 +136,25 @@ DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "χ": [127],
     "ᵻ": [128],
     "ⱱ": [129],
+    "0": [130],  # tones
+    "1": [131],
+    "2": [132],
+    "3": [133],
+    "4": [134],
+    "5": [135],
+    "6": [136],
+    "7": [137],
+    "8": [138],
+    "9": [139],
+    "\u0327": [140],  # combining cedilla
+    "\u0303": [141],  # combining tilde
+    "\u032a": [142],  # combining bridge below
+    "\u032f": [143],  # combining inverted breve below
+    "\u0329": [144],  # combining vertical line below
+    "ʰ": [145],
+    "ˤ": [146],
+    "ε": [147],
+    "": [148],
 }
 
 

@@ -8,7 +8,7 @@ import logging
 import os
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
@@ -16,7 +16,7 @@ from typing import Dict, Iterable, List, Optional
 from espeak_phonemizer import Phonemizer
 
 from .norm_audio import cache_norm_audio, make_silence_detector
-from .phonemize import DEFAULT_PHONEME_ID_MAP, phonemes_to_ids, phonemize
+from .phonemize import DEFAULT_PHONEME_ID_MAP, phonemes_to_ids, phonemize, MAX_PHONEMES
 
 _LOGGER = logging.getLogger("preprocess")
 
@@ -48,6 +48,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--speaker-id", type=int, help="Add speaker id to single speaker dataset"
+    )
+    parser.add_argument(
+        "--skip-audio", action="store_true", help="Don't preprocess audio"
     )
     parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to the console"
@@ -120,9 +123,7 @@ def main() -> None:
                 "inference": {"noise_scale": 0.667, "length_scale": 1, "noise_w": 0.8},
                 "phoneme_map": {},
                 "phoneme_id_map": DEFAULT_PHONEME_ID_MAP,
-                "num_symbols": len(
-                    set(itertools.chain.from_iterable(DEFAULT_PHONEME_ID_MAP.values()))
-                ),
+                "num_symbols": MAX_PHONEMES,
                 "num_speakers": len(speaker_counts),
                 "speaker_id_map": speaker_ids,
             },
@@ -160,20 +161,32 @@ def main() -> None:
             queue_in.put(utt_batch)
 
         _LOGGER.debug("Waiting for jobs to finish")
+        missing_phonemes: Counter[str] = Counter()
         for _ in range(num_utterances):
             utt = queue_out.get()
             if utt is not None:
                 if utt.speaker is not None:
                     utt.speaker_id = speaker_ids[utt.speaker]
 
+                utt_dict = dataclasses.asdict(utt)
+                utt_dict.pop("missing_phonemes")
+
                 # JSONL
                 json.dump(
-                    dataclasses.asdict(utt),
+                    utt_dict,
                     dataset_file,
                     ensure_ascii=False,
                     cls=PathEncoder,
                 )
                 print("", file=dataset_file)
+
+                missing_phonemes.update(utt.missing_phonemes)
+
+        if missing_phonemes:
+            for phoneme, count in missing_phonemes.most_common():
+                _LOGGER.warning("Missing %s (%s)", phoneme, count)
+
+            _LOGGER.warning("Missing %s phoneme(s)", len(missing_phonemes))
 
     # Signal workers to stop
     for proc in processes:
@@ -201,13 +214,17 @@ def process_batch(args: argparse.Namespace, queue_in: JoinableQueue, queue_out: 
                 try:
                     _LOGGER.debug(utt)
                     utt.phonemes = phonemize(utt.text, phonemizer)
-                    utt.phoneme_ids = phonemes_to_ids(utt.phonemes)
-                    utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
-                        utt.audio_path,
-                        args.cache_dir,
-                        silence_detector,
-                        args.sample_rate,
+                    utt.phoneme_ids = phonemes_to_ids(
+                        utt.phonemes,
+                        missing_phonemes=utt.missing_phonemes,
                     )
+                    if not args.skip_audio:
+                        utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
+                            utt.audio_path,
+                            args.cache_dir,
+                            silence_detector,
+                            args.sample_rate,
+                        )
                     queue_out.put(utt)
                 except TimeoutError:
                     _LOGGER.error("Skipping utterance due to timeout: %s", utt)
@@ -233,6 +250,7 @@ class Utterance:
     phoneme_ids: Optional[List[int]] = None
     audio_norm_path: Optional[Path] = None
     audio_spec_path: Optional[Path] = None
+    missing_phonemes: Counter[str] = field(default_factory=Counter)
 
 
 class PathEncoder(json.JSONEncoder):
