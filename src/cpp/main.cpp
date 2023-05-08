@@ -158,9 +158,17 @@ int main(int argc, char *argv[]) {
       piper::textToWavFile(voice, line, audioFile, result);
       cout << outputPath.string() << endl;
     } else if (runConfig.outputType == OUTPUT_FILE) {
+      // Read all of standard input before synthesizing.
+      // Otherwise, we would overwrite the output file for each line.
+      stringstream text;
+      text << line;
+      while (getline(cin, line)) {
+        text << " " << line;
+      }
+
       // Output audio to WAV file
       ofstream audioFile(runConfig.outputPath.value().string(), ios::binary);
-      piper::textToWavFile(voice, line, audioFile, result);
+      piper::textToWavFile(voice, text.str(), audioFile, result);
     } else if (runConfig.outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
       piper::textToWavFile(voice, line, cout, result);
