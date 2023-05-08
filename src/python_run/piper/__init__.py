@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 import wave
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,6 +9,8 @@ from typing import List, Mapping, Optional, Sequence, Union
 import numpy as np
 import onnxruntime
 from espeak_phonemizer import Phonemizer
+
+_LOGGER = logging.getLogger(__name__)
 
 _BOS = "^"
 _EOS = "$"
@@ -69,8 +72,11 @@ class Piper:
         phoneme_ids: List[int] = []
 
         for phoneme in phonemes:
-            phoneme_ids.extend(self.config.phoneme_id_map[phoneme])
-            phoneme_ids.extend(self.config.phoneme_id_map[_PAD])
+            if phoneme in self.config.phoneme_id_map:
+                phoneme_ids.extend(self.config.phoneme_id_map[phoneme])
+                phoneme_ids.extend(self.config.phoneme_id_map[_PAD])
+            else:
+                _LOGGER.warning("No id for phoneme: %s", phoneme)
 
         phoneme_ids.extend(self.config.phoneme_id_map[_EOS])
 
