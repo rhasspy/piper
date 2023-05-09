@@ -1,6 +1,7 @@
 ![Piper logo](etc/logo.png)
 
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
+Piper is used in a [variety of projects](#people-using-piper).
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
@@ -68,6 +69,17 @@ echo 'Welcome to the world of speech synthesis!' | \
 For multi-speaker models, use `--speaker <number>` to change speakers (default: 0).
 
 See `piper --help` for more options.
+
+
+## People using Piper
+
+Piper has been used in the following projects/papers:
+
+* [Home Assistant](https://github.com/home-assistant/addons/blob/master/piper/README.md)
+* [Rhasspy 3](https://github.com/rhasspy/rhasspy3/)
+* [NVDA - NonVisual Desktop Access](https://www.nvaccess.org/post/in-process-8th-may-2023/#voices)
+* [Image Captioning for the Visually Impaired and Blind: A Recipe for Low-Resource Languages](https://www.techrxiv.org/articles/preprint/Image_Captioning_for_the_Visually_Impaired_and_Blind_A_Recipe_for_Low-Resource_Languages/22133894)
+* [Open Voice Operating System](https://github.com/OpenVoiceOS/ovos-tts-plugin-piper)
 
 
 ## Training
