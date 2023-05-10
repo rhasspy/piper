@@ -29,6 +29,7 @@ Supported languages:
 * Finnish (fi)
 * French (fr)
 * Greek (el-gr)
+* Icelandic (is)
 * Italian (it)
 * Kazakh (kk)
 * Nepali (ne)
