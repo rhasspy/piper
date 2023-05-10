@@ -1,7 +1,7 @@
 ![Piper logo](etc/logo.png)
 
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
-Piper is used in a [variety of projects](#people-using-piper).
+Piper is used in a [variety of projects](#people-using-piper), and is funded by [Nabu Casa](https://nabucasa.com/).
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
