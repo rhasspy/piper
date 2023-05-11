@@ -398,7 +398,12 @@ def ljspeech_dataset(
                 # Try with .wav
                 wav_path = wav_dir / f"{filename}.wav"
 
-            if (not skip_audio) and (not wav_path.exists()):
+            wav_exists = wav_exists.exists()
+            if (not skip_audio) and wav_exists and (wav_path.stat().st_size == 0):
+                _LOGGER.warning("Empty file: %s", wav_path)
+                continue
+
+            if (not skip_audio) and (not wav_exists):
                 _LOGGER.warning("Missing %s", filename)
                 continue
 
