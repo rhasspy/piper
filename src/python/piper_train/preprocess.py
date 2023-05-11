@@ -381,10 +381,7 @@ def is_good_speaking_rate(
     return True
 
 
-def ljspeech_dataset(
-    dataset_dir: Path,
-    args: argparse.Namespace,
-) -> Iterable[Utterance]:
+def ljspeech_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
     dataset_dir = args.input_dir
     is_single_speaker = args.single_speaker
     speaker_id = args.speaker_id
@@ -443,10 +440,7 @@ def ljspeech_dataset(
             )
 
 
-def mycroft_dataset(
-    dataset_dir: Path,
-    args: argparse.Namespace,
-) -> Iterable[Utterance]:
+def mycroft_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
     dataset_dir = args.input_dir
     is_single_speaker = args.single_speaker
     skip_audio = args.skip_audio
