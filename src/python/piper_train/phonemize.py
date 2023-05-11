@@ -220,6 +220,10 @@ ALPHABETS = {
         "ь": [42],
         "ю": [43],
         "я": [44],
+        "\u0301": [45],  # combining acute accent
+        "\u0306": [46],  # combining breve
+        "\u0308": [47],  # combining diaeresis
+        "—": [48],       # em dash
     }
 }
 
