@@ -28,17 +28,19 @@ struct Voice {
 };
 
 void initialize(std::filesystem::path cwd) {
-  const char *dataPath = NULL;
+  string dataPath;
 
   auto cwdDataPath = std::filesystem::absolute(cwd.append("espeak-ng-data"));
   if (std::filesystem::is_directory(cwdDataPath)) {
-    dataPath = cwdDataPath.c_str();
+    dataPath = cwdDataPath.string();
   }
+
+	cerr << "dataPath: " << dataPath << endl;
 
   // Set up espeak-ng for calling espeak_TextToPhonemes
   int result = espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS,
                                  /*buflength*/ 0,
-                                 /*path*/ dataPath,
+                                 /*path*/ dataPath.c_str(),
                                  /*options*/ 0);
   if (result < 0) {
     throw runtime_error("Failed to initialize eSpeak-ng");

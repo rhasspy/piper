@@ -43,7 +43,7 @@ void loadModel(string modelPath, ModelSession &session) {
   session.options.DisableProfiling();
 
   auto startTime = chrono::steady_clock::now();
-  session.onnx = Ort::Session(session.env, modelPath.c_str(), session.options);
+  session.onnx = Ort::Session(session.env, filesystem::path(modelPath).c_str(), session.options);
   auto endTime = chrono::steady_clock::now();
   auto loadDuration = chrono::duration<double>(endTime - startTime);
 }

@@ -15,6 +15,12 @@
 #include <pcaudiolib/audio.h>
 #endif
 
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 #include "piper.hpp"
 
 using namespace std;
@@ -54,7 +60,15 @@ int main(int argc, char *argv[]) {
   parseArgs(argc, argv, runConfig);
 
   // NOTE: This won't work for Windows (need GetModuleFileName)
+#ifdef _MSC_VER
+  auto exePath = []() {
+    wchar_t moduleFileName[MAX_PATH] = { 0 };
+    GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
+    return filesystem::path(moduleFileName);
+  }();
+#else
   auto exePath = filesystem::canonical("/proc/self/exe");
+#endif
   piper::initialize(exePath.parent_path());
 
   piper::Voice voice;
