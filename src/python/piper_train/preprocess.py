@@ -118,12 +118,7 @@ def main() -> None:
     _LOGGER.debug("Counting number of speakers/utterances in the dataset")
     speaker_counts: Counter[str] = Counter()
     num_utterances = 0
-    for utt in make_dataset(
-        args.input_dir,
-        args.single_speaker,
-        args.speaker_id,
-        args.skip_audio,
-    ):
+    for utt in make_dataset(args):
         speaker = utt.speaker or ""
         speaker_counts[speaker] += 1
         num_utterances += 1
@@ -197,12 +192,7 @@ def main() -> None:
     )
     with open(args.output_dir / "dataset.jsonl", "w", encoding="utf-8") as dataset_file:
         for utt_batch in batched(
-            make_dataset(
-                args.input_dir,
-                args.single_speaker,
-                args.speaker_id,
-                args.skip_audio,
-            ),
+            make_dataset(args),
             batch_size,
         ):
             queue_in.put(utt_batch)
@@ -393,10 +383,13 @@ def is_good_speaking_rate(
 
 def ljspeech_dataset(
     dataset_dir: Path,
-    is_single_speaker: bool,
-    speaker_id: Optional[int] = None,
-    skip_audio: bool = False,
+    args: argparse.Namespace,
 ) -> Iterable[Utterance]:
+    dataset_dir = args.input_dir
+    is_single_speaker = args.single_speaker
+    speaker_id = args.speaker_id
+    skip_audio = args.skip_audio
+
     # filename|speaker|text
     # speaker is optional
     metadata_path = dataset_dir / "metadata.csv"
@@ -452,10 +445,12 @@ def ljspeech_dataset(
 
 def mycroft_dataset(
     dataset_dir: Path,
-    is_single_speaker: bool,
-    speaker_id: Optional[int] = None,
-    skip_audio: bool = False,
+    args: argparse.Namespace,
 ) -> Iterable[Utterance]:
+    dataset_dir = args.input_dir
+    is_single_speaker = args.single_speaker
+    skip_audio = args.skip_audio
+
     speaker_id = 0
     for metadata_path in dataset_dir.glob("**/*-metadata.txt"):
         speaker = metadata_path.parent.name if not is_single_speaker else None
