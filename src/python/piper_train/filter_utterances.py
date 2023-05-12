@@ -158,6 +158,7 @@ def main():
                 },
                 json_file,
                 indent=4,
+                ensure_ascii=False,
             )
 
 
@@ -222,7 +223,7 @@ class ProcessUtterance:
         offset_sec, duration_sec = trim_silence(
             audio_16khz,
             self.thread_data.detector,
-            threshold=0.5,
+            threshold=0.8,
             samples_per_chunk=480,
             sample_rate=vad_sample_rate,
             keep_chunks_before=2,
