@@ -24,6 +24,7 @@ from .phonemize import (
     PhonemeType,
     phonemes_to_ids,
     phonemize,
+    PHONEME_MAPS,
 )
 
 _LOGGER = logging.getLogger("preprocess")
@@ -250,6 +251,7 @@ def phonemize_batch_espeak(
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
         phonemizer = Phonemizer(default_voice=args.language)
+        phoneme_map = PHONEME_MAPS.get(args.langauge)
 
         while True:
             utt_batch = queue_in.get()
@@ -259,7 +261,9 @@ def phonemize_batch_espeak(
             for utt in utt_batch:
                 try:
                     _LOGGER.debug(utt)
-                    utt.phonemes = phonemize(casing(utt.text), phonemizer)
+                    utt.phonemes = phonemize(
+                        casing(utt.text), phonemizer, phoneme_map=phoneme_map
+                    )
                     utt.phoneme_ids = phonemes_to_ids(
                         utt.phonemes,
                         missing_phonemes=utt.missing_phonemes,

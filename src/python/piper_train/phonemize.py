@@ -173,6 +173,11 @@ DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "↑": [151],
 }
 
+PHONEME_MAPS = {
+    # Brazilian Portuguese
+    "pt-br": {"c": ["k"]}
+}
+
 ALPHABETS = {
     # Ukrainian
     "uk": {
@@ -224,16 +229,33 @@ ALPHABETS = {
         "\u0301": [45],  # combining acute accent
         "\u0306": [46],  # combining breve
         "\u0308": [47],  # combining diaeresis
-        "—": [48],       # em dash
+        "—": [48],  # em dash
     }
 }
 
 
-def phonemize(text: str, phonemizer: Phonemizer) -> List[str]:
+def phonemize(
+    text: str,
+    phonemizer: Phonemizer,
+    phoneme_map: Optional[Dict[str, List[str]]] = None,
+) -> List[str]:
     phonemes_str = phonemizer.phonemize(text=text, keep_clause_breakers=True)
 
     # Phonemes are decomposed into unicode codepoints
-    return list(unicodedata.normalize("NFD", phonemes_str))
+    unmapped_phonemes = list(unicodedata.normalize("NFD", phonemes_str))
+    if not phoneme_map:
+        return unmapped_phonemes
+
+    # Phonemes can be mapped to lists of other phonemes
+    mapped_phonemes = []
+    for phoneme in unmapped_phonemes:
+        sub_phonemes = phoneme_map.get(phoneme)
+        if sub_phonemes:
+            mapped_phonemes.extend(sub_phonemes)
+        else:
+            mapped_phonemes.append(phoneme)
+
+    return mapped_phonemes
 
 
 def phonemes_to_ids(
@@ -281,13 +303,14 @@ def main() -> None:
     args = parser.parse_args()
 
     phonemizer = Phonemizer(args.language)
+    phoneme_map = PHONEME_MAPS.get(args.language)
 
     for line in sys.stdin:
         line = line.strip()
         if not line:
             continue
 
-        phonemes = phonemize(line, phonemizer)
+        phonemes = phonemize(line, phonemizer, phoneme_map=phoneme_map)
         phoneme_ids = phonemes_to_ids(phonemes)
         json.dump(
             {
