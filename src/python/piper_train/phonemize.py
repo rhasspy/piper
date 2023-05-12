@@ -167,9 +167,10 @@ DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "ʰ": [145],
     "ˤ": [146],
     "ε": [147],
-    "": [148],
+    "↓": [148],
     "#": [149],  # Icelandic
     '"': [150],  # Russian
+    "↑": [151],
 }
 
 ALPHABETS = {
