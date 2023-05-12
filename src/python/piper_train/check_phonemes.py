@@ -8,8 +8,8 @@ from .phonemize import DEFAULT_PHONEME_ID_MAP
 
 
 def main() -> None:
-    used_phonemes: Counter[str] = Counter()
-    missing_phonemes: Counter[str] = Counter()
+    used_phonemes: "Counter[str]" = Counter()
+    missing_phonemes: "Counter[str]" = Counter()
 
     for line in sys.stdin:
         line = line.strip()

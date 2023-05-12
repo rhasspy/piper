@@ -11,9 +11,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional
 
-import librosa
 from espeak_phonemizer import Phonemizer
 
 from .norm_audio import cache_norm_audio, make_silence_detector
@@ -21,10 +20,10 @@ from .phonemize import (
     ALPHABETS,
     DEFAULT_PHONEME_ID_MAP,
     MAX_PHONEMES,
+    PHONEME_MAPS,
     PhonemeType,
     phonemes_to_ids,
     phonemize,
-    PHONEME_MAPS,
 )
 
 _LOGGER = logging.getLogger("preprocess")
@@ -110,7 +109,7 @@ def main() -> None:
 
     # Count speakers
     _LOGGER.debug("Counting number of speakers/utterances in the dataset")
-    speaker_counts: Counter[str] = Counter()
+    speaker_counts: "Counter[str]" = Counter()
     num_utterances = 0
     for utt in make_dataset(args):
         speaker = utt.speaker or ""
@@ -192,7 +191,7 @@ def main() -> None:
             queue_in.put(utt_batch)
 
         _LOGGER.debug("Waiting for jobs to finish")
-        missing_phonemes: Counter[str] = Counter()
+        missing_phonemes: "Counter[str]" = Counter()
         for _ in range(num_utterances):
             utt = queue_out.get()
             if utt is not None:
@@ -342,7 +341,7 @@ class Utterance:
     phoneme_ids: Optional[List[int]] = None
     audio_norm_path: Optional[Path] = None
     audio_spec_path: Optional[Path] = None
-    missing_phonemes: Counter[str] = field(default_factory=Counter)
+    missing_phonemes: "Counter[str]" = field(default_factory=Counter)
 
 
 class PathEncoder(json.JSONEncoder):

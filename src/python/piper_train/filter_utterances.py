@@ -3,10 +3,10 @@ import argparse
 import csv
 import json
 import re
-import sys
-import statistics
 import shutil
+import statistics
 import subprocess
+import sys
 import threading
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -17,7 +17,7 @@ from typing import Optional
 
 import numpy as np
 
-from .norm_audio import make_silence_detector, trim_silence, SileroVoiceActivityDetector
+from .norm_audio import make_silence_detector, trim_silence
 
 _DIR = Path(__file__).parent
 
@@ -256,11 +256,6 @@ class ProcessUtterance:
         #         universal_newlines=True,
         #     ).strip()
         # )
-
-
-def make_silence_detector() -> SileroVoiceActivityDetector:
-    silence_model = _DIR / "norm_audio" / "models" / "silero_vad.onnx"
-    return SileroVoiceActivityDetector(silence_model)
 
 
 if __name__ == "__main__":
