@@ -89,7 +89,13 @@ Piper has been used in the following projects/papers:
 
 See [src/python](src/python)
 
-Start by creating a virtual environment:
+Start by installing system dependencies:
+
+``` sh
+sudo apt-get install python3-dev
+```
+
+Then create a virtual environment:
 
 ``` sh
 cd piper/src/python
