@@ -11,7 +11,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import librosa
 from espeak_phonemizer import Phonemizer
@@ -69,13 +69,6 @@ def main() -> None:
         choices=("ignore", "lower", "upper", "casefold"),
         default="ignore",
         help="Casing applied to utterance text",
-    )
-    #
-    parser.add_argument(
-        "--speaking-rate-min", type=float, help="Minimum speaking rate (chars/sec)"
-    )
-    parser.add_argument(
-        "--speaking-rate-max", type=float, help="Maximum speaking rate (chars/sec)"
     )
     #
     parser.add_argument(
@@ -355,32 +348,6 @@ class PathEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def is_good_speaking_rate(
-    text: str,
-    wav_path: Path,
-    args: argparse.Namespace,
-) -> bool:
-    min_rate: Optional[float] = args.speaking_rate_min
-    max_rate: Optional[float] = args.speaking_rate_max
-
-    if (min_rate is None) and (max_rate is None):
-        return True
-
-    if len(text) == 0:
-        return False
-
-    duration = librosa.get_duration(path=wav_path)
-    rate = len(text) / duration
-
-    if (min_rate is not None) and (rate < min_rate):
-        return False
-
-    if (max_rate is not None) and (rate > max_rate):
-        return False
-
-    return True
-
-
 def ljspeech_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
     dataset_dir = args.input_dir
     is_single_speaker = args.single_speaker
@@ -429,10 +396,6 @@ def ljspeech_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
 
                 if wav_path.stat().st_size == 0:
                     _LOGGER.warning("Empty file: %s", wav_path)
-                    continue
-
-                if not is_good_speaking_rate(text, wav_path, args):
-                    _LOGGER.warning("Bad speaking rate: %s", wav_path)
                     continue
 
             yield Utterance(
