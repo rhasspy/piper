@@ -39,6 +39,7 @@ Supported languages:
 * Norwegian (no)
 * Polish (pl)
 * Brazilian Portuguese (pt-br)
+* Russian (ru)
 * Ukrainian (uk)
 * Vietnamese (vi)
 * Chinese (zh-cn)
