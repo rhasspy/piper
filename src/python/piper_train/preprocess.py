@@ -250,7 +250,7 @@ def phonemize_batch_espeak(
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
         phonemizer = Phonemizer(default_voice=args.language)
-        phoneme_map = PHONEME_MAPS.get(args.langauge)
+        phoneme_map = PHONEME_MAPS.get(args.language)
 
         while True:
             utt_batch = queue_in.get()
