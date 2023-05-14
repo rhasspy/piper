@@ -131,7 +131,7 @@ def main():
                     utt.exclude_reason = ExcludeReason.HIGH
                 else:
                     if is_multispeaker:
-                        writer.writerow((utt.id, utt.text, utt.speaker))
+                        writer.writerow((utt.id, utt.speaker, utt.text))
                     else:
                         writer.writerow((utt.id, utt.text))
 
