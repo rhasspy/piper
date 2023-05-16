@@ -40,6 +40,7 @@ Supported languages:
 * Polish (pl)
 * Brazilian Portuguese (pt-br)
 * Russian (ru)
+* Swedish (sv-se)
 * Ukrainian (uk)
 * Vietnamese (vi)
 * Chinese (zh-cn)
