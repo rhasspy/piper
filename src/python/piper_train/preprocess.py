@@ -303,12 +303,11 @@ def phonemize_batch_text(
                 try:
                     _LOGGER.debug(utt)
                     utt.phonemes = list(unicodedata.normalize("NFD", casing(utt.text)))
-                    utt.phoneme_ids = []
-                    for phoneme in utt.phonemes:
-                        if phoneme in alphabet:
-                            utt.phoneme_ids.extend(alphabet[phoneme])
-                        else:
-                            utt.missing_phonemes[phoneme] += 1
+                    utt.phoneme_ids = phonemes_to_ids(
+                        utt.phonemes,
+                        phoneme_id_map=alphabet,
+                        missing_phonemes=utt.missing_phonemes,
+                    )
                     if not args.skip_audio:
                         utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
                             utt.audio_path,

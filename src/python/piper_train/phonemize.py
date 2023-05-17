@@ -300,18 +300,55 @@ def phonemes_to_ids(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("language")
+    parser.add_argument(
+        "--phoneme-type",
+        choices=list(PhonemeType),
+        default=PhonemeType.ESPEAK,
+        help="Type of phonemes to use (default: espeak)",
+    )
+    parser.add_argument(
+        "--text-casing",
+        choices=("ignore", "lower", "upper", "casefold"),
+        default="ignore",
+        help="Casing applied to utterance text",
+    )
     args = parser.parse_args()
 
-    phonemizer = Phonemizer(args.language)
+    phonemizer: Optional[Phonemizer] = None
+
+    if args.text_casing == "lower":
+        casing = str.lower
+    elif args.text_casing == "upper":
+        casing = str.upper
+    else:
+        # ignore
+        casing = lambda s: s
+
+    if args.phoneme_type == PhonemeType.TEXT:
+        # Use text directly
+        phoneme_id_map = ALPHABETS[args.language]
+    else:
+        # Use eSpeak
+        phonemizer = Phonemizer(args.language)
+        phoneme_id_map = DEFAULT_PHONEME_ID_MAP
+
     phoneme_map = PHONEME_MAPS.get(args.language)
+    missing_phonemes: "Counter[str]" = Counter()
 
     for line in sys.stdin:
         line = line.strip()
         if not line:
             continue
 
-        phonemes = phonemize(line, phonemizer, phoneme_map=phoneme_map)
-        phoneme_ids = phonemes_to_ids(phonemes)
+        if args.phoneme_type == PhonemeType.TEXT:
+            phonemes = list(unicodedata.normalize("NFD", casing(line)))
+        else:
+            assert phonemizer is not None
+            phonemes = phonemize(line, phonemizer, phoneme_map=phoneme_map)
+
+        phoneme_ids = phonemes_to_ids(
+            phonemes, phoneme_id_map=phoneme_id_map, missing_phonemes=missing_phonemes
+        )
         json.dump(
             {
                 "text": line,
@@ -322,6 +359,11 @@ def main() -> None:
             ensure_ascii=False,
         )
         print("")
+
+    if missing_phonemes:
+        print("Missing", len(missing_phonemes), "phonemes", file=sys.stderr)
+        for phoneme, count in missing_phonemes.most_common():
+            print(phoneme, count, file=sys.stderr)
 
 
 if __name__ == "__main__":
