@@ -21,6 +21,10 @@
 #include <windows.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 #include "piper.hpp"
 
 using namespace std;
@@ -67,7 +71,16 @@ int main(int argc, char *argv[]) {
     return filesystem::path(moduleFileName);
   }();
 #else
+#ifdef __APPLE__
+  auto exePath = []() {
+    char moduleFileName[PATH_MAX] = { 0 };
+    uint32_t moduleFileNameSize = std::size(moduleFileName);
+    _NSGetExecutablePath(moduleFileName, &moduleFileNameSize);
+    return filesystem::path(moduleFileName);
+  }();
+#else
   auto exePath = filesystem::canonical("/proc/self/exe");
+#endif
 #endif
   piper::initialize(exePath.parent_path());
 
