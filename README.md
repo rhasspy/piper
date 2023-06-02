@@ -7,7 +7,7 @@ echo 'Welcome to the world of speech synthesis!' | \
   ./piper --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
 ```
 
-[Listen to voice samples](https://rhasspy.github.io/piper-samples)
+[Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a [video tutorial by Thorsten Müller](https://youtu.be/rjq5eZoWWSo)
 
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
