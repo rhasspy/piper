@@ -36,6 +36,7 @@ struct RunConfig {
   optional<float> noiseScale;
   optional<float> lengthScale;
   optional<float> noiseW;
+  optional<float> sentenceSilenceSeconds;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -92,6 +93,11 @@ int main(int argc, char *argv[]) {
 
   if (runConfig.noiseW) {
     voice.synthesisConfig.noiseW = runConfig.noiseW.value();
+  }
+
+  if (runConfig.sentenceSilenceSeconds) {
+    voice.synthesisConfig.sentenceSilenceSeconds =
+        runConfig.sentenceSilenceSeconds.value();
   }
 
   if (runConfig.outputType == OUTPUT_DIRECTORY) {
@@ -234,11 +240,14 @@ void printUsage(char *argv[]) {
           "becomes available"
        << endl;
   cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
-  cerr << "   --noise-scale           NUM   generator noise (default: 0.667)"
+  cerr << "   --noise_scale           NUM   generator noise (default: 0.667)"
        << endl;
-  cerr << "   --length-scale          NUM   phoneme length (default: 1.0)"
+  cerr << "   --length_scale          NUM   phoneme length (default: 1.0)"
        << endl;
-  cerr << "   --noise-w               NUM   phonene width noise (default: 0.8)"
+  cerr << "   --noise_w               NUM   phoneme width noise (default: 0.8)"
+       << endl;
+  cerr << "   --silence_seconds       NUM   seconds of silence after each "
+          "sentence (default: 0.2)"
        << endl;
   cerr << endl;
 }
@@ -263,7 +272,8 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "-c" || arg == "--config") {
       ensureArg(argc, argv, i);
       modelConfigPath = filesystem::path(argv[++i]);
-    } else if (arg == "-f" || arg == "--output_file") {
+    } else if (arg == "-f" || arg == "--output_file" ||
+               arg == "--output-file") {
       ensureArg(argc, argv, i);
       std::string filePath = argv[++i];
       if (filePath == "-") {
@@ -273,24 +283,27 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
         runConfig.outputType = OUTPUT_FILE;
         runConfig.outputPath = filesystem::path(filePath);
       }
-    } else if (arg == "-d" || arg == "--output_dir") {
+    } else if (arg == "-d" || arg == "--output_dir" || arg == "output-dir") {
       ensureArg(argc, argv, i);
       runConfig.outputType = OUTPUT_DIRECTORY;
       runConfig.outputPath = filesystem::path(argv[++i]);
-    } else if (arg == "--output_raw") {
+    } else if (arg == "--output_raw" || arg == "--output-raw") {
       runConfig.outputType = OUTPUT_RAW;
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
       runConfig.speakerId = (piper::SpeakerId)stol(argv[++i]);
-    } else if (arg == "--noise-scale") {
+    } else if (arg == "--noise_scale" || arg == "--noise-scale") {
       ensureArg(argc, argv, i);
       runConfig.noiseScale = stof(argv[++i]);
-    } else if (arg == "--length-scale") {
+    } else if (arg == "--length_scale" || arg == "--length-scale") {
       ensureArg(argc, argv, i);
       runConfig.lengthScale = stof(argv[++i]);
-    } else if (arg == "--noise-w") {
+    } else if (arg == "--noise_w" || arg == "--noise-w") {
       ensureArg(argc, argv, i);
       runConfig.noiseW = stof(argv[++i]);
+    } else if (arg == "--sentence_silence" || arg == "--sentence-silence") {
+      ensureArg(argc, argv, i);
+      runConfig.sentenceSilenceSeconds = stof(argv[++i]);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);

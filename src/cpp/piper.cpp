@@ -18,16 +18,31 @@ const float MAX_WAV_VALUE = 32767.0f;
 
 const std::string instanceName{"piper"};
 
+// True if the string is a single UTF-8 codepoint
 bool isSingleCodepoint(std::string s) {
   return utf8::distance(s.begin(), s.end()) == 1;
 }
 
+// Get the first UTF-8 codepoint of a string
 Phoneme getCodepoint(std::string s) {
   utf8::iterator character_iter(s.begin(), s.begin(), s.end());
   return *character_iter;
 }
 
+// Load JSON config information for phonemization
 void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
+  // {
+  //     "espeak": {
+  //         "voice": "<language code>"
+  //     },
+  //     "phoneme_type": "<espeak or text>",
+  //     "phoneme_map": {
+  //         "<from phoneme>": ["<to phoneme 1>", "<to phoneme 2>", ...]
+  //     },
+  //     "phoneme_id_map": {
+  //         "<phoneme>": [<id1>, <id2>, ...]
+  //     }
+  // }
 
   if (configRoot.contains("espeak")) {
     if (!phonemizeConfig.eSpeak) {
@@ -47,7 +62,27 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     }
   }
 
+  // phoneme to [id] map
+  // Maps phonemes to one or more phoneme ids (required).
+  if (configRoot.contains("phoneme_id_map")) {
+    auto phonemeIdMapValue = configRoot["phoneme_id_map"];
+    for (auto &fromPhonemeItem : phonemeIdMapValue.items()) {
+      std::string fromPhoneme = fromPhonemeItem.key();
+      if (!isSingleCodepoint(fromPhoneme)) {
+        throw std::runtime_error(
+            "Phonemes must be one codepoint (phoneme id map)");
+      }
+
+      auto fromCodepoint = getCodepoint(fromPhoneme);
+      for (auto &toIdValue : fromPhonemeItem.value()) {
+        PhonemeId toId = toIdValue.get<PhonemeId>();
+        phonemizeConfig.phonemeIdMap[fromCodepoint].push_back(toId);
+      }
+    }
+  }
+
   // phoneme to [phoneme] map
+  // Maps phonemes to one or more other phonemes (not normally used).
   if (configRoot.contains("phoneme_map")) {
     if (!phonemizeConfig.phonemeMap) {
       phonemizeConfig.phonemeMap.emplace();
@@ -75,33 +110,43 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     }
   }
 
-  // phoneme to [id] map
-  if (configRoot.contains("phoneme_id_map")) {
-    auto phonemeIdMapValue = configRoot["phoneme_id_map"];
-    for (auto &fromPhonemeItem : phonemeIdMapValue.items()) {
-      std::string fromPhoneme = fromPhonemeItem.key();
-      if (!isSingleCodepoint(fromPhoneme)) {
-        throw std::runtime_error(
-            "Phonemes must be one codepoint (phoneme id map)");
-      }
-
-      auto fromCodepoint = getCodepoint(fromPhoneme);
-      for (auto &toIdValue : fromPhonemeItem.value()) {
-        PhonemeId toId = toIdValue.get<PhonemeId>();
-        phonemizeConfig.phonemeIdMap[fromCodepoint].push_back(toId);
-      }
-    }
-  }
-
 } /* parsePhonemizeConfig */
 
+// Load JSON config for audio synthesis
 void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
+
+  // {
+  //     "audio": {
+  //         "sample_rate": 22050
+  //     },
+  //     "inference": {
+  //         "noise_scale": 0.667,
+  //         "length_scale": 1,
+  //         "noise_w": 0.8
+  //     }
+  // }
 
   if (configRoot.contains("audio")) {
     auto audioValue = configRoot["audio"];
     if (audioValue.contains("sample_rate")) {
       // Default sample rate is 22050 Hz
       synthesisConfig.sampleRate = audioValue.value("sample_rate", 22050);
+    }
+  }
+
+  if (configRoot.contains("inference")) {
+    // Overrides default inference settings
+    auto inferenceValue = configRoot["inference"];
+    if (inferenceValue.contains("noise_scale")) {
+      synthesisConfig.noiseScale = inferenceValue.value("noise_scale", 0.667f);
+    }
+
+    if (inferenceValue.contains("length_scale")) {
+      synthesisConfig.lengthScale = inferenceValue.value("length_scale", 1.0f);
+    }
+
+    if (inferenceValue.contains("noise_w")) {
+      synthesisConfig.noiseW = inferenceValue.value("noise_w", 0.8f);
     }
   }
 
