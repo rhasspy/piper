@@ -171,6 +171,8 @@ DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "#": [149],  # Icelandic
     '"': [150],  # Russian
     "↑": [151],
+    "\u033a": [152],  # Basque
+    "\u033b": [153],
 }
 
 PHONEME_MAPS = {
