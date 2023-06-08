@@ -24,7 +24,7 @@ target_link_libraries(piper
                       ${SPDLOG_LIBRARIES})
 
 if(NOT APPLE)
-  target_link_libraries(-static-libgcc -static-libstdc++)
+  target_link_libraries(piper -static-libgcc -static-libstdc++)
 endif()
 
 target_link_directories(piper PUBLIC
