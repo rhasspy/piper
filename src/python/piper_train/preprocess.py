@@ -428,7 +428,6 @@ def mycroft_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
                     )
         speaker_id += 1
 
-
 # -----------------------------------------------------------------------------
 
 
