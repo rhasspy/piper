@@ -4,6 +4,7 @@ import csv
 import sys
 from collections import Counter, defaultdict
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--speaker-number", type=int)

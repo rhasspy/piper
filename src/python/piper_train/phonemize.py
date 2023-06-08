@@ -3,9 +3,19 @@ import json
 import sys
 import unicodedata
 from collections import Counter
+from enum import Enum
 from typing import Dict, Iterable, List, Mapping, Optional
 
 from espeak_phonemizer import Phonemizer
+
+
+class PhonemeType(str, Enum):
+    ESPEAK = "espeak"
+    """Phonemes come from espeak-ng"""
+
+    TEXT = "text"
+    """Phonemes come from text itself"""
+
 
 MAX_PHONEMES = 256
 DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
@@ -160,6 +170,57 @@ DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "": [148],
     "#": [149],  # Icelandic
     '"': [150],  # Russian
+}
+
+ALPHABETS = {
+    # Ukrainian
+    "uk": {
+        "_": [0],
+        "^": [1],
+        "$": [2],
+        " ": [3],
+        "!": [4],
+        "'": [5],
+        ",": [6],
+        "-": [7],
+        ".": [8],
+        ":": [9],
+        ";": [10],
+        "?": [11],
+        "а": [12],
+        "б": [13],
+        "в": [14],
+        "г": [15],
+        "ґ": [16],
+        "д": [17],
+        "е": [18],
+        "є": [19],
+        "ж": [20],
+        "з": [21],
+        "и": [22],
+        "і": [23],
+        "ї": [24],
+        "й": [25],
+        "к": [26],
+        "л": [27],
+        "м": [28],
+        "н": [29],
+        "о": [30],
+        "п": [31],
+        "р": [32],
+        "с": [33],
+        "т": [34],
+        "у": [35],
+        "ф": [36],
+        "х": [37],
+        "ц": [38],
+        "ч": [39],
+        "ш": [40],
+        "щ": [41],
+        "ь": [42],
+        "ю": [43],
+        "я": [44],
+    }
 }
 
 

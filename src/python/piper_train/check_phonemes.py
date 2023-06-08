@@ -45,7 +45,7 @@ def main() -> None:
                     "category": unicodedata.category(phoneme),
                 }
                 for phoneme, count in missing_phonemes.most_common()
-            }
+            },
         },
         sys.stdout,
     )
