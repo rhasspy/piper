@@ -3,8 +3,6 @@
 
 #include <iostream>
 
-namespace piper {
-
 struct WavHeader {
   uint8_t RIFF[4] = {'R', 'I', 'F', 'F'};
   uint32_t chunkSize;
@@ -14,7 +12,7 @@ struct WavHeader {
   uint8_t fmt[4] = {'f', 'm', 't', ' '};
   uint32_t fmtSize = 16;    // bytes
   uint16_t audioFormat = 1; // PCM
-  uint16_t numChannels; // mono
+  uint16_t numChannels;     // mono
   uint32_t sampleRate;      // Hertz
   uint32_t bytesPerSec;     // sampleRate * sampleWidth
   uint16_t blockAlign = 2;  // 16-bit mono
@@ -38,7 +36,5 @@ void writeWavHeader(int sampleRate, int sampleWidth, int channels,
   audioFile.write(reinterpret_cast<const char *>(&header), sizeof(header));
 
 } /* writeWavHeader */
-
-} // namespace piper
 
 #endif // WAVFILE_H_

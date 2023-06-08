@@ -1,16 +1,12 @@
-.PHONY: release debug clean test
+.PHONY: piper clean test
 
-release:
+LIB_DIR := lib/Linux-$(shell uname -m)
+
+piper:
 	mkdir -p build
 	cd build && cmake ../src/cpp -DCMAKE_BUILD_TYPE=Release && make
-
-no-pcaudio:
-	mkdir -p build
-	cd build && cmake ../src/cpp -DCMAKE_BUILD_TYPE=Release -DUSE_PCAUDIO=OFF && make
-
-debug:
-	mkdir -p build
-	cd build && cmake ../src/cpp -DCMAKE_BUILD_TYPE=Debug && make
+	cp -aR $(LIB_DIR)/piper_phonemize/espeak-ng-data $(LIB_DIR)/piper_phonemize/lib/*.so* build/
+	cp -a $(LIB_DIR)/onnxruntime/lib/*.so* build/
 
 clean:
 	rm -rf build/ dist/
