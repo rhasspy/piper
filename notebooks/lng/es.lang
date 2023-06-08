@@ -1,0 +1,24 @@
+[language info]
+Name=Español
+code=Es
+version=0.1
+author=Mateo Cedillo
+Copyright=© 2018-2023 MT Programs, todos los derechos Reservados 
+[Strings]
+Model failed to download!=¡No se pudo descargar el modelo!
+No downloaded voice packages!=¡No se han descargado paquetes de voz!
+You have not loaded any model from the list!=¡No has cargado ningún modelo de la lista!
+Select voice package:=Selecciona paquete de voz:
+Load it!=¡Cárgalo!
+Select speaker:=Selecciona hablante:
+Rate scale=Escala de velocidad
+Phoneme noise scale=Escala de resonancia de fonemas
+Phoneme stressing scale=Escala de acentuación de fonemas
+Enter your text here:=Introduce tu texto aquí:
+Text to synthesize=Texto a sintetizar
+Synthesize=Sintetizar
+Auto-play=Auto-reproducir
+Click here to synthesize the text.=Haz clic aquí para sintetizar el texto.
+Exit=Salir
+Closes this GUI.=Cierra esta interfaz.
+audio history=Historial de audio
