@@ -13,6 +13,7 @@ from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
+import librosa
 from espeak_phonemizer import Phonemizer
 
 from .norm_audio import cache_norm_audio, make_silence_detector
@@ -68,6 +69,13 @@ def main() -> None:
         choices=("ignore", "lower", "upper", "casefold"),
         default="ignore",
         help="Casing applied to utterance text",
+    )
+    #
+    parser.add_argument(
+        "--speaking-rate-min", type=float, help="Minimum speaking rate (chars/sec)"
+    )
+    parser.add_argument(
+        "--speaking-rate-max", type=float, help="Maximum speaking rate (chars/sec)"
     )
     #
     parser.add_argument(
@@ -357,6 +365,32 @@ class PathEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+def is_good_speaking_rate(
+    text: str,
+    wav_path: Path,
+    args: argparse.Namespace,
+) -> bool:
+    min_rate: Optional[float] = args.speaking_rate_min
+    max_rate: Optional[float] = args.speaking_rate_max
+
+    if (min_rate is None) and (max_rate is None):
+        return True
+
+    if len(text) == 0:
+        return False
+
+    duration = librosa.get_duration(path=wav_path)
+    rate = len(text) / duration
+
+    if (min_rate is not None) and (rate < min_rate):
+        return False
+
+    if (max_rate is not None) and (rate > max_rate):
+        return False
+
+    return True
+
+
 def ljspeech_dataset(
     dataset_dir: Path,
     is_single_speaker: bool,
@@ -375,7 +409,7 @@ def ljspeech_dataset(
     with open(metadata_path, "r", encoding="utf-8") as csv_file:
         reader = csv.reader(csv_file, delimiter="|")
         for row in reader:
-            assert len(row) >= 2, "Not enough colums"
+            assert len(row) >= 2, "Not enough columns"
 
             speaker: Optional[str] = None
             if is_single_speaker or (len(row) == 2):
@@ -398,14 +432,18 @@ def ljspeech_dataset(
                 # Try with .wav
                 wav_path = wav_dir / f"{filename}.wav"
 
-            wav_exists = wav_exists.exists()
-            if (not skip_audio) and wav_exists and (wav_path.stat().st_size == 0):
-                _LOGGER.warning("Empty file: %s", wav_path)
-                continue
+            if not skip_audio:
+                if not wav_path.exists():
+                    _LOGGER.warning("Missing %s", filename)
+                    continue
 
-            if (not skip_audio) and (not wav_exists):
-                _LOGGER.warning("Missing %s", filename)
-                continue
+                if wav_path.stat().st_size == 0:
+                    _LOGGER.warning("Empty file: %s", wav_path)
+                    continue
+
+                if not is_good_speaking_rate(text, wav_path, args):
+                    _LOGGER.warning("Bad speaking rate: %s", wav_path)
+                    continue
 
             yield Utterance(
                 text=text, audio_path=wav_path, speaker=speaker, speaker_id=speaker_id
@@ -427,12 +465,13 @@ def mycroft_dataset(
             for row in reader:
                 filename, text = row[0], row[1]
                 wav_path = metadata_path.parent / filename
-                yield Utterance(
-                    text=text,
-                    audio_path=wav_path,
-                    speaker=speaker,
-                    speaker_id=speaker_id if not is_single_speaker else None,
-                )
+                if skip_audio or (wav_path.exists() and (wav_path.stat().st_size > 0)):
+                    yield Utterance(
+                        text=text,
+                        audio_path=wav_path,
+                        speaker=speaker,
+                        speaker_id=speaker_id if not is_single_speaker else None,
+                    )
         speaker_id += 1
 
 
