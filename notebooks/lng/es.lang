@@ -5,6 +5,7 @@ version=0.1
 author=Mateo Cedillo
 Copyright=© 2018-2023 MT Programs, todos los derechos Reservados 
 [Strings]
+Interface openned. Write your texts, configure the different synthesis options or download all the voices you want. Enjoy!=Interfaz abierta. Escribe tus textos, configura las diferentes opciones de síntesis o descarga todas las voces que quieras. ¡Disfruta!
 Model failed to download!=¡No se pudo descargar el modelo!
 No downloaded voice packages!=¡No se han descargado paquetes de voz!
 You have not loaded any model from the list!=¡No has cargado ningún modelo de la lista!

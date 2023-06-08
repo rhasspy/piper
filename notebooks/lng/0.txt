@@ -5,6 +5,7 @@ version=
 author=
 Copyright=
 [Strings]
+Interface openned. Write your texts, configure the different synthesis options or download all the voices you want. Enjoy!=
 Model failed to download!=
 No downloaded voice packages!=
 You have not loaded any model from the list!=
