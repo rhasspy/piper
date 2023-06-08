@@ -1,7 +1,7 @@
 ![Piper logo](etc/logo.png)
 
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
-Piper is used in a [variety of projects](#people-using-piper), and is funded by [Nabu Casa](https://nabucasa.com/).
+Piper is used in a [variety of projects](#people-using-piper).
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
@@ -9,6 +9,8 @@ echo 'Welcome to the world of speech synthesis!' | \
 ```
 
 [Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a [video tutorial by Thorsten Müller](https://youtu.be/rjq5eZoWWSo)
+
+[![Sponsored by Nabu Casa](etc/nabu_casa_sponsored.png)](https://nabucasa.com)
 
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
 
