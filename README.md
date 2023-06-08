@@ -68,7 +68,7 @@ For example:
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./piper --model blizzard_lessac-medium.onnx --output_file welcome.wav
+  ./piper --model en-us-lessac-medium.onnx --output_file welcome.wav
 ```
 
 For multi-speaker models, use `--speaker <number>` to change speakers (default: 0).
