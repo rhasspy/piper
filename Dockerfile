@@ -13,6 +13,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /build
 
+ARG SPDLOG_VERSION="1.11.0"
+RUN curl -L "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.tar.gz" | \
+    tar -xzvf - && \
+    mkdir -p "spdlog-${SPDLOG_VERSION}/build" && \
+    cd "spdlog-${SPDLOG_VERSION}/build" && \
+    cmake ..  && \
+    make -j8 && \
+    cmake --install . --prefix /usr
+
 RUN mkdir -p "lib/Linux-$(uname -m)"
 
 ARG ONNXRUNTIME_VERSION='1.14.1'
