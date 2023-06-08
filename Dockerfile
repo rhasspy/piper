@@ -56,6 +56,7 @@ WORKDIR /test
 COPY local/en-us/lessac/low/en-us-lessac-low.onnx \
      local/en-us/lessac/low/en-us-lessac-low.onnx.json ./
 
+# Run Piper on a test sentence and verify that the WAV file isn't empty
 COPY --from=build /dist/piper_*.tar.gz ./
 RUN tar -xzf piper*.tar.gz
 RUN echo 'This is a test.' | ./piper/piper -m en-us-lessac-low.onnx -f test.wav

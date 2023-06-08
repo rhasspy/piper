@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
-include(CheckIncludeFileCXX)
-
 project(piper C CXX)
+
+find_package(PkgConfig)
+pkg_check_modules(SPDLOG REQUIRED spdlog)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,7 +20,8 @@ target_link_libraries(piper
                       piper_phonemize
                       espeak-ng
                       onnxruntime
-                      pthread)
+                      pthread
+                      ${SPDLOG_LIBRARIES})
 
 if(NOT APPLE)
   target_link_libraries(-static-libgcc -static-libstdc++)
@@ -31,4 +33,8 @@ target_link_directories(piper PUBLIC
 
 target_include_directories(piper PUBLIC
                            ${PIPER_PHONEMIZE_ROOTDIR}/include
-                           ${ONNXRUNTIME_ROOTDIR}/include)
+                           ${ONNXRUNTIME_ROOTDIR}/include
+                           ${SPDLOG_INCLUDE_DIRS})
+
+target_compile_options(piper PUBLIC
+                       ${SPDLOG_CFLAGS_OTHER})

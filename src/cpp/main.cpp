@@ -21,6 +21,9 @@
 #include <mach-o/dyld.h>
 #endif
 
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
 #include "piper.hpp"
 
 using namespace std;
@@ -28,15 +31,36 @@ using namespace std;
 enum OutputType { OUTPUT_FILE, OUTPUT_DIRECTORY, OUTPUT_STDOUT, OUTPUT_RAW };
 
 struct RunConfig {
+  // Path to .onnx voice file
   filesystem::path modelPath;
+
+  // Path to JSON voice config file
   filesystem::path modelConfigPath;
+
+  // Type of output to produce.
+  // Default is to write a WAV file in the current directory.
   OutputType outputType = OUTPUT_DIRECTORY;
+
+  // Path for output
   optional<filesystem::path> outputPath = filesystem::path(".");
+
+  // Numerical id of the default speaker (multi-speaker voices)
   optional<piper::SpeakerId> speakerId;
+
+  // Amount of noise to add during audio generation
   optional<float> noiseScale;
+
+  // Speed of speaking (1 = normal, < 1 is faster, > 1 is slower)
   optional<float> lengthScale;
+
+  // Variation in phoneme lengths
   optional<float> noiseW;
+
+  // Seconds of silence to add after each sentence
   optional<float> sentenceSilenceSeconds;
+
+  // Path to espeak-ng data directory (default is next to piper executable)
+  optional<filesystem::path> eSpeakDataPath;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -44,19 +68,45 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
                    condition_variable &cvAudio, bool &audioReady,
                    bool &audioFinished);
 
+// ----------------------------------------------------------------------------
+
 int main(int argc, char *argv[]) {
+  spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
+
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
-  // NOTE: This won't work for Windows (need GetModuleFileName)
+  piper::PiperConfig piperConfig;
+  piper::Voice voice;
+
+  spdlog::debug("Loading voice from {} (config={})",
+                runConfig.modelPath.string(),
+                runConfig.modelConfigPath.string());
+
+  auto startTime = chrono::steady_clock::now();
+  loadVoice(piperConfig, runConfig.modelPath.string(),
+            runConfig.modelConfigPath.string(), voice, runConfig.speakerId);
+  auto endTime = chrono::steady_clock::now();
+  spdlog::info("Loaded voice in {} second(s)",
+               chrono::duration<double>(endTime - startTime).count());
+
+  if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {
+    spdlog::debug("Voice uses eSpeak phonemes ({})",
+                  voice.phonemizeConfig.eSpeak->voice);
+
+    if (runConfig.eSpeakDataPath) {
+      // User provided path
+      piperConfig.eSpeakDataPath = runConfig.eSpeakDataPath.value().string();
+    } else {
+      // Get the path to the piper executable so we can locate espeak-ng-data
+      // next to it.
 #ifdef _MSC_VER
-  auto exePath = []() {
-    wchar_t moduleFileName[MAX_PATH] = {0};
-    GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
-    return filesystem::path(moduleFileName);
-  }();
-#else
-#ifdef __APPLE__
+      auto exePath = []() {
+        wchar_t moduleFileName[MAX_PATH] = {0};
+        GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
+        return filesystem::path(moduleFileName);
+      }();
+#elifdef __APPLE__
   auto exePath = []() {
     char moduleFileName[PATH_MAX] = { 0 };
     uint32_t moduleFileNameSize = std::size(moduleFileName);
@@ -64,21 +114,21 @@ int main(int argc, char *argv[]) {
     return filesystem::path(moduleFileName);
   }();
 #else
-  auto exePath = filesystem::canonical("/proc/self/exe");
+      auto exePath = filesystem::canonical("/proc/self/exe");
 #endif
 
-  piper::PiperConfig piperConfig;
-  piperConfig.eSpeakDataPath =
-      std::filesystem::absolute(exePath.parent_path().append("espeak-ng-data"))
-          .string();
+      piperConfig.eSpeakDataPath =
+          std::filesystem::absolute(
+              exePath.parent_path().append("espeak-ng-data"))
+              .string();
 
-  piper::Voice voice;
-  auto startTime = chrono::steady_clock::now();
-  loadVoice(piperConfig, runConfig.modelPath.string(),
-            runConfig.modelConfigPath.string(), voice, runConfig.speakerId);
-  auto endTime = chrono::steady_clock::now();
-  auto loadSeconds = chrono::duration<double>(endTime - startTime).count();
-  cerr << "Load time: " << loadSeconds << " sec" << endl;
+      spdlog::debug("espeak-ng-data directory is expected at {}",
+                    piperConfig.eSpeakDataPath);
+    }
+  } else {
+    // Not using eSpeak
+    piperConfig.useESpeak = false;
+  }
 
   piper::initialize(piperConfig);
 
@@ -102,7 +152,7 @@ int main(int argc, char *argv[]) {
 
   if (runConfig.outputType == OUTPUT_DIRECTORY) {
     runConfig.outputPath = filesystem::absolute(runConfig.outputPath.value());
-    cerr << "Output directory: " << runConfig.outputPath.value() << endl;
+    spdlog::info("Output directory: {}", runConfig.outputPath.value().string());
   }
 
   string line;
@@ -175,19 +225,21 @@ int main(int argc, char *argv[]) {
       }
 
       // Wait for audio output to finish
-      cerr << "Waiting for audio..." << endl;
+      spdlog::info("Waiting for audio to finish playing...");
       rawOutputThread.join();
     }
 
-    cerr << "Real-time factor: " << result.realTimeFactor
-         << " (infer=" << result.inferSeconds
-         << " sec, audio=" << result.audioSeconds << " sec)" << endl;
+    spdlog::info("Real-time factor: {} (infer={} sec, audio={} sec)",
+                 result.realTimeFactor, result.inferSeconds,
+                 result.audioSeconds);
   }
 
   piper::terminate(piperConfig);
 
   return EXIT_SUCCESS;
 }
+
+// ----------------------------------------------------------------------------
 
 void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
                    condition_variable &cvAudio, bool &audioReady,
@@ -220,6 +272,8 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 
 } // rawOutputProc
 
+// ----------------------------------------------------------------------------
+
 void printUsage(char *argv[]) {
   cerr << endl;
   cerr << "usage: " << argv[0] << " [options]" << endl;
@@ -248,6 +302,10 @@ void printUsage(char *argv[]) {
        << endl;
   cerr << "   --silence_seconds       NUM   seconds of silence after each "
           "sentence (default: 0.2)"
+       << endl;
+  cerr << "   --espeak_data           DIR   path to espeak-ng data directory"
+       << endl;
+  cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
   cerr << endl;
 }
@@ -304,6 +362,12 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--sentence_silence" || arg == "--sentence-silence") {
       ensureArg(argc, argv, i);
       runConfig.sentenceSilenceSeconds = stof(argv[++i]);
+    } else if (arg == "--espeak_data" || arg == "--espeak-data") {
+      ensureArg(argc, argv, i);
+      runConfig.eSpeakDataPath = filesystem::path(argv[++i]);
+    } else if (arg == "--debug") {
+      // Set DEBUG logging
+      spdlog::set_level(spdlog::level::debug);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);
