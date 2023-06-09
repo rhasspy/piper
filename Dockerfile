@@ -51,7 +51,7 @@ RUN ./build/piper --help
 # Build .tar.gz to keep symlinks
 WORKDIR /dist
 RUN mkdir -p piper && \
-    cp -dR /build/build/*.so* /build/build/espeak-ng-data /build/build/piper ./piper/ && \
+    cp -dR /build/build/*.so* /build/build/espeak-ng-data /build/build/libtashkeel_model.ort /build/build/piper ./piper/ && \
     tar -czf "piper_${TARGETARCH}${TARGETVARIANT}.tar.gz" piper/
 
 # -----------------------------------------------------------------------------
