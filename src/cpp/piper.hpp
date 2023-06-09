@@ -1,8 +1,8 @@
 #ifndef PIPER_H_
 #define PIPER_H_
 
-#include <functional>
 #include <fstream>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -10,6 +10,7 @@
 #include <onnxruntime_cxx_api.h>
 #include <phoneme_ids.hpp>
 #include <phonemize.hpp>
+#include <tashkeel.hpp>
 
 #include "json.hpp"
 
@@ -26,6 +27,10 @@ struct eSpeakConfig {
 struct PiperConfig {
   std::string eSpeakDataPath;
   bool useESpeak = true;
+
+  bool useTashkeel = false;
+  std::optional<std::string> tashkeelModelPath;
+  std::unique_ptr<tashkeel::State> tashkeelState;
 };
 
 enum PhonemeType { eSpeakPhonemes, TextPhonemes };
@@ -40,7 +45,7 @@ struct PhonemizeConfig {
   PhonemeId idEos = 2; // end of sentence
   bool interspersePad = true;
 
-  std::optional<eSpeakConfig> eSpeak;
+  eSpeakConfig eSpeak;
 };
 
 struct SynthesisConfig {

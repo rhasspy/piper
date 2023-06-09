@@ -47,13 +47,9 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
   // }
 
   if (configRoot.contains("espeak")) {
-    if (!phonemizeConfig.eSpeak) {
-      phonemizeConfig.eSpeak.emplace();
-    }
-
     auto espeakValue = configRoot["espeak"];
     if (espeakValue.contains("voice")) {
-      phonemizeConfig.eSpeak->voice = espeakValue["voice"].get<std::string>();
+      phonemizeConfig.eSpeak.voice = espeakValue["voice"].get<std::string>();
     }
   }
 
@@ -173,6 +169,22 @@ void initialize(PiperConfig &config) {
     }
 
     spdlog::debug("Initialized eSpeak");
+  }
+
+  // Load onnx model for libtashkeel
+  // https://github.com/mush42/libtashkeel/
+  if (config.useTashkeel) {
+    spdlog::debug("Using libtashkeel for diacritization");
+    if (!config.tashkeelModelPath) {
+      throw std::runtime_error("No path to libtashkeel model");
+    }
+
+    spdlog::debug("Loading libtashkeel model from {}",
+                  config.tashkeelModelPath.value());
+    config.tashkeelState = std::make_unique<tashkeel::State>();
+    tashkeel::tashkeel_load(config.tashkeelModelPath.value(),
+                            *config.tashkeelState);
+    spdlog::debug("Initialized libtashkeel");
   }
 
   spdlog::info("Initialized piper");
@@ -368,6 +380,15 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
         voice.synthesisConfig.sampleRate * voice.synthesisConfig.channels);
   }
 
+  if (config.useTashkeel) {
+    if (!config.tashkeelState) {
+      throw std::runtime_error("Tashkeel model is not loaded");
+    }
+
+    spdlog::debug("Diacritizing text with libtashkeel: {}", text);
+    text = tashkeel::tashkeel_run(text, *config.tashkeelState);
+  }
+
   // Phonemes for each sentence
   spdlog::debug("Phonemizing text: {}", text);
   std::vector<std::vector<Phoneme>> phonemes;
@@ -375,7 +396,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
   if (voice.phonemizeConfig.phonemeType == eSpeakPhonemes) {
     // Use espeak-ng for phonemization
     eSpeakPhonemeConfig eSpeakConfig;
-    eSpeakConfig.voice = voice.phonemizeConfig.eSpeak->voice;
+    eSpeakConfig.voice = voice.phonemizeConfig.eSpeak.voice;
     phonemize_eSpeak(text, eSpeakConfig, phonemes);
   } else {
     // Use UTF-8 codepoints as "phonemes"
@@ -405,7 +426,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
     PhonemeIdConfig idConfig;
     if (voice.phonemizeConfig.phonemeType == TextPhonemes) {
-      auto &language = voice.phonemizeConfig.eSpeak->voice;
+      auto &language = voice.phonemizeConfig.eSpeak.voice;
       spdlog::debug("Text phoneme language: {}", language);
       if (DEFAULT_ALPHABET.count(language) < 1) {
         throw std::runtime_error(

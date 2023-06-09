@@ -14,7 +14,6 @@ string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
 string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 
 set(PIPER_PHONEMIZE_ROOTDIR ${CMAKE_CURRENT_LIST_DIR}/../../lib/${CMAKE_HOST_SYSTEM_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR}/piper_phonemize)
-set(ONNXRUNTIME_ROOTDIR ${CMAKE_CURRENT_LIST_DIR}/../../lib/${CMAKE_HOST_SYSTEM_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR}/onnxruntime)
 
 target_link_libraries(piper
                       piper_phonemize
@@ -28,12 +27,10 @@ if(NOT APPLE)
 endif()
 
 target_link_directories(piper PUBLIC
-                        ${PIPER_PHONEMIZE_ROOTDIR}/lib
-                        ${ONNXRUNTIME_ROOTDIR}/lib)
+                        ${PIPER_PHONEMIZE_ROOTDIR}/lib)
 
 target_include_directories(piper PUBLIC
                            ${PIPER_PHONEMIZE_ROOTDIR}/include
-                           ${ONNXRUNTIME_ROOTDIR}/include
                            ${SPDLOG_INCLUDE_DIRS})
 
 target_compile_options(piper PUBLIC

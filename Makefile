@@ -6,7 +6,6 @@ piper:
 	mkdir -p build
 	cd build && cmake ../src/cpp -DCMAKE_BUILD_TYPE=Release && make
 	cp -aR $(LIB_DIR)/piper_phonemize/lib/espeak-ng-data $(LIB_DIR)/piper_phonemize/lib/*.so* build/
-	cp -a $(LIB_DIR)/onnxruntime/lib/*.so* build/
 
 clean:
 	rm -rf build/ dist/

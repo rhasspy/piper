@@ -61,6 +61,10 @@ struct RunConfig {
 
   // Path to espeak-ng data directory (default is next to piper executable)
   optional<filesystem::path> eSpeakDataPath;
+
+  // Path to libtashkeel ort model
+  // https://github.com/mush42/libtashkeel/
+  optional<filesystem::path> tashkeelModelPath;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -90,33 +94,34 @@ int main(int argc, char *argv[]) {
   spdlog::info("Loaded voice in {} second(s)",
                chrono::duration<double>(endTime - startTime).count());
 
-  if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {
-    spdlog::debug("Voice uses eSpeak phonemes ({})",
-                  voice.phonemizeConfig.eSpeak->voice);
-
-    if (runConfig.eSpeakDataPath) {
-      // User provided path
-      piperConfig.eSpeakDataPath = runConfig.eSpeakDataPath.value().string();
-    } else {
-      // Get the path to the piper executable so we can locate espeak-ng-data
-      // next to it.
+  // Get the path to the piper executable so we can locate espeak-ng-data, etc.
+  // next to it.
 #ifdef _MSC_VER
-      auto exePath = []() {
-        wchar_t moduleFileName[MAX_PATH] = {0};
-        GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
-        return filesystem::path(moduleFileName);
-      }();
+  auto exePath = []() {
+    wchar_t moduleFileName[MAX_PATH] = {0};
+    GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
+    return filesystem::path(moduleFileName);
+  }();
 #elifdef __APPLE__
   auto exePath = []() {
-    char moduleFileName[PATH_MAX] = { 0 };
+    char moduleFileName[PATH_MAX] = {0};
     uint32_t moduleFileNameSize = std::size(moduleFileName);
     _NSGetExecutablePath(moduleFileName, &moduleFileNameSize);
     return filesystem::path(moduleFileName);
   }();
 #else
-      auto exePath = filesystem::canonical("/proc/self/exe");
+  auto exePath = filesystem::canonical("/proc/self/exe");
 #endif
 
+  if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {
+    spdlog::debug("Voice uses eSpeak phonemes ({})",
+                  voice.phonemizeConfig.eSpeak.voice);
+
+    if (runConfig.eSpeakDataPath) {
+      // User provided path
+      piperConfig.eSpeakDataPath = runConfig.eSpeakDataPath.value().string();
+    } else {
+      // Assume next to piper executable
       piperConfig.eSpeakDataPath =
           std::filesystem::absolute(
               exePath.parent_path().append("espeak-ng-data"))
@@ -128,6 +133,25 @@ int main(int argc, char *argv[]) {
   } else {
     // Not using eSpeak
     piperConfig.useESpeak = false;
+  }
+
+  // Enable libtashkeel for Arabic
+  if (voice.phonemizeConfig.eSpeak.voice == "ar") {
+    piperConfig.useTashkeel = true;
+    if (runConfig.tashkeelModelPath) {
+      // User provided path
+      piperConfig.tashkeelModelPath =
+          runConfig.tashkeelModelPath.value().string();
+    } else {
+      // Assume next to piper executable
+      piperConfig.tashkeelModelPath =
+          std::filesystem::absolute(
+              exePath.parent_path().append("libtashkeel_model.ort"))
+              .string();
+
+      spdlog::debug("libtashkeel model is expected at {}",
+                    piperConfig.tashkeelModelPath.value());
+    }
   }
 
   piper::initialize(piperConfig);
@@ -365,6 +389,9 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--espeak_data" || arg == "--espeak-data") {
       ensureArg(argc, argv, i);
       runConfig.eSpeakDataPath = filesystem::path(argv[++i]);
+    } else if (arg == "--tashkeel_model" || arg == "--tashkeel-model") {
+      ensureArg(argc, argv, i);
+      runConfig.tashkeelModelPath = filesystem::path(argv[++i]);
     } else if (arg == "--debug") {
       // Set DEBUG logging
       spdlog::set_level(spdlog::level::debug);
