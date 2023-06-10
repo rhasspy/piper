@@ -20,6 +20,9 @@
         "ryan_medium": "1MDKqaIfgtFwjhXpqv41aeX1Xuny7f8vV",
         "Ryan_high": "1PGvYA4CRaiBm_7gnZUa220ZW0YSyZisE"
     },
+    "ka": {
+        "natia-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ka/ka_GE/natia/medium/epoch%3D5239-step%3D1607690.ckpt"
+    },
     "kk": {
         "iseke-low": "1kIcnqTr6DI4JRibooe7ZvCIkGHez8kQT",
         "raya-low": "11UuZBPqjgn09S4Vkv7yi7_rIp7yB0UCt"
@@ -29,6 +32,15 @@
     },
     "no": {
         "talesyntese-medium": "1Oy621DHbRVFpmdKVEeXXyOI9l7aTkLFF"
+    },
+    "pl": {
+        "gosia-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/pl/pl_PL/gosia/medium/epoch%3D5001-step%3D1457672.ckpt"
+    },
+    "ru": {
+        "dmitri-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/dmitri/medium/epoch%3D5589-step%3D1478840.ckpt"
+    },
+    "uk": {
+        "ukrainian_tts-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/uk/uk_UK/ukrainian_tts/medium/epoch%3D2090-step%3D1166778.ckpt"
     },
     "vi": {
         "vivos-low": "16Wd-ygTus1Yl8Hs2o674iiClfyIaBaC9"
