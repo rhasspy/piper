@@ -1,9 +1,23 @@
+import argparse
+import json
+import sys
 import unicodedata
 from collections import Counter
+from enum import Enum
 from typing import Dict, Iterable, List, Mapping, Optional
 
 from espeak_phonemizer import Phonemizer
 
+
+class PhonemeType(str, Enum):
+    ESPEAK = "espeak"
+    """Phonemes come from espeak-ng"""
+
+    TEXT = "text"
+    """Phonemes come from text itself"""
+
+
+MAX_PHONEMES = 256
 DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "_": [0],
     "^": [1],
@@ -135,14 +149,115 @@ DEFAULT_PHONEME_ID_MAP: Dict[str, List[int]] = {
     "χ": [127],
     "ᵻ": [128],
     "ⱱ": [129],
+    "0": [130],  # tones
+    "1": [131],
+    "2": [132],
+    "3": [133],
+    "4": [134],
+    "5": [135],
+    "6": [136],
+    "7": [137],
+    "8": [138],
+    "9": [139],
+    "\u0327": [140],  # combining cedilla
+    "\u0303": [141],  # combining tilde
+    "\u032a": [142],  # combining bridge below
+    "\u032f": [143],  # combining inverted breve below
+    "\u0329": [144],  # combining vertical line below
+    "ʰ": [145],
+    "ˤ": [146],
+    "ε": [147],
+    "↓": [148],
+    "#": [149],  # Icelandic
+    '"': [150],  # Russian
+    "↑": [151],
+    "\u033a": [152],  # Basque
+    "\u033b": [153],
+}
+
+PHONEME_MAPS = {
+    # Brazilian Portuguese
+    "pt-br": {"c": ["k"]}
+}
+
+ALPHABETS = {
+    # Ukrainian
+    "uk": {
+        "_": [0],
+        "^": [1],
+        "$": [2],
+        " ": [3],
+        "!": [4],
+        "'": [5],
+        ",": [6],
+        "-": [7],
+        ".": [8],
+        ":": [9],
+        ";": [10],
+        "?": [11],
+        "а": [12],
+        "б": [13],
+        "в": [14],
+        "г": [15],
+        "ґ": [16],
+        "д": [17],
+        "е": [18],
+        "є": [19],
+        "ж": [20],
+        "з": [21],
+        "и": [22],
+        "і": [23],
+        "ї": [24],
+        "й": [25],
+        "к": [26],
+        "л": [27],
+        "м": [28],
+        "н": [29],
+        "о": [30],
+        "п": [31],
+        "р": [32],
+        "с": [33],
+        "т": [34],
+        "у": [35],
+        "ф": [36],
+        "х": [37],
+        "ц": [38],
+        "ч": [39],
+        "ш": [40],
+        "щ": [41],
+        "ь": [42],
+        "ю": [43],
+        "я": [44],
+        "\u0301": [45],  # combining acute accent
+        "\u0306": [46],  # combining breve
+        "\u0308": [47],  # combining diaeresis
+        "—": [48],  # em dash
+    }
 }
 
 
-def phonemize(text: str, phonemizer: Phonemizer) -> List[str]:
+def phonemize(
+    text: str,
+    phonemizer: Phonemizer,
+    phoneme_map: Optional[Dict[str, List[str]]] = None,
+) -> List[str]:
     phonemes_str = phonemizer.phonemize(text=text, keep_clause_breakers=True)
 
     # Phonemes are decomposed into unicode codepoints
-    return list(unicodedata.normalize("NFD", phonemes_str))
+    unmapped_phonemes = list(unicodedata.normalize("NFD", phonemes_str))
+    if not phoneme_map:
+        return unmapped_phonemes
+
+    # Phonemes can be mapped to lists of other phonemes
+    mapped_phonemes = []
+    for phoneme in unmapped_phonemes:
+        sub_phonemes = phoneme_map.get(phoneme)
+        if sub_phonemes:
+            mapped_phonemes.extend(sub_phonemes)
+        else:
+            mapped_phonemes.append(phoneme)
+
+    return mapped_phonemes
 
 
 def phonemes_to_ids(
@@ -179,3 +294,79 @@ def phonemes_to_ids(
         phoneme_ids.extend(phoneme_id_map[eos])
 
     return phoneme_ids
+
+
+# -----------------------------------------------------------------------------
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("language")
+    parser.add_argument(
+        "--phoneme-type",
+        choices=list(PhonemeType),
+        default=PhonemeType.ESPEAK,
+        help="Type of phonemes to use (default: espeak)",
+    )
+    parser.add_argument(
+        "--text-casing",
+        choices=("ignore", "lower", "upper", "casefold"),
+        default="ignore",
+        help="Casing applied to utterance text",
+    )
+    args = parser.parse_args()
+
+    phonemizer: Optional[Phonemizer] = None
+
+    if args.text_casing == "lower":
+        casing = str.lower
+    elif args.text_casing == "upper":
+        casing = str.upper
+    else:
+        # ignore
+        casing = lambda s: s
+
+    if args.phoneme_type == PhonemeType.TEXT:
+        # Use text directly
+        phoneme_id_map = ALPHABETS[args.language]
+    else:
+        # Use eSpeak
+        phonemizer = Phonemizer(args.language)
+        phoneme_id_map = DEFAULT_PHONEME_ID_MAP
+
+    phoneme_map = PHONEME_MAPS.get(args.language)
+    missing_phonemes: "Counter[str]" = Counter()
+
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+
+        if args.phoneme_type == PhonemeType.TEXT:
+            phonemes = list(unicodedata.normalize("NFD", casing(line)))
+        else:
+            assert phonemizer is not None
+            phonemes = phonemize(line, phonemizer, phoneme_map=phoneme_map)
+
+        phoneme_ids = phonemes_to_ids(
+            phonemes, phoneme_id_map=phoneme_id_map, missing_phonemes=missing_phonemes
+        )
+        json.dump(
+            {
+                "text": line,
+                "phonemes": phonemes,
+                "phoneme_ids": phoneme_ids,
+            },
+            sys.stdout,
+            ensure_ascii=False,
+        )
+        print("")
+
+    if missing_phonemes:
+        print("Missing", len(missing_phonemes), "phonemes", file=sys.stderr)
+        for phoneme, count in missing_phonemes.most_common():
+            print(phoneme, count, file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

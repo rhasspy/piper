@@ -2,7 +2,6 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional
 
 import torch
 
@@ -41,7 +40,6 @@ def main():
     model_g = model.model_g
 
     num_symbols = model_g.n_vocab
-    num_speakers = model_g.n_speakers
 
     # Inference only
     model_g.eval()

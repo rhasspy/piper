@@ -8,7 +8,8 @@ docker run \
   --user "$(id -u):$(id -g)" \
   --ipc=host \
   -v "${HOME}:${HOME}" \
+  -v /media/cache:/media/cache:ro \
   -v /etc/hostname:/etc/hostname:ro \
   -v /etc/localtime:/etc/localtime:ro \
-  piper-train \
+  larynx2-train \
   "$@"

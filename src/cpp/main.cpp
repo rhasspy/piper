@@ -2,6 +2,7 @@
 #include <condition_variable>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -10,38 +11,60 @@
 #include <thread>
 #include <vector>
 
-#ifdef HAVE_PCAUDIO
-// https://github.com/espeak-ng/pcaudiolib
-#include <pcaudiolib/audio.h>
-#endif
-
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
 #endif
 
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
 #include "piper.hpp"
 
 using namespace std;
 
-enum OutputType {
-  OUTPUT_FILE,
-  OUTPUT_DIRECTORY,
-  OUTPUT_STDOUT,
-  OUTPUT_PLAY,
-  OUTPUT_RAW
-};
+enum OutputType { OUTPUT_FILE, OUTPUT_DIRECTORY, OUTPUT_STDOUT, OUTPUT_RAW };
 
 struct RunConfig {
+  // Path to .onnx voice file
   filesystem::path modelPath;
+
+  // Path to JSON voice config file
   filesystem::path modelConfigPath;
-  OutputType outputType = OUTPUT_PLAY;
-  optional<filesystem::path> outputPath;
+
+  // Type of output to produce.
+  // Default is to write a WAV file in the current directory.
+  OutputType outputType = OUTPUT_DIRECTORY;
+
+  // Path for output
+  optional<filesystem::path> outputPath = filesystem::path(".");
+
+  // Numerical id of the default speaker (multi-speaker voices)
   optional<piper::SpeakerId> speakerId;
+
+  // Amount of noise to add during audio generation
   optional<float> noiseScale;
+
+  // Speed of speaking (1 = normal, < 1 is faster, > 1 is slower)
   optional<float> lengthScale;
+
+  // Variation in phoneme lengths
   optional<float> noiseW;
+
+  // Seconds of silence to add after each sentence
+  optional<float> sentenceSilenceSeconds;
+
+  // Path to espeak-ng data directory (default is next to piper executable)
+  optional<filesystem::path> eSpeakDataPath;
+
+  // Path to libtashkeel ort model
+  // https://github.com/mush42/libtashkeel/
+  optional<filesystem::path> tashkeelModelPath;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -49,35 +72,89 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
                    condition_variable &cvAudio, bool &audioReady,
                    bool &audioFinished);
 
-#ifdef HAVE_PCAUDIO
-void playProc(audio_object *my_audio, vector<int16_t> &sharedAudioBuffer,
-              mutex &mutAudio, condition_variable &cvAudio, bool &audioReady,
-              bool &audioFinished);
-#endif
+// ----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
+  spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
+
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
-  // NOTE: This won't work for Windows (need GetModuleFileName)
+  piper::PiperConfig piperConfig;
+  piper::Voice voice;
+
+  spdlog::debug("Loading voice from {} (config={})",
+                runConfig.modelPath.string(),
+                runConfig.modelConfigPath.string());
+
+  auto startTime = chrono::steady_clock::now();
+  loadVoice(piperConfig, runConfig.modelPath.string(),
+            runConfig.modelConfigPath.string(), voice, runConfig.speakerId);
+  auto endTime = chrono::steady_clock::now();
+  spdlog::info("Loaded voice in {} second(s)",
+               chrono::duration<double>(endTime - startTime).count());
+
+  // Get the path to the piper executable so we can locate espeak-ng-data, etc.
+  // next to it.
 #ifdef _MSC_VER
   auto exePath = []() {
-    wchar_t moduleFileName[MAX_PATH] = { 0 };
+    wchar_t moduleFileName[MAX_PATH] = {0};
     GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
+    return filesystem::path(moduleFileName);
+  }();
+#elifdef __APPLE__
+  auto exePath = []() {
+    char moduleFileName[PATH_MAX] = {0};
+    uint32_t moduleFileNameSize = std::size(moduleFileName);
+    _NSGetExecutablePath(moduleFileName, &moduleFileNameSize);
     return filesystem::path(moduleFileName);
   }();
 #else
   auto exePath = filesystem::canonical("/proc/self/exe");
 #endif
-  piper::initialize(exePath.parent_path());
 
-  piper::Voice voice;
-  auto startTime = chrono::steady_clock::now();
-  loadVoice(runConfig.modelPath.string(), runConfig.modelConfigPath.string(),
-            voice, runConfig.speakerId);
-  auto endTime = chrono::steady_clock::now();
-  auto loadSeconds = chrono::duration<double>(endTime - startTime).count();
-  cerr << "Load time: " << loadSeconds << " sec" << endl;
+  if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {
+    spdlog::debug("Voice uses eSpeak phonemes ({})",
+                  voice.phonemizeConfig.eSpeak.voice);
+
+    if (runConfig.eSpeakDataPath) {
+      // User provided path
+      piperConfig.eSpeakDataPath = runConfig.eSpeakDataPath.value().string();
+    } else {
+      // Assume next to piper executable
+      piperConfig.eSpeakDataPath =
+          std::filesystem::absolute(
+              exePath.parent_path().append("espeak-ng-data"))
+              .string();
+
+      spdlog::debug("espeak-ng-data directory is expected at {}",
+                    piperConfig.eSpeakDataPath);
+    }
+  } else {
+    // Not using eSpeak
+    piperConfig.useESpeak = false;
+  }
+
+  // Enable libtashkeel for Arabic
+  if (voice.phonemizeConfig.eSpeak.voice == "ar") {
+    piperConfig.useTashkeel = true;
+    if (runConfig.tashkeelModelPath) {
+      // User provided path
+      piperConfig.tashkeelModelPath =
+          runConfig.tashkeelModelPath.value().string();
+    } else {
+      // Assume next to piper executable
+      piperConfig.tashkeelModelPath =
+          std::filesystem::absolute(
+              exePath.parent_path().append("libtashkeel_model.ort"))
+              .string();
+
+      spdlog::debug("libtashkeel model is expected at {}",
+                    piperConfig.tashkeelModelPath.value());
+    }
+  }
+
+  piper::initialize(piperConfig);
 
   // Scales
   if (runConfig.noiseScale) {
@@ -92,36 +169,14 @@ int main(int argc, char *argv[]) {
     voice.synthesisConfig.noiseW = runConfig.noiseW.value();
   }
 
-#ifdef HAVE_PCAUDIO
-  audio_object *my_audio = nullptr;
-
-  if (runConfig.outputType == OUTPUT_PLAY) {
-    // Output audio to the default audio device
-    my_audio = create_audio_device_object(NULL, "piper", "Text-to-Speech");
-
-    // TODO: Support 32-bit sample widths
-    auto audioFormat = AUDIO_OBJECT_FORMAT_S16LE;
-    int error = audio_object_open(my_audio, audioFormat,
-                                  voice.synthesisConfig.sampleRate,
-                                  voice.synthesisConfig.channels);
-    if (error != 0) {
-      throw runtime_error(audio_object_strerror(my_audio, error));
-    }
+  if (runConfig.sentenceSilenceSeconds) {
+    voice.synthesisConfig.sentenceSilenceSeconds =
+        runConfig.sentenceSilenceSeconds.value();
   }
-#else
-  if (runConfig.outputType == OUTPUT_PLAY) {
-    // Cannot play audio directly
-    cerr << "WARNING: Piper was not compiled with pcaudiolib. Output audio "
-            "will be written to the current directory."
-         << endl;
-    runConfig.outputType = OUTPUT_DIRECTORY;
-    runConfig.outputPath = filesystem::path(".");
-  }
-#endif
 
   if (runConfig.outputType == OUTPUT_DIRECTORY) {
     runConfig.outputPath = filesystem::absolute(runConfig.outputPath.value());
-    cerr << "Output directory: " << runConfig.outputPath.value() << endl;
+    spdlog::info("Output directory: {}", runConfig.outputPath.value().string());
   }
 
   string line;
@@ -142,15 +197,23 @@ int main(int argc, char *argv[]) {
 
       // Output audio to automatically-named WAV file in a directory
       ofstream audioFile(outputPath.string(), ios::binary);
-      piper::textToWavFile(voice, line, audioFile, result);
+      piper::textToWavFile(piperConfig, voice, line, audioFile, result);
       cout << outputPath.string() << endl;
     } else if (runConfig.outputType == OUTPUT_FILE) {
+      // Read all of standard input before synthesizing.
+      // Otherwise, we would overwrite the output file for each line.
+      stringstream text;
+      text << line;
+      while (getline(cin, line)) {
+        text << " " << line;
+      }
+
       // Output audio to WAV file
       ofstream audioFile(runConfig.outputPath.value().string(), ios::binary);
-      piper::textToWavFile(voice, line, audioFile, result);
+      piper::textToWavFile(piperConfig, voice, text.str(), audioFile, result);
     } else if (runConfig.outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
-      piper::textToWavFile(voice, line, cout, result);
+      piper::textToWavFile(piperConfig, voice, line, cout, result);
     } else if (runConfig.outputType == OUTPUT_RAW) {
       // Raw output to stdout
       mutex mutAudio;
@@ -174,7 +237,8 @@ int main(int argc, char *argv[]) {
           cvAudio.notify_one();
         }
       };
-      piper::textToAudio(voice, line, audioBuffer, result, audioCallback);
+      piper::textToAudio(piperConfig, voice, line, audioBuffer, result,
+                         audioCallback);
 
       // Signal thread that there is no more audio
       {
@@ -185,64 +249,21 @@ int main(int argc, char *argv[]) {
       }
 
       // Wait for audio output to finish
-      cerr << "Waiting for audio..." << endl;
+      spdlog::info("Waiting for audio to finish playing...");
       rawOutputThread.join();
-    } else if (runConfig.outputType == OUTPUT_PLAY) {
-#ifdef HAVE_PCAUDIO
-      mutex mutAudio;
-      condition_variable cvAudio;
-      bool audioReady = false;
-      bool audioFinished = false;
-      vector<int16_t> audioBuffer;
-      vector<int16_t> sharedAudioBuffer;
-
-      thread playThread(playProc, my_audio, ref(sharedAudioBuffer),
-                        ref(mutAudio), ref(cvAudio), ref(audioReady),
-                        ref(audioFinished));
-      auto audioCallback = [&audioBuffer, &sharedAudioBuffer, &mutAudio,
-                            &cvAudio, &audioReady]() {
-        // Signal thread that audio is ready
-        {
-          unique_lock lockAudio(mutAudio);
-          copy(audioBuffer.begin(), audioBuffer.end(),
-               back_inserter(sharedAudioBuffer));
-          audioReady = true;
-          cvAudio.notify_one();
-        }
-      };
-      piper::textToAudio(voice, line, audioBuffer, result, audioCallback);
-
-      // Signal thread that there is no more audio
-      {
-        unique_lock lockAudio(mutAudio);
-        audioReady = true;
-        audioFinished = true;
-        cvAudio.notify_one();
-      }
-
-      // Wait for audio output to finish
-      cerr << "Waiting for audio..." << endl;
-      playThread.join();
-#else
-      throw runtime_error("Cannot play audio! Not compiled with pcaudiolib.");
-#endif
     }
 
-    cerr << "Real-time factor: " << result.realTimeFactor
-         << " (infer=" << result.inferSeconds
-         << " sec, audio=" << result.audioSeconds << " sec)" << endl;
+    spdlog::info("Real-time factor: {} (infer={} sec, audio={} sec)",
+                 result.realTimeFactor, result.inferSeconds,
+                 result.audioSeconds);
   }
 
-  piper::terminate();
-
-#ifdef HAVE_PCAUDIO
-  audio_object_close(my_audio);
-  audio_object_destroy(my_audio);
-  my_audio = nullptr;
-#endif
+  piper::terminate(piperConfig);
 
   return EXIT_SUCCESS;
 }
+
+// ----------------------------------------------------------------------------
 
 void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
                    condition_variable &cvAudio, bool &audioReady,
@@ -275,42 +296,7 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 
 } // rawOutputProc
 
-#ifdef HAVE_PCAUDIO
-void playProc(audio_object *my_audio, vector<int16_t> &sharedAudioBuffer,
-              mutex &mutAudio, condition_variable &cvAudio, bool &audioReady,
-              bool &audioFinished) {
-  vector<int16_t> internalAudioBuffer;
-  while (true) {
-    {
-      unique_lock lockAudio{mutAudio};
-      cvAudio.wait(lockAudio, [&audioReady] { return audioReady; });
-
-      if (sharedAudioBuffer.empty() && audioFinished) {
-        break;
-      }
-
-      copy(sharedAudioBuffer.begin(), sharedAudioBuffer.end(),
-           back_inserter(internalAudioBuffer));
-
-      sharedAudioBuffer.clear();
-
-      if (!audioFinished) {
-        audioReady = false;
-      }
-    }
-
-    int error =
-        audio_object_write(my_audio, (const char *)internalAudioBuffer.data(),
-                           sizeof(int16_t) * internalAudioBuffer.size());
-    if (error != 0) {
-      throw runtime_error(audio_object_strerror(my_audio, error));
-    }
-    audio_object_flush(my_audio);
-    internalAudioBuffer.clear();
-  }
-
-} // playProc
-#endif
+// ----------------------------------------------------------------------------
 
 void printUsage(char *argv[]) {
   cerr << endl;
@@ -332,11 +318,18 @@ void printUsage(char *argv[]) {
           "becomes available"
        << endl;
   cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
-  cerr << "   --noise-scale           NUM   generator noise (default: 0.667)"
+  cerr << "   --noise_scale           NUM   generator noise (default: 0.667)"
        << endl;
-  cerr << "   --length-scale          NUM   phoneme length (default: 1.0)"
+  cerr << "   --length_scale          NUM   phoneme length (default: 1.0)"
        << endl;
-  cerr << "   --noise-w               NUM   phonene width noise (default: 0.8)"
+  cerr << "   --noise_w               NUM   phoneme width noise (default: 0.8)"
+       << endl;
+  cerr << "   --silence_seconds       NUM   seconds of silence after each "
+          "sentence (default: 0.2)"
+       << endl;
+  cerr << "   --espeak_data           DIR   path to espeak-ng data directory"
+       << endl;
+  cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
   cerr << endl;
 }
@@ -361,7 +354,8 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "-c" || arg == "--config") {
       ensureArg(argc, argv, i);
       modelConfigPath = filesystem::path(argv[++i]);
-    } else if (arg == "-f" || arg == "--output_file") {
+    } else if (arg == "-f" || arg == "--output_file" ||
+               arg == "--output-file") {
       ensureArg(argc, argv, i);
       std::string filePath = argv[++i];
       if (filePath == "-") {
@@ -371,24 +365,36 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
         runConfig.outputType = OUTPUT_FILE;
         runConfig.outputPath = filesystem::path(filePath);
       }
-    } else if (arg == "-d" || arg == "--output_dir") {
+    } else if (arg == "-d" || arg == "--output_dir" || arg == "output-dir") {
       ensureArg(argc, argv, i);
       runConfig.outputType = OUTPUT_DIRECTORY;
       runConfig.outputPath = filesystem::path(argv[++i]);
-    } else if (arg == "--output_raw") {
+    } else if (arg == "--output_raw" || arg == "--output-raw") {
       runConfig.outputType = OUTPUT_RAW;
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
       runConfig.speakerId = (piper::SpeakerId)stol(argv[++i]);
-    } else if (arg == "--noise-scale") {
+    } else if (arg == "--noise_scale" || arg == "--noise-scale") {
       ensureArg(argc, argv, i);
       runConfig.noiseScale = stof(argv[++i]);
-    } else if (arg == "--length-scale") {
+    } else if (arg == "--length_scale" || arg == "--length-scale") {
       ensureArg(argc, argv, i);
       runConfig.lengthScale = stof(argv[++i]);
-    } else if (arg == "--noise-w") {
+    } else if (arg == "--noise_w" || arg == "--noise-w") {
       ensureArg(argc, argv, i);
       runConfig.noiseW = stof(argv[++i]);
+    } else if (arg == "--sentence_silence" || arg == "--sentence-silence") {
+      ensureArg(argc, argv, i);
+      runConfig.sentenceSilenceSeconds = stof(argv[++i]);
+    } else if (arg == "--espeak_data" || arg == "--espeak-data") {
+      ensureArg(argc, argv, i);
+      runConfig.eSpeakDataPath = filesystem::path(argv[++i]);
+    } else if (arg == "--tashkeel_model" || arg == "--tashkeel-model") {
+      ensureArg(argc, argv, i);
+      runConfig.tashkeelModelPath = filesystem::path(argv[++i]);
+    } else if (arg == "--debug") {
+      // Set DEBUG logging
+      spdlog::set_level(spdlog::level::debug);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);

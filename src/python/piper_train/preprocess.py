@@ -6,9 +6,9 @@ import itertools
 import json
 import logging
 import os
+import unicodedata
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
@@ -16,7 +16,15 @@ from typing import Dict, Iterable, List, Optional
 from espeak_phonemizer import Phonemizer
 
 from .norm_audio import cache_norm_audio, make_silence_detector
-from .phonemize import DEFAULT_PHONEME_ID_MAP, phonemes_to_ids, phonemize
+from .phonemize import (
+    ALPHABETS,
+    DEFAULT_PHONEME_ID_MAP,
+    MAX_PHONEMES,
+    PHONEME_MAPS,
+    PhonemeType,
+    phonemes_to_ids,
+    phonemize,
+)
 
 _LOGGER = logging.getLogger("preprocess")
 
@@ -48,6 +56,23 @@ def main() -> None:
     )
     parser.add_argument(
         "--speaker-id", type=int, help="Add speaker id to single speaker dataset"
+    )
+    #
+    parser.add_argument(
+        "--phoneme-type",
+        choices=list(PhonemeType),
+        default=PhonemeType.ESPEAK,
+        help="Type of phonemes to use (default: espeak)",
+    )
+    parser.add_argument(
+        "--text-casing",
+        choices=("ignore", "lower", "upper", "casefold"),
+        default="ignore",
+        help="Casing applied to utterance text",
+    )
+    #
+    parser.add_argument(
+        "--skip-audio", action="store_true", help="Don't preprocess audio"
     )
     parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to the console"
@@ -84,9 +109,9 @@ def main() -> None:
 
     # Count speakers
     _LOGGER.debug("Counting number of speakers/utterances in the dataset")
-    speaker_counts: Counter[str] = Counter()
+    speaker_counts: "Counter[str]" = Counter()
     num_utterances = 0
-    for utt in make_dataset(args.input_dir, args.single_speaker, args.speaker_id):
+    for utt in make_dataset(args):
         speaker = utt.speaker or ""
         speaker_counts[speaker] += 1
         num_utterances += 1
@@ -118,11 +143,12 @@ def main() -> None:
                     "voice": args.language,
                 },
                 "inference": {"noise_scale": 0.667, "length_scale": 1, "noise_w": 0.8},
+                "phoneme_type": str(args.phoneme_type),
                 "phoneme_map": {},
-                "phoneme_id_map": DEFAULT_PHONEME_ID_MAP,
-                "num_symbols": len(
-                    set(itertools.chain.from_iterable(DEFAULT_PHONEME_ID_MAP.values()))
-                ),
+                "phoneme_id_map": ALPHABETS[args.language]
+                if args.phoneme_type == PhonemeType.TEXT
+                else DEFAULT_PHONEME_ID_MAP,
+                "num_symbols": MAX_PHONEMES,
                 "num_speakers": len(speaker_counts),
                 "speaker_id_map": speaker_ids,
             },
@@ -142,8 +168,13 @@ def main() -> None:
     queue_out: "Queue[Optional[Utterance]]" = Queue()
 
     # Start workers
+    if args.phoneme_type == PhonemeType.TEXT:
+        target = phonemize_batch_text
+    else:
+        target = phonemize_batch_espeak
+
     processes = [
-        Process(target=process_batch, args=(args, queue_in, queue_out))
+        Process(target=target, args=(args, queue_in, queue_out))
         for _ in range(args.max_workers)
     ]
     for proc in processes:
@@ -154,26 +185,38 @@ def main() -> None:
     )
     with open(args.output_dir / "dataset.jsonl", "w", encoding="utf-8") as dataset_file:
         for utt_batch in batched(
-            make_dataset(args.input_dir, args.single_speaker, args.speaker_id),
+            make_dataset(args),
             batch_size,
         ):
             queue_in.put(utt_batch)
 
         _LOGGER.debug("Waiting for jobs to finish")
+        missing_phonemes: "Counter[str]" = Counter()
         for _ in range(num_utterances):
             utt = queue_out.get()
             if utt is not None:
                 if utt.speaker is not None:
                     utt.speaker_id = speaker_ids[utt.speaker]
 
+                utt_dict = dataclasses.asdict(utt)
+                utt_dict.pop("missing_phonemes")
+
                 # JSONL
                 json.dump(
-                    dataclasses.asdict(utt),
+                    utt_dict,
                     dataset_file,
                     ensure_ascii=False,
                     cls=PathEncoder,
                 )
                 print("", file=dataset_file)
+
+                missing_phonemes.update(utt.missing_phonemes)
+
+        if missing_phonemes:
+            for phoneme, count in missing_phonemes.most_common():
+                _LOGGER.warning("Missing %s (%s)", phoneme, count)
+
+            _LOGGER.warning("Missing %s phoneme(s)", len(missing_phonemes))
 
     # Signal workers to stop
     for proc in processes:
@@ -187,10 +230,27 @@ def main() -> None:
 # -----------------------------------------------------------------------------
 
 
-def process_batch(args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue):
+def get_text_casing(casing: str):
+    if casing == "lower":
+        return str.lower
+
+    if casing == "upper":
+        return str.upper
+
+    if casing == "casefold":
+        return str.casefold
+
+    return lambda s: s
+
+
+def phonemize_batch_espeak(
+    args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
+):
     try:
+        casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
         phonemizer = Phonemizer(default_voice=args.language)
+        phoneme_map = PHONEME_MAPS.get(args.language)
 
         while True:
             utt_batch = queue_in.get()
@@ -200,14 +260,20 @@ def process_batch(args: argparse.Namespace, queue_in: JoinableQueue, queue_out: 
             for utt in utt_batch:
                 try:
                     _LOGGER.debug(utt)
-                    utt.phonemes = phonemize(utt.text, phonemizer)
-                    utt.phoneme_ids = phonemes_to_ids(utt.phonemes)
-                    utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
-                        utt.audio_path,
-                        args.cache_dir,
-                        silence_detector,
-                        args.sample_rate,
+                    utt.phonemes = phonemize(
+                        casing(utt.text), phonemizer, phoneme_map=phoneme_map
                     )
+                    utt.phoneme_ids = phonemes_to_ids(
+                        utt.phonemes,
+                        missing_phonemes=utt.missing_phonemes,
+                    )
+                    if not args.skip_audio:
+                        utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
+                            utt.audio_path,
+                            args.cache_dir,
+                            silence_detector,
+                            args.sample_rate,
+                        )
                     queue_out.put(utt)
                 except TimeoutError:
                     _LOGGER.error("Skipping utterance due to timeout: %s", utt)
@@ -217,7 +283,48 @@ def process_batch(args: argparse.Namespace, queue_in: JoinableQueue, queue_out: 
 
             queue_in.task_done()
     except Exception:
-        _LOGGER.exception("process_batch")
+        _LOGGER.exception("phonemize_batch_espeak")
+
+
+def phonemize_batch_text(
+    args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
+):
+    try:
+        casing = get_text_casing(args.text_casing)
+        silence_detector = make_silence_detector()
+        alphabet = ALPHABETS[args.language]
+
+        while True:
+            utt_batch = queue_in.get()
+            if utt_batch is None:
+                break
+
+            for utt in utt_batch:
+                try:
+                    _LOGGER.debug(utt)
+                    utt.phonemes = list(unicodedata.normalize("NFD", casing(utt.text)))
+                    utt.phoneme_ids = phonemes_to_ids(
+                        utt.phonemes,
+                        phoneme_id_map=alphabet,
+                        missing_phonemes=utt.missing_phonemes,
+                    )
+                    if not args.skip_audio:
+                        utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
+                            utt.audio_path,
+                            args.cache_dir,
+                            silence_detector,
+                            args.sample_rate,
+                        )
+                    queue_out.put(utt)
+                except TimeoutError:
+                    _LOGGER.error("Skipping utterance due to timeout: %s", utt)
+                except Exception:
+                    _LOGGER.exception("Failed to process utterance: %s", utt)
+                    queue_out.put(None)
+
+            queue_in.task_done()
+    except Exception:
+        _LOGGER.exception("phonemize_batch_text")
 
 
 # -----------------------------------------------------------------------------
@@ -233,6 +340,7 @@ class Utterance:
     phoneme_ids: Optional[List[int]] = None
     audio_norm_path: Optional[Path] = None
     audio_spec_path: Optional[Path] = None
+    missing_phonemes: "Counter[str]" = field(default_factory=Counter)
 
 
 class PathEncoder(json.JSONEncoder):
@@ -242,9 +350,12 @@ class PathEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def ljspeech_dataset(
-    dataset_dir: Path, is_single_speaker: bool, speaker_id: Optional[int] = None
-) -> Iterable[Utterance]:
+def ljspeech_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
+    dataset_dir = args.input_dir
+    is_single_speaker = args.single_speaker
+    speaker_id = args.speaker_id
+    skip_audio = args.skip_audio
+
     # filename|speaker|text
     # speaker is optional
     metadata_path = dataset_dir / "metadata.csv"
@@ -257,7 +368,7 @@ def ljspeech_dataset(
     with open(metadata_path, "r", encoding="utf-8") as csv_file:
         reader = csv.reader(csv_file, delimiter="|")
         for row in reader:
-            assert len(row) >= 2, "Not enough colums"
+            assert len(row) >= 2, "Not enough columns"
 
             speaker: Optional[str] = None
             if is_single_speaker or (len(row) == 2):
@@ -280,18 +391,25 @@ def ljspeech_dataset(
                 # Try with .wav
                 wav_path = wav_dir / f"{filename}.wav"
 
-            if not wav_path.exists():
-                _LOGGER.warning("Missing %s", filename)
-                continue
+            if not skip_audio:
+                if not wav_path.exists():
+                    _LOGGER.warning("Missing %s", filename)
+                    continue
+
+                if wav_path.stat().st_size == 0:
+                    _LOGGER.warning("Empty file: %s", wav_path)
+                    continue
 
             yield Utterance(
                 text=text, audio_path=wav_path, speaker=speaker, speaker_id=speaker_id
             )
 
 
-def mycroft_dataset(
-    dataset_dir: Path, is_single_speaker: bool, speaker_id: Optional[int] = None
-) -> Iterable[Utterance]:
+def mycroft_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
+    dataset_dir = args.input_dir
+    is_single_speaker = args.single_speaker
+    skip_audio = args.skip_audio
+
     speaker_id = 0
     for metadata_path in dataset_dir.glob("**/*-metadata.txt"):
         speaker = metadata_path.parent.name if not is_single_speaker else None
@@ -301,14 +419,14 @@ def mycroft_dataset(
             for row in reader:
                 filename, text = row[0], row[1]
                 wav_path = metadata_path.parent / filename
-                yield Utterance(
-                    text=text,
-                    audio_path=wav_path,
-                    speaker=speaker,
-                    speaker_id=speaker_id if not is_single_speaker else None,
-                )
+                if skip_audio or (wav_path.exists() and (wav_path.stat().st_size > 0)):
+                    yield Utterance(
+                        text=text,
+                        audio_path=wav_path,
+                        speaker=speaker,
+                        speaker_id=speaker_id if not is_single_speaker else None,
+                    )
         speaker_id += 1
-
 
 # -----------------------------------------------------------------------------
 
