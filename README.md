@@ -91,6 +91,8 @@ Piper has been used in the following projects/papers:
 
 See [src/python](src/python)
 
+Pretrained checkpoints are available on [Hugging Face](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main)
+
 Start by installing system dependencies:
 
 ``` sh
