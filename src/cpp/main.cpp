@@ -329,6 +329,9 @@ void printUsage(char *argv[]) {
        << endl;
   cerr << "   --espeak_data           DIR   path to espeak-ng data directory"
        << endl;
+  cerr << "   --tashkeel_model        FILE  path to libtashkeel onnx model "
+          "(arabic)"
+       << endl;
   cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
   cerr << endl;
