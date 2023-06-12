@@ -24,17 +24,7 @@ RUN curl -L "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSIO
 
 RUN mkdir -p "lib/Linux-$(uname -m)"
 
-ARG ONNXRUNTIME_VERSION='1.14.1'
-RUN if [ "${TARGETARCH}${TARGETVARIANT}" = 'amd64' ]; then \
-        ONNXRUNTIME_ARCH='x64'; \
-    else \
-        ONNXRUNTIME_ARCH="$(uname -m)"; \
-    fi && \
-    curl -L "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}.tgz" | \
-        tar -C "lib/Linux-$(uname -m)" -xzvf - && \
-    mv "lib/Linux-$(uname -m)"/onnxruntime-* \
-       "lib/Linux-$(uname -m)/onnxruntime"
-
+# Use pre-compiled Piper phonemization library (includes onnxruntime)
 ARG PIPER_PHONEMIZE_VERSION='1.0.0'
 RUN mkdir -p "lib/Linux-$(uname -m)/piper_phonemize" && \
     curl -L "https://github.com/rhasspy/piper-phonemize/releases/download/v${PIPER_PHONEMIZE_VERSION}/libpiper_phonemize-${TARGETARCH}${TARGETVARIANT}.tar.gz" | \
