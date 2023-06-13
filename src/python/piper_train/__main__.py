@@ -134,7 +134,7 @@ def load_state_dict(model, saved_state_dict):
             new_state_dict[k] = saved_state_dict[k]
         else:
             # Use initialized value
-            _LOGGER.debug("%s is not in the checkpoint for %s", k, key)
+            _LOGGER.debug("%s is not in the checkpoint", k)
             new_state_dict[k] = v
 
     model.load_state_dict(new_state_dict)
