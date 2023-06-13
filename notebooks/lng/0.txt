@@ -23,3 +23,6 @@ Click here to synthesize the text.=
 Exit=
 Closes this GUI.=
 audio history=
+The Use GPU checkbox is checked, but you don't have a GPU runtime.=
+The Use GPU checkbox is unchecked, however you are using a GPU runtime environment. We recommend you check the checkbox to use GPU to take advantage of it.=
+Invalid link or ID!=
