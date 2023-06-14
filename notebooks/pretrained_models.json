@@ -10,6 +10,7 @@
         "thorsten-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/de/de_DE/thorsten/medium/epoch%3D3135-step%3D2702056.ckpt"
     },
     "en-gb": {
+        "alan-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/alan/medium/epoch%3D6339-step%3D1647790.ckpt",
         "northern_english_male-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/northern_english_male/medium/epoch%3D9029-step%3D2261720.ckpt"
     },
     "en-us": {
@@ -19,6 +20,12 @@
     },
     "es": {
         "davefx-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/davefx/medium/epoch%3D5629-step%3D1605020.ckpt"
+    },
+    "fi": {
+        "harri-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fi/fi_FI/harri/medium/epoch%3D3369-step%3D1714630.ckpt"
+    },
+    "fr": {
+        "siwis-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fr/fr_FR/siwis/medium/epoch%3D3304-step%3D2050940.ckpt"
     },
     "ka": {
         "natia-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ka/ka_GE/natia/medium/epoch%3D5239-step%3D1607690.ckpt"
@@ -30,8 +37,11 @@
     "ne": {
         "Google-low": "1yCD88RJlMbXmRLDsiHBYmGnYCQZpZKvG"
     },
+    "nl": {
+        "nathalie-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/nl/nl_NL/nathalie/medium/epoch%3D6119-step%3D1806410.ckpt"
+    },
     "no": {
-        "talesyntese-medium": "1Oy621DHbRVFpmdKVEeXXyOI9l7aTkLFF"
+        "talesyntese-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/no/no_NO/talesyntese/medium/epoch%3D3459-step%3D2052250.ckpt"
     },
     "pl": {
         "gosia-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/pl/pl_PL/gosia/medium/epoch%3D5001-step%3D1457672.ckpt"
