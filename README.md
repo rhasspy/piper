@@ -18,9 +18,7 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
-Download voices from [the release](https://github.com/rhasspy/piper/releases/tag/v0.0.2).
-
-Supported languages:
+[Download voices](https://github.com/rhasspy/piper/releases/tag/v0.0.2) for the supported languages:
 
 * Catalan (ca)
 * Danish (da)
@@ -50,13 +48,12 @@ Supported languages:
 
 Download a release:
 
-* [amd64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_amd64.tar.gz) (desktop Linux)
-* [arm64](https://github.com/rhasspy/piper/releases/download/v0.0.2/piper_arm64.tar.gz) (Raspberry Pi 4)
+* [amd64](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_amd64.tar.gz) (desktop Linux)
+* [arm64](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_arm64.tar.gz) (Raspberry Pi 4)
 
-If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp). Piper depends on a patched `espeak-ng` in [lib](lib), which includes a way to get access to the "terminator" used to end each clause/sentence.
-
-The ONNX runtime is expected in `lib/Linux-$(uname -m)`, so `lib/Linux-x86_64`, etc. You can change this path in `src/cpp/CMakeLists.txt` if necessary.
-Last tested with [onnxruntime](https://github.com/microsoft/onnxruntime) 1.14.1.
+If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp).
+You must download and extract [piper-phonemize](https://github.com/rhasspy/piper-phonemize) to `lib/Linux-$(uname -m)/piper_phonemize` before building.
+For example, `lib/Linux-x86_64/piper_phonemize/lib/libpiper_phonemize.so` should exist for AMD/Intel machines (as well as everything else from `libpiper_phonemize-amd64.tar.gz`).
 
 
 ## Usage
@@ -125,7 +122,7 @@ python3 -m piper_train.preprocess \
   --sample-rate 22050
 ```
 
-Datasets must either be in the [LJSpeech](https://keithito.com/LJ-Speech-Dataset/) format or from [Mimic Recording Studio](https://github.com/MycroftAI/mimic-recording-studio) (`--dataset-format mycroft`).
+Datasets must either be in the [LJSpeech](https://keithito.com/LJ-Speech-Dataset/) format (with only id/text columns or id/speaker/text) or from [Mimic Recording Studio](https://github.com/MycroftAI/mimic-recording-studio) (`--dataset-format mycroft`).
 
 Finally, you can train:
 

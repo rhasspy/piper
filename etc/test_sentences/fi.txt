@@ -1,0 +1,7 @@
+Sateenkaari on spektrin väreissä esiintyvä ilmakehän optinen ilmiö.
+Se syntyy, kun valo taittuu pisaran etupinnasta, heijastuu pisaran takapinnasta ja taittuu jälleen pisaran etupinnasta.
+Koska vesipisara on dispersiivinen, valkoinen valo hajoaa väreiksi muodostaen sateenkaaren.
+Prisman tuottama spektri on valon eri aallonpituuksien tasainen jatkumo ilman kaistoja.
+Ihmissilmä kykenee erottamaan spektristä erikseen joitain satoja eri värejä.
+Tämän mukaisesti Munsellin värisysteemi erottaa 100 eri värisävyä.
+Päävärien näennäinen erillisyys on ihmisen näköjärjestelmän ominaisuus ja päävärien tarkka lukumäärä on jossain määrin vapaavalintainen.
