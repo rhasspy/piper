@@ -55,7 +55,6 @@ If you want to build from source, see the [Makefile](Makefile) and [C++ source](
 You must download and extract [piper-phonemize](https://github.com/rhasspy/piper-phonemize) to `lib/Linux-$(uname -m)/piper_phonemize` before building.
 For example, `lib/Linux-x86_64/piper_phonemize/lib/libpiper_phonemize.so` should exist for AMD/Intel machines (as well as everything else from `libpiper_phonemize-amd64.tar.gz`).
 
-
 ## Usage
 
 1. [Download a voice](#voices) and extract the `.onnx` and `.onnx.json` files
@@ -72,6 +71,34 @@ For multi-speaker models, use `--speaker <number>` to change speakers (default: 
 
 See `piper --help` for more options.
 
+## Installation and Usage with Docker
+
+You can build a Docker image:
+
+```sh
+docker buildx build --target build -t piper:latest .
+```
+
+After building, you can connect to the container, download voices into it and run `piper`:
+
+```sh
+docker run -it --entrypoint bash piper:latest
+
+# run within the container
+cd /dist/piper
+curl -L --output voice-en-us-lessac-medium.tar.gz https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-en-us-lessac-medium.tar.gz
+tar -xvf voice-en-us-lessac-medium.tar.gz
+echo 'Welcome to the world of speech synthesis!' | \
+  ./piper --model en-us-lessac-medium.onnx --output_file welcome.wav
+
+# while the container is running, and in a different terminal, copy the output file to the host
+docker cp $(docker ps -lq):/dist/piper/welcome.wav .
+```
+
+To build the `test` Docker image, you will need these voice files:
+
+* `local/en-us/lessac/low/en-us-lessac-low.onnx`
+* `local/en-us/lessac/low/en-us-lessac-low.onnx.json`
 
 ## People using Piper
 
