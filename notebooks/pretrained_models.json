@@ -15,7 +15,6 @@
     },
     "en-us": {
         "joe_medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/joe/medium/epoch%3D7889-step%3D1221224.ckpt",
-        "lessac-low": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/low/epoch%3D1811-step%3D438504.ckpt",
         "lessac-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/medium/epoch%3D2164-step%3D1355540.ckpt"
     },
     "es": {
@@ -35,7 +34,7 @@
         "raya-low": "11UuZBPqjgn09S4Vkv7yi7_rIp7yB0UCt"
     },
     "ne": {
-        "Google-low": "1yCD88RJlMbXmRLDsiHBYmGnYCQZpZKvG"
+        "Google-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ne/ne_NP/google/medium/epoch%3D2829-step%3D367900.ckpt"
     },
     "nl": {
         "nathalie-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/nl/nl_NL/nathalie/medium/epoch%3D6119-step%3D1806410.ckpt"
