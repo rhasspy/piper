@@ -2,6 +2,14 @@ FROM quay.io/pypa/manylinux_2_28_x86_64 as build-amd64
 
 FROM quay.io/pypa/manylinux_2_28_aarch64 as build-arm64
 
+FROM debian:bullseye as build-armv7
+
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends \
+        build-essential cmake ca-certificates curl pkg-config
+
+# -----------------------------------------------------------------------------
+
 ARG TARGETARCH
 ARG TARGETVARIANT
 FROM build-${TARGETARCH}${TARGETVARIANT} as build
@@ -46,7 +54,7 @@ RUN mkdir -p piper && \
 
 # -----------------------------------------------------------------------------
 
-FROM debian:buster as test
+FROM debian:bullseye as test
 ARG TARGETARCH
 ARG TARGETVARIANT
 
