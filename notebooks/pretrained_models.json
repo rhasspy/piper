@@ -22,7 +22,8 @@
         "lessac-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/medium/epoch%3D2164-step%3D1355540.ckpt"
     },
     "es": {
-        "davefx-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/davefx/medium/epoch%3D5629-step%3D1605020.ckpt"
+        "davefx-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/davefx/medium/epoch%3D5629-step%3D1605020.ckpt",
+        "sharvard-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/sharvard/medium/epoch%3D4899-step%3D215600.ckpt"
     },
     "fi": {
         "harri-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fi/fi_FI/harri/medium/epoch%3D3369-step%3D1714630.ckpt"
