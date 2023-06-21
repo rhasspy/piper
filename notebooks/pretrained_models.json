@@ -3,6 +3,9 @@
         "qasr-low": "1H9y8nlJ3K6_elXsB6YaJKsnbEBYCSF-_",
         "qasr-high": "10xcE_l1DMQorjnQoRcUF7KP2uRgSr11q"
     },
+    "ca": {
+        "upc_ona-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ca/ca_ES/upc_ona/medium/epoch%3D3184-step%3D1641140.ckpt"
+    },
     "da": {
         "nst_talesyntese-medium": "1tqaEGKUnUVV7NtfkZ5Lf6qkMBfyUx661"
     },
@@ -15,11 +18,13 @@
         "northern_english_male-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/northern_english_male/medium/epoch%3D9029-step%3D2261720.ckpt"
     },
     "en-us": {
+        "amy_medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/amy/medium/epoch%3D6679-step%3D1554200.ckpt",
         "arctic_medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/arctic/medium/epoch%3D663-step%3D646736.ckpt",
         "joe_medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/joe/medium/epoch%3D7889-step%3D1221224.ckpt",
         "kusal_medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/kusal/medium/epoch%3D2652-step%3D1953828.ckpt",
         "l2arctic_medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/blob/main/en/en_US/l2arctic/medium/epoch%3D536-step%3D902160.ckpt",
-        "lessac-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/medium/epoch%3D2164-step%3D1355540.ckpt"
+        "lessac-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/medium/epoch%3D2164-step%3D1355540.ckpt",
+        "Ryan-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/ryan/medium/epoch%3D4641-step%3D3104302.ckpt"
     },
     "es": {
         "davefx-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/davefx/medium/epoch%3D5629-step%3D1605020.ckpt",
