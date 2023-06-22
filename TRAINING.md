@@ -170,6 +170,8 @@ python3 -m piper_train \
     --precision 32
 ```
 
+Use `--quality high` to train a [larger voice model](https://github.com/rhasspy/piper/blob/master/src/python/piper_train/vits/config.py#L45) (sounds better, but is much slower).
+
 You can adjust the validation split (5% = 0.05) and number of test examples for your specific dataset. For fine-tuning, they are often set to 0 because the target dataset is very small.
 
 Batch size can be tricky to get right. It depends on the size of your GPU's vRAM, the model's quality/size, and the length of the longest sentence in your dataset. The `--max-phoneme-ids <N>` argument to `piper_train` will drop sentences that have more than `N` phoneme ids. In practice, using `--batch-size 32` and `--max-phoneme-ids 400` will work for 24 GB of vRAM (RTX 3090/4090).
