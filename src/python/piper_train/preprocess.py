@@ -143,7 +143,7 @@ def main() -> None:
                     "voice": args.language,
                 },
                 "inference": {"noise_scale": 0.667, "length_scale": 1, "noise_w": 0.8},
-                "phoneme_type": str(args.phoneme_type),
+                "phoneme_type": args.phoneme_type.value,
                 "phoneme_map": {},
                 "phoneme_id_map": ALPHABETS[args.language]
                 if args.phoneme_type == PhonemeType.TEXT
@@ -427,6 +427,7 @@ def mycroft_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
                         speaker_id=speaker_id if not is_single_speaker else None,
                     )
         speaker_id += 1
+
 
 # -----------------------------------------------------------------------------
 
