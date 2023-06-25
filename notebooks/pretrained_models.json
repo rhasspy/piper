@@ -35,6 +35,9 @@
         "davefx-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/davefx/medium/epoch%3D5629-step%3D1605020.ckpt",
         "sharvard-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_ES/sharvard/medium/epoch%3D4899-step%3D215600.ckpt"
     },
+    "es-419": {
+        "aldo-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/es/es_MX/ald/medium/epoch%3D9999-step%3D1753600.ckpt"
+    },
     "fi": {
         "harri-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fi/fi_FI/harri/medium/epoch%3D3369-step%3D1714630.ckpt"
     },
@@ -64,7 +67,13 @@
         "faber-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/pt/pt_BR/faber/medium/epoch%3D6159-step%3D1230728.ckpt"
     },
     "ru": {
-        "dmitri-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/dmitri/medium/epoch%3D5589-step%3D1478840.ckpt"
+        "denis-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/denis/medium/epoch%3D4474-step%3D1521860.ckpt",
+        "dmitri-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/dmitri/medium/epoch%3D5589-step%3D1478840.ckpt",
+        "irina-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/irina/medium/epoch%3D4139-step%3D929464.ckpt",
+        "ruslan-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ru/ru_RU/ruslan/medium/epoch%3D2436-step%3D1724372.ckpt"
+    },
+    "sw": {
+        "lanfrica-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/sw/sw_CD/lanfrica/medium/epoch%3D2619-step%3D1635820.ckpt"
     },
     "uk": {
         "ukrainian_tts-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/uk/uk_UK/ukrainian_tts/medium/epoch%3D2090-step%3D1166778.ckpt"
