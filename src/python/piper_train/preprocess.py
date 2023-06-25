@@ -26,6 +26,8 @@ from .phonemize import (
     phonemize,
 )
 
+_DIR = Path(__file__).parent
+_VERSION = (_DIR / "VERSION").read_text(encoding="utf-8").strip()
 _LOGGER = logging.getLogger("preprocess")
 
 
@@ -151,6 +153,7 @@ def main() -> None:
                 "num_symbols": MAX_PHONEMES,
                 "num_speakers": len(speaker_counts),
                 "speaker_id_map": speaker_ids,
+                "piper_version": _VERSION,
             },
             config_file,
             ensure_ascii=False,
