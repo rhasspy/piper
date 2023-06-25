@@ -67,6 +67,14 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     for (auto &fromPhonemeItem : phonemeIdMapValue.items()) {
       std::string fromPhoneme = fromPhonemeItem.key();
       if (!isSingleCodepoint(fromPhoneme)) {
+        std::stringstream idsStr;
+        for (auto &toIdValue : fromPhonemeItem.value()) {
+          PhonemeId toId = toIdValue.get<PhonemeId>();
+          idsStr << toId << ",";
+        }
+
+        spdlog::error("\"{}\" is not a single codepoint (ids={})", fromPhoneme,
+                      idsStr.str());
         throw std::runtime_error(
             "Phonemes must be one codepoint (phoneme id map)");
       }
@@ -90,6 +98,7 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     for (auto &fromPhonemeItem : phonemeMapValue.items()) {
       std::string fromPhoneme = fromPhonemeItem.key();
       if (!isSingleCodepoint(fromPhoneme)) {
+        spdlog::error("\"{}\" is not a single codepoint", fromPhoneme);
         throw std::runtime_error(
             "Phonemes must be one codepoint (phoneme map)");
       }
