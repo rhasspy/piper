@@ -88,80 +88,9 @@ Piper has been used in the following projects/papers:
 
 ## Training
 
-See [src/python](src/python)
+See the [training guide](TRAINING.md) and the [source code](src/python).
 
 Pretrained checkpoints are available on [Hugging Face](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main)
-
-Start by installing system dependencies:
-
-``` sh
-sudo apt-get install python3-dev
-```
-
-Then create a virtual environment:
-
-``` sh
-cd piper/src/python
-python3 -m venv .venv
-source .venv/bin/activate
-pip3 install --upgrade pip
-pip3 install --upgrade wheel setuptools
-pip3 install -r requirements.txt
-```
-
-Run the `build_monotonic_align.sh` script in the `src/python` directory to build the extension.
-
-Ensure you have [espeak-ng](https://github.com/espeak-ng/espeak-ng/) installed (`sudo apt-get install espeak-ng`).
-
-Next, preprocess your dataset:
-
-``` sh
-python3 -m piper_train.preprocess \
-  --language en-us \
-  --input-dir /path/to/ljspeech/ \
-  --output-dir /path/to/training_dir/ \
-  --dataset-format ljspeech \
-  --sample-rate 22050
-```
-
-Datasets must either be in the [LJSpeech](https://keithito.com/LJ-Speech-Dataset/) format (with only id/text columns or id/speaker/text) or from [Mimic Recording Studio](https://github.com/MycroftAI/mimic-recording-studio) (`--dataset-format mycroft`).
-
-Finally, you can train:
-
-``` sh
-python3 -m piper_train \
-    --dataset-dir /path/to/training_dir/ \
-    --accelerator 'gpu' \
-    --devices 1 \
-    --batch-size 32 \
-    --validation-split 0.05 \
-    --num-test-examples 5 \
-    --max_epochs 10000 \
-    --precision 32
-```
-
-Training uses [PyTorch Lightning](https://www.pytorchlightning.ai/). Run `tensorboard --logdir /path/to/training_dir/lightning_logs` to monitor. See `python3 -m piper_train --help` for many additional options.
-
-It is highly recommended to train with the following `Dockerfile`:
-
-``` dockerfile
-FROM nvcr.io/nvidia/pytorch:22.03-py3
-
-RUN pip3 install \
-    'pytorch-lightning'
-
-ENV NUMBA_CACHE_DIR=.numba_cache
-```
-
-See the various `infer_*` and `export_*` scripts in [src/python/piper_train](src/python/piper_train) to test and export your voice from the checkpoint in `lightning_logs`. The `dataset.jsonl` file in your training directory can be used with `python3 -m piper_train.infer` for quick testing:
-
-``` sh
-head -n5 /path/to/training_dir/dataset.jsonl | \
-  python3 -m piper_train.infer \
-    --checkpoint lightning_logs/path/to/checkpoint.ckpt \
-    --sample-rate 22050 \
-    --output-dir wavs
-```
 
 
 ## Running in Python
