@@ -67,6 +67,14 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     for (auto &fromPhonemeItem : phonemeIdMapValue.items()) {
       std::string fromPhoneme = fromPhonemeItem.key();
       if (!isSingleCodepoint(fromPhoneme)) {
+        std::stringstream idsStr;
+        for (auto &toIdValue : fromPhonemeItem.value()) {
+          PhonemeId toId = toIdValue.get<PhonemeId>();
+          idsStr << toId << ",";
+        }
+
+        spdlog::error("\"{}\" is not a single codepoint (ids={})", fromPhoneme,
+                      idsStr.str());
         throw std::runtime_error(
             "Phonemes must be one codepoint (phoneme id map)");
       }
@@ -90,6 +98,7 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     for (auto &fromPhonemeItem : phonemeMapValue.items()) {
       std::string fromPhoneme = fromPhonemeItem.key();
       if (!isSingleCodepoint(fromPhoneme)) {
+        spdlog::error("\"{}\" is not a single codepoint", fromPhoneme);
         throw std::runtime_error(
             "Phonemes must be one codepoint (phoneme map)");
       }
@@ -424,19 +433,10 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
     SynthesisResult sentenceResult;
 
+    // Use phoneme/id map from config
     PhonemeIdConfig idConfig;
-    if (voice.phonemizeConfig.phonemeType == TextPhonemes) {
-      auto &language = voice.phonemizeConfig.eSpeak.voice;
-      spdlog::debug("Text phoneme language: {}", language);
-      if (DEFAULT_ALPHABET.count(language) < 1) {
-        throw std::runtime_error(
-            "Text phoneme language for voice is not supported");
-      }
-
-      // Use alphabet for language
-      idConfig.phonemeIdMap =
-          std::make_shared<PhonemeIdMap>(DEFAULT_ALPHABET[language]);
-    }
+    idConfig.phonemeIdMap =
+        std::make_shared<PhonemeIdMap>(voice.phonemizeConfig.phonemeIdMap);
 
     // phonemes -> ids
     phonemes_to_ids(sentencePhonemes, idConfig, phonemeIds, missingPhonemes);
