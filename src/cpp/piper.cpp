@@ -433,19 +433,10 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
     SynthesisResult sentenceResult;
 
+    // Use phoneme/id map from config
     PhonemeIdConfig idConfig;
-    if (voice.phonemizeConfig.phonemeType == TextPhonemes) {
-      auto &language = voice.phonemizeConfig.eSpeak.voice;
-      spdlog::debug("Text phoneme language: {}", language);
-      if (DEFAULT_ALPHABET.count(language) < 1) {
-        throw std::runtime_error(
-            "Text phoneme language for voice is not supported");
-      }
-
-      // Use alphabet for language
-      idConfig.phonemeIdMap =
-          std::make_shared<PhonemeIdMap>(DEFAULT_ALPHABET[language]);
-    }
+    idConfig.phonemeIdMap =
+        std::make_shared<PhonemeIdMap>(voice.phonemizeConfig.phonemeIdMap);
 
     // phonemes -> ids
     phonemes_to_ids(sentencePhonemes, idConfig, phonemeIds, missingPhonemes);
