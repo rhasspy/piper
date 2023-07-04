@@ -87,7 +87,7 @@ class Piper:
             dtype=np.float32,
         )
 
-        if (self.config.num_speakers > 1) and (speaker_id is not None):
+        if (self.config.num_speakers > 1) and (speaker_id is None):
             # Default speaker
             speaker_id = 0
 
