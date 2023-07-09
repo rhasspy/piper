@@ -9,6 +9,7 @@
 #include <onnxruntime_cxx_api.h>
 #include <spdlog/spdlog.h>
 
+#include "json.hpp"
 #include "piper.hpp"
 #include "utf8.h"
 #include "wavfile.hpp"

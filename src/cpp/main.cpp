@@ -24,9 +24,11 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include "json.hpp"
 #include "piper.hpp"
 
 using namespace std;
+using json = nlohmann::json;
 
 enum OutputType { OUTPUT_FILE, OUTPUT_DIRECTORY, OUTPUT_STDOUT, OUTPUT_RAW };
 
@@ -65,6 +67,14 @@ struct RunConfig {
   // Path to libtashkeel ort model
   // https://github.com/mush42/libtashkeel/
   optional<filesystem::path> tashkeelModelPath;
+
+  // stdin input is lines of JSON instead of text with format:
+  // {
+  //   "text": "...",             (required)
+  //   "speaker_id": int,         (optional)
+  //   "output_file": "...",      (optional)
+  // }
+  bool jsonInput = false;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -182,39 +192,69 @@ int main(int argc, char *argv[]) {
   string line;
   piper::SynthesisResult result;
   while (getline(cin, line)) {
+    auto outputType = runConfig.outputType;
+    auto speakerId = voice.synthesisConfig.speakerId;
+    std::optional<filesystem::path> outputPath;
 
-    // Path to output WAV file
+    if (runConfig.jsonInput) {
+      // Each line is a JSON object
+      json lineRoot = json::parse(line);
+
+      // Text is required
+      line = lineRoot["text"].get<std::string>();
+
+      if (lineRoot.contains("output_file")) {
+        // Override output WAV file path
+        outputType = OUTPUT_FILE;
+        outputPath =
+            filesystem::path(lineRoot["output_file"].get<std::string>());
+      }
+
+      if (lineRoot.contains("speaker_id")) {
+        // Override speaker id
+        voice.synthesisConfig.speakerId =
+            lineRoot["speaker_id"].get<piper::SpeakerId>();
+      }
+    }
+
+    // Timestamp is used for path to output WAV file
     const auto now = chrono::system_clock::now();
     const auto timestamp =
         chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
             .count();
 
-    if (runConfig.outputType == OUTPUT_DIRECTORY) {
+    if (outputType == OUTPUT_DIRECTORY) {
+      // Generate path using timestamp
       stringstream outputName;
       outputName << timestamp << ".wav";
-      filesystem::path outputPath = runConfig.outputPath.value();
-      outputPath.append(outputName.str());
+      outputPath = runConfig.outputPath.value();
+      outputPath->append(outputName.str());
 
       // Output audio to automatically-named WAV file in a directory
-      ofstream audioFile(outputPath.string(), ios::binary);
+      ofstream audioFile(outputPath->string(), ios::binary);
       piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath.string() << endl;
-    } else if (runConfig.outputType == OUTPUT_FILE) {
-      // Read all of standard input before synthesizing.
-      // Otherwise, we would overwrite the output file for each line.
-      stringstream text;
-      text << line;
-      while (getline(cin, line)) {
-        text << " " << line;
+      cout << outputPath->string() << endl;
+    } else if (outputType == OUTPUT_FILE) {
+      if (!runConfig.jsonInput) {
+        // Read all of standard input before synthesizing.
+        // Otherwise, we would overwrite the output file for each line.
+        stringstream text;
+        text << line;
+        while (getline(cin, line)) {
+          text << " " << line;
+        }
+
+        line = text.str();
       }
 
       // Output audio to WAV file
-      ofstream audioFile(runConfig.outputPath.value().string(), ios::binary);
-      piper::textToWavFile(piperConfig, voice, text.str(), audioFile, result);
-    } else if (runConfig.outputType == OUTPUT_STDOUT) {
+      ofstream audioFile(outputPath->string(), ios::binary);
+      piper::textToWavFile(piperConfig, voice, line, audioFile, result);
+      cout << outputPath->string() << endl;
+    } else if (outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
       piper::textToWavFile(piperConfig, voice, line, cout, result);
-    } else if (runConfig.outputType == OUTPUT_RAW) {
+    } else if (outputType == OUTPUT_RAW) {
       // Raw output to stdout
       mutex mutAudio;
       condition_variable cvAudio;
@@ -256,7 +296,11 @@ int main(int argc, char *argv[]) {
     spdlog::info("Real-time factor: {} (infer={} sec, audio={} sec)",
                  result.realTimeFactor, result.inferSeconds,
                  result.audioSeconds);
-  }
+
+    // Restore config (--json-input)
+    voice.synthesisConfig.speakerId = speakerId;
+
+  } // for each line
 
   piper::terminate(piperConfig);
 
@@ -332,6 +376,9 @@ void printUsage(char *argv[]) {
   cerr << "   --tashkeel_model        FILE  path to libtashkeel onnx model "
           "(arabic)"
        << endl;
+  cerr << "   --json-input                  stdin input is lines of JSON "
+          "instead of plain text"
+       << endl;
   cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
   cerr << endl;
@@ -395,6 +442,8 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--tashkeel_model" || arg == "--tashkeel-model") {
       ensureArg(argc, argv, i);
       runConfig.tashkeelModelPath = filesystem::path(argv[++i]);
+    } else if (arg == "--json_input" || arg == "--json-input") {
+      runConfig.jsonInput = true;
     } else if (arg == "--debug") {
       // Set DEBUG logging
       spdlog::set_level(spdlog::level::debug);

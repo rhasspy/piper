@@ -92,6 +92,9 @@ def main() -> None:
     # Prevent log spam
     logging.getLogger("numba").setLevel(logging.WARNING)
 
+    # Ensure enum
+    args.phoneme_type = PhonemeType(args.phoneme_type)
+
     # Convert to paths and create output directories
     args.input_dir = Path(args.input_dir)
     args.output_dir = Path(args.output_dir)
