@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
   while (getline(cin, line)) {
     auto outputType = runConfig.outputType;
     auto speakerId = voice.synthesisConfig.speakerId;
-    std::optional<filesystem::path> outputPath;
+    std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
 
     if (runConfig.jsonInput) {
       // Each line is a JSON object
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
       if (lineRoot.contains("output_file")) {
         // Override output WAV file path
         outputType = OUTPUT_FILE;
-        outputPath =
+        maybeOutputPath =
             filesystem::path(lineRoot["output_file"].get<std::string>());
       }
 
@@ -238,14 +238,20 @@ int main(int argc, char *argv[]) {
       // Generate path using timestamp
       stringstream outputName;
       outputName << timestamp << ".wav";
-      outputPath = runConfig.outputPath.value();
-      outputPath->append(outputName.str());
+      filesystem::path outputPath = runConfig.outputPath.value();
+      outputPath.append(outputName.str());
 
       // Output audio to automatically-named WAV file in a directory
-      ofstream audioFile(outputPath->string(), ios::binary);
+      ofstream audioFile(outputPath.string(), ios::binary);
       piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath->string() << endl;
+      cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_FILE) {
+      if (!maybeOutputPath || maybeOutputPath->empty()) {
+        throw runtime_error("No output path provided");
+      }
+
+      filesystem::path outputPath = maybeOutputPath.value();
+
       if (!runConfig.jsonInput) {
         // Read all of standard input before synthesizing.
         // Otherwise, we would overwrite the output file for each line.
@@ -259,9 +265,9 @@ int main(int argc, char *argv[]) {
       }
 
       // Output audio to WAV file
-      ofstream audioFile(outputPath->string(), ios::binary);
+      ofstream audioFile(outputPath.string(), ios::binary);
       piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath->string() << endl;
+      cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
       piper::textToWavFile(piperConfig, voice, line, cout, result);
