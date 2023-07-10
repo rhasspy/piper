@@ -70,9 +70,10 @@ struct RunConfig {
 
   // stdin input is lines of JSON instead of text with format:
   // {
-  //   "text": "...",             (required)
+  //   "text": str,               (required)
   //   "speaker_id": int,         (optional)
-  //   "output_file": "...",      (optional)
+  //   "speaker": str,            (optional)
+  //   "output_file": str,        (optional)
   // }
   bool jsonInput = false;
 };
@@ -454,6 +455,9 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.tashkeelModelPath = filesystem::path(argv[++i]);
     } else if (arg == "--json_input" || arg == "--json-input") {
       runConfig.jsonInput = true;
+    } else if (arg == "--version") {
+      std::cout << piper::getVersion() << std::endl;
+      exit(0);
     } else if (arg == "--debug") {
       // Set DEBUG logging
       spdlog::set_level(spdlog::level::debug);

@@ -18,30 +18,31 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
-[Download voices](https://github.com/rhasspy/piper/releases/tag/v0.0.2) for the supported languages:
+[Download voices](https://huggingface.co/rhasspy/piper-voices/tree/main) for the supported languages:
 
-* Catalan (ca)
-* Danish (da)
-* German (de)
-* British English (en-gb)
-* U.S. English (en-us)
-* Spanish (es)
-* Finnish (fi)
-* French (fr)
-* Greek (el-gr)
-* Icelandic (is)
-* Italian (it)
-* Kazakh (kk)
-* Nepali (ne)
-* Dutch (nl)
-* Norwegian (no)
-* Polish (pl)
-* Brazilian Portuguese (pt-br)
-* Russian (ru)
-* Swedish (sv-se)
-* Ukrainian (uk)
-* Vietnamese (vi)
-* Chinese (zh-cn)
+* Catalan (ca_ES)
+* Danish (da_DK)
+* German (de_DE)
+* English (en_GB, en_US)
+* Spanish (es_ES, es_MX)
+* Finnish (fi_FI)
+* French (fr_FR)
+* Greek (el_GR)
+* Icelandic (is_IS)
+* Italian (it_IT)
+* Georgian (ka_GE)
+* Kazakh (kk_KZ)
+* Nepali (ne_NP)
+* Dutch (nl_BE, nl_NL)
+* Norwegian (no_NO)
+* Polish (pl_PL)
+* Portuguese (pt_BR)
+* Russian (ru_RU)
+* Swedish (sv_SE)
+* Swahili (sw_CD)
+* Ukrainian (uk_UA)
+* Vietnamese (vi_VN)
+* Chinese (zh_CN)
 
 
 ## Installation
@@ -72,6 +73,32 @@ echo 'Welcome to the world of speech synthesis!' | \
 For multi-speaker models, use `--speaker <number>` to change speakers (default: 0).
 
 See `piper --help` for more options.
+
+
+### JSON Input
+
+The `piper` executable can accept JSON input when using the `--json-input` flag. Each line of input must be a JSON object with `text` field. For example:
+
+``` json
+{ "text": "First sentence to speak." }
+{ "text": "Second sentence to speak." }
+```
+
+Optional fields include:
+
+* `speaker` - string
+    * Name of the speaker to use from `speaker_id_map` in config (multi-speaker voices only)
+* `speaker_id` - number
+    * Id of speaker to use from 0 to number of speakers - 1 (multi-speaker voices only, overrides "speaker")
+* `output_file` - string
+    * Path to output WAV file
+    
+The following example writes two sentences with different speakers to different files:
+
+``` json
+{ "text": "First speaker.", "speaker_id": 0, "output_file": "/tmp/speaker_0.wav" }
+{ "text": "Second speaker.", "speaker_id": 1, "output_file": "/tmp/speaker_1.wav" }
+```
 
 
 ## People using Piper

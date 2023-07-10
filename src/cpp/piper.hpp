@@ -89,6 +89,9 @@ struct Voice {
   ModelSession session;
 };
 
+// Get version of Piper
+std::string getVersion();
+
 // Must be called before using textTo* functions
 void initialize(PiperConfig &config);
 

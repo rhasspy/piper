@@ -16,10 +16,23 @@
 
 namespace piper {
 
+#ifdef _PIPER_VERSION
+// https://stackoverflow.com/questions/47346133/how-to-use-a-define-inside-a-format-string
+#define _STR(x) #x
+#define STR(x) _STR(x)
+const std::string VERSION = STR(_PIPER_VERSION);
+#else
+const std::string VERSION = "";
+#endif
+
 // Maximum value for 16-bit signed WAV sample
 const float MAX_WAV_VALUE = 32767.0f;
 
 const std::string instanceName{"piper"};
+
+std::string getVersion() {
+  return VERSION;
+}
 
 // True if the string is a single UTF-8 codepoint
 bool isSingleCodepoint(std::string s) {

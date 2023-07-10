@@ -1,6 +1,7 @@
 .PHONY: piper clean
 
 LIB_DIR := lib/Linux-$(shell uname -m)
+VERSION := $(cat VERSION)
 
 piper:
 	mkdir -p build

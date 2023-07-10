@@ -5,6 +5,8 @@ project(piper C CXX)
 find_package(PkgConfig)
 pkg_check_modules(SPDLOG REQUIRED spdlog)
 
+file(READ "${CMAKE_CURRENT_LIST_DIR}/../../VERSION" piper_version)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -35,3 +37,5 @@ target_include_directories(piper PUBLIC
 
 target_compile_options(piper PUBLIC
                        ${SPDLOG_CFLAGS_OTHER})
+
+target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
