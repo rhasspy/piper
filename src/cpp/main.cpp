@@ -214,6 +214,16 @@ int main(int argc, char *argv[]) {
         // Override speaker id
         voice.synthesisConfig.speakerId =
             lineRoot["speaker_id"].get<piper::SpeakerId>();
+      } else if (lineRoot.contains("speaker")) {
+        // Resolve to id using speaker id map
+        auto speakerName = lineRoot["speaker"].get<std::string>();
+        if ((voice.modelConfig.speakerIdMap) &&
+            (voice.modelConfig.speakerIdMap->count(speakerName) > 0)) {
+          voice.synthesisConfig.speakerId =
+              (*voice.modelConfig.speakerIdMap)[speakerName];
+        } else {
+          spdlog::warn("No speaker named: {}", speakerName);
+        }
       }
     }
 

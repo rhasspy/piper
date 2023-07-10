@@ -163,6 +163,19 @@ void parseModelConfig(json &configRoot, ModelConfig &modelConfig) {
 
   modelConfig.numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
 
+  if (configRoot.contains("speaker_id_map")) {
+    if (!modelConfig.speakerIdMap) {
+      modelConfig.speakerIdMap.emplace();
+    }
+
+    auto speakerIdMapValue = configRoot["speaker_id_map"];
+    for (auto &speakerItem : speakerIdMapValue.items()) {
+      std::string speakerName = speakerItem.key();
+      (*modelConfig.speakerIdMap)[speakerName] =
+          speakerItem.value().get<SpeakerId>();
+    }
+  }
+
 } /* parseModelConfig */
 
 void initialize(PiperConfig &config) {

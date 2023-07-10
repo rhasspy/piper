@@ -61,6 +61,9 @@ struct SynthesisConfig {
 
 struct ModelConfig {
   int numSpeakers;
+
+  // speaker name -> id
+  std::optional<std::map<std::string, SpeakerId>> speakerIdMap;
 };
 
 struct ModelSession {
