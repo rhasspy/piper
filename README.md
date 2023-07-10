@@ -118,7 +118,7 @@ Piper has been used in the following projects/papers:
 * [Image Captioning for the Visually Impaired and Blind: A Recipe for Low-Resource Languages](https://www.techrxiv.org/articles/preprint/Image_Captioning_for_the_Visually_Impaired_and_Blind_A_Recipe_for_Low-Resource_Languages/22133894)
 * [Open Voice Operating System](https://github.com/OpenVoiceOS/ovos-tts-plugin-piper)
 * [JetsonGPT](https://github.com/shahizat/jetsonGPT)
-
+* [LocalAI](https://github.com/go-skynet/LocalAI)
 
 ## Training
 
