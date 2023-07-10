@@ -18,7 +18,7 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
-[Download voices](https://huggingface.co/rhasspy/piper-voices/tree/main) for the supported languages:
+[Download voices](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) for the supported languages:
 
 * Catalan (ca_ES)
 * Danish (da_DK)
@@ -44,14 +44,21 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Vietnamese (vi_VN)
 * Chinese (zh_CN)
 
+You will need two files per voice:
+
+1. A `.onnx` model file, such as [`en_US-lessac-medium.onnx`](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx)
+2. A `.onnx.json` config file, such as [`en_US-lessac-medium.onnx.json`](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json)
+
+The `MODEL_CARD` file for each voice contains important licensing information. Piper is intended for text to speech research, and does not impose any additional restrictions on voice models. Some voices may have restrictive licenses, however, so please review them carefully!
+
 
 ## Installation
 
 Download a release:
 
-* [amd64](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_amd64.tar.gz) (64-bit desktop Linux)
-* [arm64](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
-* [armv7](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_armv7.tar.gz) (32-bit Raspberry Pi 3/4)
+* [amd64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_amd64.tar.gz) (64-bit desktop Linux)
+* [arm64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
+* [armv7](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_armv7.tar.gz) (32-bit Raspberry Pi 3/4)
 
 If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp).
 You must download and extract [piper-phonemize](https://github.com/rhasspy/piper-phonemize) to `lib/Linux-$(uname -m)/piper_phonemize` before building.
@@ -67,7 +74,7 @@ For example:
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./piper --model en-us-lessac-medium.onnx --output_file welcome.wav
+  ./piper --model en_US-lessac-medium.onnx --output_file welcome.wav
 ```
 
 For multi-speaker models, use `--speaker <number>` to change speakers (default: 0).
