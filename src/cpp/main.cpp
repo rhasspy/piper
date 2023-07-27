@@ -385,7 +385,7 @@ void printUsage(char *argv[]) {
        << endl;
   cerr << "   --noise_w               NUM   phoneme width noise (default: 0.8)"
        << endl;
-  cerr << "   --silence_seconds       NUM   seconds of silence after each "
+  cerr << "   --sentence_silence      NUM   seconds of silence after each "
           "sentence (default: 0.2)"
        << endl;
   cerr << "   --espeak_data           DIR   path to espeak-ng data directory"
