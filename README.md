@@ -5,7 +5,7 @@ Piper is used in a [variety of projects](#people-using-piper).
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./piper --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
+  ./piper --model en_US-lessac-medium.onnx --output_file welcome.wav
 ```
 
 [Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a [video tutorial by Thorsten Müller](https://youtu.be/rjq5eZoWWSo)
@@ -54,7 +54,7 @@ The `MODEL_CARD` file for each voice contains important licensing information. P
 
 ## Installation
 
-Download a release:
+You can [run Piper with Python](#running-in-python) or download a binary release:
 
 * [amd64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_amd64.tar.gz) (64-bit desktop Linux)
 * [arm64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
@@ -131,13 +131,21 @@ Pretrained checkpoints are available on [Hugging Face](https://huggingface.co/da
 
 See [src/python_run](src/python_run)
 
-Run `scripts/setup.sh` to create a virtual environment and install the requirements. Then run:
+Install with `pip`:
 
 ``` sh
-echo 'Welcome to the world of speech synthesis!' | scripts/piper \
-  --model /path/to/voice.onnx \
+pip install piper-tts
+```
+
+and then run:
+
+``` sh
+echo 'Welcome to the world of speech synthesis!' | piper \
+  --model en_US-lessac-medium \
   --output_file welcome.wav
 ```
+
+This will automatically download [voice files](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) the first time they're used. Use `--data-dir` and `--download-dir` to adjust where voices are found/downloaded.
 
 If you'd like to use a GPU, install the `onnxruntime-gpu` package:
 
@@ -146,5 +154,5 @@ If you'd like to use a GPU, install the `onnxruntime-gpu` package:
 .venv/bin/pip3 install onnxruntime-gpu
 ```
 
-and then run `scripts/piper` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
+and then run `piper` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
 
