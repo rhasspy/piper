@@ -70,9 +70,10 @@ struct RunConfig {
 
   // stdin input is lines of JSON instead of text with format:
   // {
-  //   "text": "...",             (required)
+  //   "text": str,               (required)
   //   "speaker_id": int,         (optional)
-  //   "output_file": "...",      (optional)
+  //   "speaker": str,            (optional)
+  //   "output_file": str,        (optional)
   // }
   bool jsonInput = false;
 };
@@ -194,7 +195,7 @@ int main(int argc, char *argv[]) {
   while (getline(cin, line)) {
     auto outputType = runConfig.outputType;
     auto speakerId = voice.synthesisConfig.speakerId;
-    std::optional<filesystem::path> outputPath;
+    std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
 
     if (runConfig.jsonInput) {
       // Each line is a JSON object
@@ -206,7 +207,7 @@ int main(int argc, char *argv[]) {
       if (lineRoot.contains("output_file")) {
         // Override output WAV file path
         outputType = OUTPUT_FILE;
-        outputPath =
+        maybeOutputPath =
             filesystem::path(lineRoot["output_file"].get<std::string>());
       }
 
@@ -214,6 +215,16 @@ int main(int argc, char *argv[]) {
         // Override speaker id
         voice.synthesisConfig.speakerId =
             lineRoot["speaker_id"].get<piper::SpeakerId>();
+      } else if (lineRoot.contains("speaker")) {
+        // Resolve to id using speaker id map
+        auto speakerName = lineRoot["speaker"].get<std::string>();
+        if ((voice.modelConfig.speakerIdMap) &&
+            (voice.modelConfig.speakerIdMap->count(speakerName) > 0)) {
+          voice.synthesisConfig.speakerId =
+              (*voice.modelConfig.speakerIdMap)[speakerName];
+        } else {
+          spdlog::warn("No speaker named: {}", speakerName);
+        }
       }
     }
 
@@ -227,14 +238,20 @@ int main(int argc, char *argv[]) {
       // Generate path using timestamp
       stringstream outputName;
       outputName << timestamp << ".wav";
-      outputPath = runConfig.outputPath.value();
-      outputPath->append(outputName.str());
+      filesystem::path outputPath = runConfig.outputPath.value();
+      outputPath.append(outputName.str());
 
       // Output audio to automatically-named WAV file in a directory
-      ofstream audioFile(outputPath->string(), ios::binary);
+      ofstream audioFile(outputPath.string(), ios::binary);
       piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath->string() << endl;
+      cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_FILE) {
+      if (!maybeOutputPath || maybeOutputPath->empty()) {
+        throw runtime_error("No output path provided");
+      }
+
+      filesystem::path outputPath = maybeOutputPath.value();
+
       if (!runConfig.jsonInput) {
         // Read all of standard input before synthesizing.
         // Otherwise, we would overwrite the output file for each line.
@@ -248,9 +265,9 @@ int main(int argc, char *argv[]) {
       }
 
       // Output audio to WAV file
-      ofstream audioFile(outputPath->string(), ios::binary);
+      ofstream audioFile(outputPath.string(), ios::binary);
       piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath->string() << endl;
+      cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
       piper::textToWavFile(piperConfig, voice, line, cout, result);
@@ -368,7 +385,7 @@ void printUsage(char *argv[]) {
        << endl;
   cerr << "   --noise_w               NUM   phoneme width noise (default: 0.8)"
        << endl;
-  cerr << "   --silence_seconds       NUM   seconds of silence after each "
+  cerr << "   --sentence_silence      NUM   seconds of silence after each "
           "sentence (default: 0.2)"
        << endl;
   cerr << "   --espeak_data           DIR   path to espeak-ng data directory"
@@ -444,6 +461,9 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.tashkeelModelPath = filesystem::path(argv[++i]);
     } else if (arg == "--json_input" || arg == "--json-input") {
       runConfig.jsonInput = true;
+    } else if (arg == "--version") {
+      std::cout << piper::getVersion() << std::endl;
+      exit(0);
     } else if (arg == "--debug") {
       // Set DEBUG logging
       spdlog::set_level(spdlog::level::debug);

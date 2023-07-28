@@ -5,7 +5,7 @@ Piper is used in a [variety of projects](#people-using-piper).
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./piper --model en-us-blizzard_lessac-medium.onnx --output_file welcome.wav
+  ./piper --model en_US-lessac-medium.onnx --output_file welcome.wav
 ```
 
 [Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a [video tutorial by Thorsten Müller](https://youtu.be/rjq5eZoWWSo)
@@ -18,39 +18,47 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
-[Download voices](https://github.com/rhasspy/piper/releases/tag/v0.0.2) for the supported languages:
+[Download voices](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) for the supported languages:
 
-* Catalan (ca)
-* Danish (da)
-* German (de)
-* British English (en-gb)
-* U.S. English (en-us)
-* Spanish (es)
-* Finnish (fi)
-* French (fr)
-* Greek (el-gr)
-* Icelandic (is)
-* Italian (it)
-* Kazakh (kk)
-* Nepali (ne)
-* Dutch (nl)
-* Norwegian (no)
-* Polish (pl)
-* Brazilian Portuguese (pt-br)
-* Russian (ru)
-* Swedish (sv-se)
-* Ukrainian (uk)
-* Vietnamese (vi)
-* Chinese (zh-cn)
+* Catalan (ca_ES)
+* Danish (da_DK)
+* German (de_DE)
+* English (en_GB, en_US)
+* Spanish (es_ES, es_MX)
+* Finnish (fi_FI)
+* French (fr_FR)
+* Greek (el_GR)
+* Icelandic (is_IS)
+* Italian (it_IT)
+* Georgian (ka_GE)
+* Kazakh (kk_KZ)
+* Nepali (ne_NP)
+* Dutch (nl_BE, nl_NL)
+* Norwegian (no_NO)
+* Polish (pl_PL)
+* Portuguese (pt_BR)
+* Russian (ru_RU)
+* Swedish (sv_SE)
+* Swahili (sw_CD)
+* Ukrainian (uk_UA)
+* Vietnamese (vi_VN)
+* Chinese (zh_CN)
+
+You will need two files per voice:
+
+1. A `.onnx` model file, such as [`en_US-lessac-medium.onnx`](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx)
+2. A `.onnx.json` config file, such as [`en_US-lessac-medium.onnx.json`](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json)
+
+The `MODEL_CARD` file for each voice contains important licensing information. Piper is intended for text to speech research, and does not impose any additional restrictions on voice models. Some voices may have restrictive licenses, however, so please review them carefully!
 
 
 ## Installation
 
-Download a release:
+You can [run Piper with Python](#running-in-python) or download a binary release:
 
-* [amd64](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_amd64.tar.gz) (64-bit desktop Linux)
-* [arm64](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
-* [armv7](https://github.com/rhasspy/piper/releases/download/v1.0.0/piper_armv7.tar.gz) (32-bit Raspberry Pi 3/4)
+* [amd64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_amd64.tar.gz) (64-bit desktop Linux)
+* [arm64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
+* [armv7](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_armv7.tar.gz) (32-bit Raspberry Pi 3/4)
 
 If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp).
 You must download and extract [piper-phonemize](https://github.com/rhasspy/piper-phonemize) to `lib/Linux-$(uname -m)/piper_phonemize` before building.
@@ -66,12 +74,38 @@ For example:
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./piper --model en-us-lessac-medium.onnx --output_file welcome.wav
+  ./piper --model en_US-lessac-medium.onnx --output_file welcome.wav
 ```
 
 For multi-speaker models, use `--speaker <number>` to change speakers (default: 0).
 
 See `piper --help` for more options.
+
+
+### JSON Input
+
+The `piper` executable can accept JSON input when using the `--json-input` flag. Each line of input must be a JSON object with `text` field. For example:
+
+``` json
+{ "text": "First sentence to speak." }
+{ "text": "Second sentence to speak." }
+```
+
+Optional fields include:
+
+* `speaker` - string
+    * Name of the speaker to use from `speaker_id_map` in config (multi-speaker voices only)
+* `speaker_id` - number
+    * Id of speaker to use from 0 to number of speakers - 1 (multi-speaker voices only, overrides "speaker")
+* `output_file` - string
+    * Path to output WAV file
+    
+The following example writes two sentences with different speakers to different files:
+
+``` json
+{ "text": "First speaker.", "speaker_id": 0, "output_file": "/tmp/speaker_0.wav" }
+{ "text": "Second speaker.", "speaker_id": 1, "output_file": "/tmp/speaker_1.wav" }
+```
 
 
 ## People using Piper
@@ -84,7 +118,7 @@ Piper has been used in the following projects/papers:
 * [Image Captioning for the Visually Impaired and Blind: A Recipe for Low-Resource Languages](https://www.techrxiv.org/articles/preprint/Image_Captioning_for_the_Visually_Impaired_and_Blind_A_Recipe_for_Low-Resource_Languages/22133894)
 * [Open Voice Operating System](https://github.com/OpenVoiceOS/ovos-tts-plugin-piper)
 * [JetsonGPT](https://github.com/shahizat/jetsonGPT)
-
+* [LocalAI](https://github.com/go-skynet/LocalAI)
 
 ## Training
 
@@ -97,13 +131,21 @@ Pretrained checkpoints are available on [Hugging Face](https://huggingface.co/da
 
 See [src/python_run](src/python_run)
 
-Run `scripts/setup.sh` to create a virtual environment and install the requirements. Then run:
+Install with `pip`:
 
 ``` sh
-echo 'Welcome to the world of speech synthesis!' | scripts/piper \
-  --model /path/to/voice.onnx \
+pip install piper-tts
+```
+
+and then run:
+
+``` sh
+echo 'Welcome to the world of speech synthesis!' | piper \
+  --model en_US-lessac-medium \
   --output_file welcome.wav
 ```
+
+This will automatically download [voice files](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) the first time they're used. Use `--data-dir` and `--download-dir` to adjust where voices are found/downloaded.
 
 If you'd like to use a GPU, install the `onnxruntime-gpu` package:
 
@@ -112,5 +154,5 @@ If you'd like to use a GPU, install the `onnxruntime-gpu` package:
 .venv/bin/pip3 install onnxruntime-gpu
 ```
 
-and then run `scripts/piper` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
+and then run `piper` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
 

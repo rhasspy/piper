@@ -39,7 +39,7 @@ RUN mkdir -p "lib/Linux-$(uname -m)/piper_phonemize" && \
         tar -C "lib/Linux-$(uname -m)/piper_phonemize" -xzvf -
 
 # Build piper binary
-COPY Makefile ./
+COPY VERSION Makefile ./
 COPY src/cpp/ ./src/cpp/
 RUN make
 

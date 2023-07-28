@@ -61,6 +61,9 @@ struct SynthesisConfig {
 
 struct ModelConfig {
   int numSpeakers;
+
+  // speaker name -> id
+  std::optional<std::map<std::string, SpeakerId>> speakerIdMap;
 };
 
 struct ModelSession {
@@ -85,6 +88,9 @@ struct Voice {
   ModelConfig modelConfig;
   ModelSession session;
 };
+
+// Get version of Piper
+std::string getVersion();
 
 // Must be called before using textTo* functions
 void initialize(PiperConfig &config);

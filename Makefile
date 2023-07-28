@@ -1,6 +1,8 @@
 .PHONY: piper clean
 
 LIB_DIR := lib/Linux-$(shell uname -m)
+VERSION := $(cat VERSION)
+DOCKER_PLATFORM ?= linux/amd64,linux/arm64,linux/arm/v7
 
 piper:
 	mkdir -p build
@@ -11,4 +13,4 @@ clean:
 	rm -rf build/ dist/
 
 docker:
-	docker buildx build . --platform 'linux/amd64,linux/arm64,linux/arm/v7' --output 'type=local,dest=dist'
+	docker buildx build . --platform '$(DOCKER_PLATFORM)' --output 'type=local,dest=dist'

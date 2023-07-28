@@ -16,10 +16,23 @@
 
 namespace piper {
 
+#ifdef _PIPER_VERSION
+// https://stackoverflow.com/questions/47346133/how-to-use-a-define-inside-a-format-string
+#define _STR(x) #x
+#define STR(x) _STR(x)
+const std::string VERSION = STR(_PIPER_VERSION);
+#else
+const std::string VERSION = "";
+#endif
+
 // Maximum value for 16-bit signed WAV sample
 const float MAX_WAV_VALUE = 32767.0f;
 
 const std::string instanceName{"piper"};
+
+std::string getVersion() {
+  return VERSION;
+}
 
 // True if the string is a single UTF-8 codepoint
 bool isSingleCodepoint(std::string s) {
@@ -162,6 +175,19 @@ void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
 void parseModelConfig(json &configRoot, ModelConfig &modelConfig) {
 
   modelConfig.numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
+
+  if (configRoot.contains("speaker_id_map")) {
+    if (!modelConfig.speakerIdMap) {
+      modelConfig.speakerIdMap.emplace();
+    }
+
+    auto speakerIdMapValue = configRoot["speaker_id_map"];
+    for (auto &speakerItem : speakerIdMapValue.items()) {
+      std::string speakerName = speakerItem.key();
+      (*modelConfig.speakerIdMap)[speakerName] =
+          speakerItem.value().get<SpeakerId>();
+    }
+  }
 
 } /* parseModelConfig */
 
