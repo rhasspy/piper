@@ -189,7 +189,21 @@ int main(int argc, char *argv[]) {
         runConfig.sentenceSilenceSeconds.value();
   }
 
-  voice.synthesisConfig.phonemeSilenceSeconds = runConfig.phonemeSilenceSeconds;
+  if (runConfig.phonemeSilenceSeconds) {
+    if (!voice.synthesisConfig.phonemeSilenceSeconds) {
+      // Overwrite
+      voice.synthesisConfig.phonemeSilenceSeconds =
+          runConfig.phonemeSilenceSeconds;
+    } else {
+      // Merge
+      for (const auto &[phoneme, silenceSeconds] :
+           *runConfig.phonemeSilenceSeconds) {
+        voice.synthesisConfig.phonemeSilenceSeconds->try_emplace(
+            phoneme, silenceSeconds);
+      }
+    }
+
+  } // if phonemeSilenceSeconds
 
   if (runConfig.outputType == OUTPUT_DIRECTORY) {
     runConfig.outputPath = filesystem::absolute(runConfig.outputPath.value());

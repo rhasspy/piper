@@ -32,14 +32,18 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Italian (it_IT)
 * Georgian (ka_GE)
 * Kazakh (kk_KZ)
+* Luxembourgish (lb_LU)
 * Nepali (ne_NP)
 * Dutch (nl_BE, nl_NL)
 * Norwegian (no_NO)
 * Polish (pl_PL)
 * Portuguese (pt_BR)
+* Romanian (ro_RO)
 * Russian (ru_RU)
+* Serbian (sr_RS)
 * Swedish (sv_SE)
 * Swahili (sw_CD)
+* Turkish (tr_TR)
 * Ukrainian (uk_UA)
 * Vietnamese (vi_VN)
 * Chinese (zh_CN)
@@ -81,6 +85,17 @@ For multi-speaker models, use `--speaker <number>` to change speakers (default: 
 
 See `piper --help` for more options.
 
+### Streaming Audio
+
+Piper can stream raw audio to stdout as its produced:
+
+``` sh
+echo 'This sentence is spoken first. This sentence is synthesized while the first sentence is spoken.' | \
+  ./piper --model en_US-lessac-medium.onnx --output-raw | \
+  aplay -r 22050 -f S16_LE -t raw -
+```
+
+This is **raw** audio and not a WAV file, so make sure your audio player is set to play 16-bit mono PCM samples at the correct sample rate for the voice.
 
 ### JSON Input
 

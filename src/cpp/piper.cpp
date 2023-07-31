@@ -140,7 +140,11 @@ void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
   //     "inference": {
   //         "noise_scale": 0.667,
   //         "length_scale": 1,
-  //         "noise_w": 0.8
+  //         "noise_w": 0.8,
+  //         "phoneme_silence": {
+  //           "<phoneme>": <seconds of silence>,
+  //           ...
+  //         }
   //     }
   // }
 
@@ -166,7 +170,27 @@ void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
     if (inferenceValue.contains("noise_w")) {
       synthesisConfig.noiseW = inferenceValue.value("noise_w", 0.8f);
     }
-  }
+
+    if (inferenceValue.contains("phoneme_silence")) {
+      // phoneme -> seconds of silence to add after
+      synthesisConfig.phonemeSilenceSeconds.emplace();
+      auto phonemeSilenceValue = inferenceValue["phoneme_silence"];
+      for (auto &phonemeItem : phonemeSilenceValue.items()) {
+        std::string phonemeStr = phonemeItem.key();
+        if (!isSingleCodepoint(phonemeStr)) {
+          spdlog::error("\"{}\" is not a single codepoint", phonemeStr);
+          throw std::runtime_error(
+              "Phonemes must be one codepoint (phoneme silence)");
+        }
+
+        auto phoneme = getCodepoint(phonemeStr);
+        (*synthesisConfig.phonemeSilenceSeconds)[phoneme] =
+            phonemeItem.value().get<float>();
+      }
+
+    } // if phoneme_silence
+
+  } // if inference
 
 } /* parseSynthesisConfig */
 
