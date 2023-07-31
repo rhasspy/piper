@@ -1,7 +1,7 @@
 cython>=0.29.0,<1
-espeak-phonemizer>=1.1.0,<2
+piper-phonemize~=1.0.0
 librosa>=0.9.2,<1
 numpy>=1.19.0
-onnxruntime~=1.11.0
+onnxruntime>=1.11.0
 pytorch-lightning~=1.7.0
-torch~=1.11.0
+torch>=1.11.0,<2

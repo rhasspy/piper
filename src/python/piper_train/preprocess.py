@@ -9,26 +9,35 @@ import os
 import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
+from enum import Enum
 from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
-from espeak_phonemizer import Phonemizer
+from piper_phonemize import (
+    phonemize_espeak,
+    phonemize_codepoints,
+    phoneme_ids_espeak,
+    phoneme_ids_codepoints,
+    get_codepoints_map,
+    get_espeak_map,
+    get_max_phonemes,
+    tashkeel_run,
+)
 
 from .norm_audio import cache_norm_audio, make_silence_detector
-from .phonemize import (
-    ALPHABETS,
-    DEFAULT_PHONEME_ID_MAP,
-    MAX_PHONEMES,
-    PHONEME_MAPS,
-    PhonemeType,
-    phonemes_to_ids,
-    phonemize,
-)
 
 _DIR = Path(__file__).parent
 _VERSION = (_DIR / "VERSION").read_text(encoding="utf-8").strip()
 _LOGGER = logging.getLogger("preprocess")
+
+
+class PhonemeType(str, Enum):
+    ESPEAK = "espeak"
+    """Phonemes come from espeak-ng"""
+
+    TEXT = "text"
+    """Phonemes come from text itself"""
 
 
 def main() -> None:
@@ -150,10 +159,10 @@ def main() -> None:
                 "inference": {"noise_scale": 0.667, "length_scale": 1, "noise_w": 0.8},
                 "phoneme_type": args.phoneme_type.value,
                 "phoneme_map": {},
-                "phoneme_id_map": ALPHABETS[args.language]
+                "phoneme_id_map": get_codepoints_map()[args.language]
                 if args.phoneme_type == PhonemeType.TEXT
-                else DEFAULT_PHONEME_ID_MAP,
-                "num_symbols": MAX_PHONEMES,
+                else get_espeak_map(),
+                "num_symbols": get_max_phonemes(),
                 "num_speakers": len(speaker_counts),
                 "speaker_id_map": speaker_ids,
                 "piper_version": _VERSION,
@@ -255,8 +264,6 @@ def phonemize_batch_espeak(
     try:
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
-        phonemizer = Phonemizer(default_voice=args.language)
-        phoneme_map = PHONEME_MAPS.get(args.language)
 
         while True:
             utt_batch = queue_in.get()
@@ -266,10 +273,15 @@ def phonemize_batch_espeak(
             for utt in utt_batch:
                 try:
                     _LOGGER.debug(utt)
-                    utt.phonemes = phonemize(
-                        casing(utt.text), phonemizer, phoneme_map=phoneme_map
-                    )
-                    utt.phoneme_ids = phonemes_to_ids(
+                    all_phonemes = phonemize_espeak(casing(utt.text), args.language)
+
+                    # Flatten
+                    utt.phonemes = [
+                        phoneme
+                        for sentence_phonemes in all_phonemes
+                        for phoneme in sentence_phonemes
+                    ]
+                    utt.phoneme_ids = phoneme_ids_espeak(
                         utt.phonemes,
                         missing_phonemes=utt.missing_phonemes,
                     )
@@ -298,7 +310,6 @@ def phonemize_batch_text(
     try:
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
-        alphabet = ALPHABETS[args.language]
 
         while True:
             utt_batch = queue_in.get()
@@ -308,10 +319,16 @@ def phonemize_batch_text(
             for utt in utt_batch:
                 try:
                     _LOGGER.debug(utt)
-                    utt.phonemes = list(unicodedata.normalize("NFD", casing(utt.text)))
-                    utt.phoneme_ids = phonemes_to_ids(
+                    all_phonemes = phonemize_codepoints(casing(utt.text))
+                    # Flatten
+                    utt.phonemes = [
+                        phoneme
+                        for sentence_phonemes in all_phonemes
+                        for phoneme in sentence_phonemes
+                    ]
+                    utt.phoneme_ids = phoneme_ids_codepoints(
+                        args.language,
                         utt.phonemes,
-                        phoneme_id_map=alphabet,
                         missing_phonemes=utt.missing_phonemes,
                     )
                     if not args.skip_audio:
