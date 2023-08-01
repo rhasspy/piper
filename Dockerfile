@@ -33,7 +33,7 @@ RUN curl -L "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSIO
 RUN mkdir -p "lib/Linux-$(uname -m)"
 
 # Use pre-compiled Piper phonemization library (includes onnxruntime)
-ARG PIPER_PHONEMIZE_VERSION='1.0.0'
+ARG PIPER_PHONEMIZE_VERSION='1.1.0'
 RUN mkdir -p "lib/Linux-$(uname -m)/piper_phonemize" && \
     curl -L "https://github.com/rhasspy/piper-phonemize/releases/download/v${PIPER_PHONEMIZE_VERSION}/libpiper_phonemize-${TARGETARCH}${TARGETVARIANT}.tar.gz" | \
         tar -C "lib/Linux-$(uname -m)/piper_phonemize" -xzvf -

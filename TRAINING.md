@@ -1,5 +1,7 @@
 # Training Guide
 
+Check out a [video training guide by Thorsten Müller](https://www.youtube.com/watch?v=b_we_jma220)
+
 Training a voice for Piper involves 3 main steps:
 
 1. Preparing the dataset
@@ -32,7 +34,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip3 install --upgrade pip
 pip3 install --upgrade wheel setuptools
-pip3 install -r requirements.txt
+pip3 install -e .
 ```
 
 Run the `build_monotonic_align.sh` script in the `src/python` directory to build the extension.

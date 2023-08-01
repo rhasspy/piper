@@ -32,14 +32,18 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Italian (it_IT)
 * Georgian (ka_GE)
 * Kazakh (kk_KZ)
+* Luxembourgish (lb_LU)
 * Nepali (ne_NP)
 * Dutch (nl_BE, nl_NL)
 * Norwegian (no_NO)
 * Polish (pl_PL)
 * Portuguese (pt_BR)
+* Romanian (ro_RO)
 * Russian (ru_RU)
+* Serbian (sr_RS)
 * Swedish (sv_SE)
 * Swahili (sw_CD)
+* Turkish (tr_TR)
 * Ukrainian (uk_UA)
 * Vietnamese (vi_VN)
 * Chinese (zh_CN)
@@ -56,9 +60,9 @@ The `MODEL_CARD` file for each voice contains important licensing information. P
 
 You can [run Piper with Python](#running-in-python) or download a binary release:
 
-* [amd64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_amd64.tar.gz) (64-bit desktop Linux)
-* [arm64](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
-* [armv7](https://github.com/rhasspy/piper/releases/download/v1.1.0/piper_armv7.tar.gz) (32-bit Raspberry Pi 3/4)
+* [amd64](https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_amd64.tar.gz) (64-bit desktop Linux)
+* [arm64](https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_arm64.tar.gz) (64-bit Raspberry Pi 4)
+* [armv7](https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_armv7.tar.gz) (32-bit Raspberry Pi 3/4)
 
 If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp).
 You must download and extract [piper-phonemize](https://github.com/rhasspy/piper-phonemize) to `lib/Linux-$(uname -m)/piper_phonemize` before building.
@@ -81,6 +85,17 @@ For multi-speaker models, use `--speaker <number>` to change speakers (default: 
 
 See `piper --help` for more options.
 
+### Streaming Audio
+
+Piper can stream raw audio to stdout as its produced:
+
+``` sh
+echo 'This sentence is spoken first. This sentence is synthesized while the first sentence is spoken.' | \
+  ./piper --model en_US-lessac-medium.onnx --output-raw | \
+  aplay -r 22050 -f S16_LE -t raw -
+```
+
+This is **raw** audio and not a WAV file, so make sure your audio player is set to play 16-bit mono PCM samples at the correct sample rate for the voice.
 
 ### JSON Input
 

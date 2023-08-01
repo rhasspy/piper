@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <functional>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -49,14 +50,22 @@ struct PhonemizeConfig {
 };
 
 struct SynthesisConfig {
+  // VITS inference settings
   float noiseScale = 0.667f;
   float lengthScale = 1.0f;
   float noiseW = 0.8f;
+
+  // Audio settings
   int sampleRate = 22050;
   int sampleWidth = 2; // 16-bit
   int channels = 1;    // mono
+
+  // Speaker id from 0 to numSpeakers - 1
   std::optional<SpeakerId> speakerId;
+
+  // Extra silence
   float sentenceSilenceSeconds = 0.2f;
+  std::optional<std::map<piper::Phoneme, float>> phonemeSilenceSeconds;
 };
 
 struct ModelConfig {
@@ -88,6 +97,12 @@ struct Voice {
   ModelConfig modelConfig;
   ModelSession session;
 };
+
+// True if the string is a single UTF-8 codepoint
+bool isSingleCodepoint(std::string s);
+
+// Get the first UTF-8 codepoint of a string
+Phoneme getCodepoint(std::string s);
 
 // Get version of Piper
 std::string getVersion();

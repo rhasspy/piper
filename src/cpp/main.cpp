@@ -4,6 +4,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <mutex>
 #include <sstream>
 #include <stdexcept>
@@ -76,6 +77,9 @@ struct RunConfig {
   //   "output_file": str,        (optional)
   // }
   bool jsonInput = false;
+
+  // Seconds of extra silence to insert after a single phoneme
+  optional<std::map<piper::Phoneme, float>> phonemeSilenceSeconds;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -184,6 +188,22 @@ int main(int argc, char *argv[]) {
     voice.synthesisConfig.sentenceSilenceSeconds =
         runConfig.sentenceSilenceSeconds.value();
   }
+
+  if (runConfig.phonemeSilenceSeconds) {
+    if (!voice.synthesisConfig.phonemeSilenceSeconds) {
+      // Overwrite
+      voice.synthesisConfig.phonemeSilenceSeconds =
+          runConfig.phonemeSilenceSeconds;
+    } else {
+      // Merge
+      for (const auto &[phoneme, silenceSeconds] :
+           *runConfig.phonemeSilenceSeconds) {
+        voice.synthesisConfig.phonemeSilenceSeconds->try_emplace(
+            phoneme, silenceSeconds);
+      }
+    }
+
+  } // if phonemeSilenceSeconds
 
   if (runConfig.outputType == OUTPUT_DIRECTORY) {
     runConfig.outputPath = filesystem::absolute(runConfig.outputPath.value());
@@ -453,6 +473,23 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--sentence_silence" || arg == "--sentence-silence") {
       ensureArg(argc, argv, i);
       runConfig.sentenceSilenceSeconds = stof(argv[++i]);
+    } else if (arg == "--phoneme_silence" || arg == "--phoneme-silence") {
+      ensureArg(argc, argv, i);
+      ensureArg(argc, argv, i + 1);
+      auto phonemeStr = std::string(argv[++i]);
+      if (!piper::isSingleCodepoint(phonemeStr)) {
+        std::cerr << "Phoneme '" << phonemeStr
+                  << "' is not a single codepoint (--phoneme_silence)"
+                  << std::endl;
+        exit(1);
+      }
+
+      if (!runConfig.phonemeSilenceSeconds) {
+        runConfig.phonemeSilenceSeconds.emplace();
+      }
+
+      auto phoneme = piper::getCodepoint(phonemeStr);
+      (*runConfig.phonemeSilenceSeconds)[phoneme] = stof(argv[++i]);
     } else if (arg == "--espeak_data" || arg == "--espeak-data") {
       ensureArg(argc, argv, i);
       runConfig.eSpeakDataPath = filesystem::path(argv[++i]);
