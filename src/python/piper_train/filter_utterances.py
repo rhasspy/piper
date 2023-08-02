@@ -145,7 +145,7 @@ def main():
             for speaker in speaker_details
         }
 
-        with open(args.write_json, "w") as json_file:
+        with open(args.write_json, "w", encoding="utf-8") as json_file:
             json.dump(
                 {
                     speaker: {
@@ -238,24 +238,6 @@ class ProcessUtterance:
                 duration_sec = 0.0
 
         return duration_sec
-
-        # return float(
-        #     subprocess.check_output(
-        #         [
-        #             "ffprobe",
-        #             "-i",
-        #             str(audio_path),
-        #             "-show_entries",
-        #             "format=duration",
-        #             "-v",
-        #             "quiet",
-        #             "-of",
-        #             "csv=p=0",
-        #         ],
-        #         stderr=subprocess.DEVNULL,
-        #         universal_newlines=True,
-        #     ).strip()
-        # )
 
 
 if __name__ == "__main__":
