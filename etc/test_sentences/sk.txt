@@ -1,0 +1,7 @@
+Dúha je optický úkaz vznikajúci v atmosfére Zeme.
+Vznik dúhy je spôsobený disperziou slnečného svetla prechádzajúceho kvapkou.
+Predpokladom pre vznik dúhy je prítomnosť vodných kvapiek v atmosfére a Slnka, ktorého svetlo cez kvapky môže prechádzať.
+Pretože voda má väčší index lomu ako vzduch, svetlo sa na ich rozhraní láme.
+Uhol lomu je rôzny pre rôzne vlnové dĺžky svetla a teda svetlo sa rozkladá na jednotlivé farebné zložky, ktoré sa odrážajú na vnútornej stene a kvapku opúšťajú pod rôznymi uhlami s najväčšou intenzitou svetla pri uhloch okolo 40° – 42°.
+Pri výške slnka nad 42° sa nedá pozorovať.
+Modré svetlo kratšia vlnová dĺžka sa láme pod väčším uhlom ako červené svetlo, ale pretože oblasť zadnej strany kvapky má ohnisko vnútri kvapky, spektrum samo prechádza, a preto sa červené svetlo zobrazí vyššie na oblohe a vytvára vonkajšiu farbu dúhy.
