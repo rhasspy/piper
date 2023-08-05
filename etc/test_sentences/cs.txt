@@ -1,0 +1,8 @@
+Duha je fotometeor, projevující se jako skupina soustředných barevných oblouků, které vznikají lomem a vnitřním odrazem slunečního nebo měsíčního světla na vodních kapkách v atmosféře.
+Podobný úkaz může vzniknout i v drobných ledových krystalech v atmosféře.
+Za deště nebo mlhy prochází světlo každou jednotlivou kapkou.
+Protože má voda větší index lomu než vzduch, světlo se v ní láme.
+Index lomu je různý pro různé vlnové délky světla a povrch kapky má tvar koule.
+Světlo se tedy na okrajích dešťových kapek rozkládá na jednotlivé barevné složky, které se odrážejí na vnitřní stěně a opouštějí pod různými úhly kapku.
+Kapky, které jsou ve stejné úhlové vzdálenosti od zdroje světla, se pak jeví, jako by měly stejnou barvu.
+Proto má duha tvar kruhu, případně jeho části.
