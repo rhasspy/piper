@@ -19,6 +19,7 @@
         "aru-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/aru/medium/epoch%3D3479-step%3D939600.ckpt",
         "jenny_dioco-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/jenny_dioco/medium/epoch%3D2748-step%3D1729300.ckpt",
         "northern_english_male-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/northern_english_male/medium/epoch%3D9029-step%3D2261720.ckpt",
+        "semaine-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/semaine/medium/epoch%3D1849-step%3D214600.ckpt",
         "vctk-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_GB/vctk/medium/epoch%3D545-step%3D1511328.ckpt"
     },
     "en-us": {
@@ -43,7 +44,11 @@
         "harri-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fi/fi_FI/harri/medium/epoch%3D3369-step%3D1714630.ckpt"
     },
     "fr": {
-        "siwis-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fr/fr_FR/siwis/medium/epoch%3D3304-step%3D2050940.ckpt"
+        "siwis-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fr/fr_FR/siwis/medium/epoch%3D3304-step%3D2050940.ckpt",
+        "upmc-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/fr/fr_FR/upmc/medium/epoch%3D2999-step%3D702000.ckpt"
+    },
+    "hu": {
+        "berta-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/blob/main/hu/hu_HU/berta/epoch%3D5249-step%3D1429580.ckpt"
     },
     "ka": {
         "natia-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ka/ka_GE/natia/medium/epoch%3D5239-step%3D1607690.ckpt"
@@ -65,6 +70,7 @@
         "talesyntese-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/no/no_NO/talesyntese/medium/epoch%3D3459-step%3D2052250.ckpt"
     },
     "pl": {
+        "darkman-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/pl/pl_PL/darkman/medium/epoch%3D4909-step%3D1454360.ckpt",
         "gosia-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/pl/pl_PL/gosia/medium/epoch%3D5001-step%3D1457672.ckpt"
     },
     "pt": {
