@@ -1,0 +1,28 @@
+[language info]
+Name=Español
+code=Es
+version=0.1
+author=Mateo Cedillo
+Copyright=© 2018-2023 MT Programs, todos los derechos Reservados 
+[Strings]
+Interface openned. Write your texts, configure the different synthesis options or download all the voices you want. Enjoy!=Interfaz abierta. Escribe tus textos, configura las diferentes opciones de síntesis o descarga todas las voces que quieras. ¡Disfruta!
+Model failed to download!=¡No se pudo descargar el modelo!
+No downloaded voice packages!=¡No se han descargado paquetes de voz!
+You have not loaded any model from the list!=¡No has cargado ningún modelo de la lista!
+Select voice package=Selecciona paquete de voz
+Load it!=¡Cárgalo!
+Select speaker=Selecciona hablante
+Rate scale=Escala de velocidad
+Phoneme noise scale=Escala de resonancia de fonemas
+Phoneme stressing scale=Escala de acentuación de fonemas
+Enter your text here=Introduce tu texto aquí
+Text to synthesize=Texto a sintetizar
+Synthesize=Sintetizar
+Auto-play=Auto-reproducir
+Click here to synthesize the text.=Haz clic aquí para sintetizar el texto.
+Exit=Salir
+Closes this GUI.=Cierra esta interfaz.
+audio history=Historial de audio
+The Use GPU checkbox is checked, but you don't have a GPU runtime.=La casilla de usar GPU está habilitada, pero no tienes un entorno de ejecución con GPU.
+The Use GPU checkbox is unchecked, however you are using a GPU runtime environment. We recommend you check the checkbox to use GPU to take advantage of it.=La casilla de usar GPU está desmarcada, sin embargo, estás usando un entorno de ejecución GPU. Te recomendamos activar la casilla de usar GPU para aprovecharla.
+Invalid link or ID!=¡Enlace o ID no válido!
