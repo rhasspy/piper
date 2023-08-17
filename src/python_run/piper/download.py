@@ -20,9 +20,28 @@ class VoiceNotFoundError(Exception):
     pass
 
 
-def get_voices() -> Dict[str, Any]:
-    """Loads available voices from embedded JSON file."""
-    with open(_DIR / "voices.json", "r", encoding="utf-8") as voices_file:
+def get_voices(
+    download_dir: Union[str, Path], update_voices: bool = False
+) -> Dict[str, Any]:
+    """Loads available voices from downloaded or embedded JSON file."""
+    download_dir = Path(download_dir)
+    voices_download = download_dir / "voices.json"
+
+    if update_voices:
+        # Download latest voices.json
+        voices_url = URL_FORMAT.format(file="voices.json")
+        _LOGGER.debug("Downloading %s to %s", voices_url, voices_download)
+        with urlopen(voices_url) as response, open(
+            voices_download, "wb"
+        ) as download_file:
+            shutil.copyfileobj(response, download_file)
+
+    # Prefer downloaded file to embedded
+    voices_embedded = _DIR / "voices.json"
+    voices_path = voices_download if voices_download.exists() else voices_embedded
+
+    _LOGGER.debug("Loading %s", voices_path)
+    with open(voices_path, "r", encoding="utf-8") as voices_file:
         return json.load(voices_file)
 
 
