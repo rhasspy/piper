@@ -1,0 +1,21 @@
+Instrucciones para traductores
+Este documento es una pequeña guía de instrucciones que ayudarán mejor a la creación de idiomas y entender su sintaxis.
+*Crear un nuevo idioma:
+Para crear un nuevo idioma, primero debes hacer una copia del archivo 0.txt, ya que ese archivo es una plantilla vacía de traducción y en esa plantilla nos basaremos para crear las entradas y los mensajes.
+Una vez hecha la copia del archivo 0.txt, nos posicionamos en la misma y renombramos el archivo a las dos primeras letras de tu idioma. Por ejemplo, si queremos hacer una traducción a francés entonces tendríamos que poner "fr" de "français", y hay que tener en cuenta que si queremos que nuestra traducción funcione en el programa deberemos cambiar la extensión te .txt a .lang. Antes funcionava solo con cambiar el nombre pero no la extensión, pero finalmente se ha decidido así por cambios técnicos y para la autodetección de idiomas nuevos.
+Una vez tengamos nuestra propia plantilla, debemos abrirla con algún editor de textos, y podemos comenzar a hacer nuestras entradas de traducción.
+Como podemos fijarnos, al principio hay una línea encerrada entre corchetes. Esas  líneas se denominan secciones, y la primera es languaje info, sección de información sobre el idioma que estamos creando.
+Explicaré las siguientes líneas que debemos llenar al final de la línea, después del signo igual:
+Name: El nombre original de tu idioma, por ejemplo, si queremos hacer una traducción en inglés quedará como "English", o, si en cambio es una traducción en español entonces se escribirá "Español", si es un idioma en portugués quedará como "português", y se aplica en todos los idiomas.
+Code: En este parámetro pondremos de nuevo las dos primeras letras del idioma a traducir, como lo hicimos en el primer paso de la creación del archivo.
+version: Versión del idioma. El idioma puede tener una versión, pero es más recomendable que sea la del programa.
+author: El nombre del autor que crea el idioma.
+Copyright: Es opcional, si queremos poner derechos de autor.
+E aquí terminamos con la primera sección.
+*Segunda sección.
+strings:
+En esta sección se encuentran todos los mensajes disponibles para traducir.
+Notarás que en cada línea hay un signo igual al final (=) Este signo es importante, pues sirve para identificar el mensaje original (antes de =) y el valor a ser traducido (después de =).
+Para traducir un mensaje, debes hacerlo al final de la línea que estás traduciendo, después del signo "=", siempre y cuando se respete la puntuación y las reglas del mensaje original.
+Una vez terminado, puedes mandarlo a revisión a angelitomateocedillo@gmail.com o, en cualquiera de mis aplicaciones, seleccionando la opción "errores y sugerencias" en el menú ayuda y enviando el archivo al formulario que se te redirige a tu navegador.
+Fin.

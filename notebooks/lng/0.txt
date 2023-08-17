@@ -1,0 +1,28 @@
+[language info]
+Name=
+code=
+version=
+author=
+Copyright=
+[Strings]
+Interface openned. Write your texts, configure the different synthesis options or download all the voices you want. Enjoy!=
+Model failed to download!=
+No downloaded voice packages!=
+You have not loaded any model from the list!=
+Select voice package=
+Load it!=
+Select speaker=
+Rate scale=
+Phoneme noise scale=
+Phoneme stressing scale=
+Enter your text here=
+Text to synthesize=
+Synthesize=
+Auto-play=
+Click here to synthesize the text.=
+Exit=
+Closes this GUI.=
+audio history=
+The Use GPU checkbox is checked, but you don't have a GPU runtime.=
+The Use GPU checkbox is unchecked, however you are using a GPU runtime environment. We recommend you check the checkbox to use GPU to take advantage of it.=
+Invalid link or ID!=

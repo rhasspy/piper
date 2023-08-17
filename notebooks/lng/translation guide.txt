@@ -1,0 +1,21 @@
+Instructions for translators
+This document is a short instruction guide that will better help you create languages and understand their syntax.
+* Create a new language:
+To create a new language, you must first make a copy of the 0.txt file, since that file is an empty translation template and we will use that template to create the posts and messages.
+Once the copy of the 0.txt file is made, we position ourselves in it and rename the file to the first two letters of your language. For example, if we want to make a French translation then we would have to put "fr" from "français", and we must bear in mind that if we want our translation to work in the program we must change the extension .txt to .lang. Before it only worked by changing the name but not the extension, but finally it has been decided that way for technical changes and for the autodetection of new languages.
+Once we have our own template, we must open it with a text editor, and we can start making our translation entries.
+As we can see, at the beginning there is a line enclosed in square brackets. These lines are called sections, and the first one is language info, a section with information about the language we are creating.
+I will explain the following lines that we must fill at the end of the line, after the equal sign:
+Name: The original name of your language, for example, if we want to make a translation in English it will remain as "English", or, if instead it is a translation in Spanish then it will be written "Español", if it is a language in Portuguese it will remain as "português", and it applies in all languages.
+Code: In this parameter we will put again the first two letters of the language to be translated, as we did in the first step of creating the file.
+version: Language version. The language may have a version, but it is recommended that it be that of the program.
+author: The name of the author who creates the language.
+Copyright: It is optional, if we want to put copyright.
+And here we end with the first section.
+*Second section.
+strings:
+In this section you will find all the messages available for translation.
+You will notice that in each line there is an equal sign at the end (=) This sign is important, as it serves to identify the original message (before =) and the value to be translated (after =).
+To translate a message, you must do it at the end of the line you are translating, after the "=" sign, as long as the punctuation and rules of the original message are respected.
+Once finished, you can send it for review to angelitomateocedillo@gmail.com or, in any of my applications, selecting the option "errors and suggestions" in the help menu and sending the file to the form that is redirected to your browser.
+End.
