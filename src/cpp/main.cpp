@@ -95,6 +95,11 @@ int main(int argc, char *argv[]) {
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
+#ifdef _WIN32
+  // Required on Windows to show IPA symbols
+  SetConsoleOutputCP(CP_UTF8);
+#endif
+
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
