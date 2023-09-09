@@ -13,6 +13,8 @@ htmlcov
 /build/
 /local/
 /dist/
+/lib/
+/install/
 *.so
 
 .venv/
