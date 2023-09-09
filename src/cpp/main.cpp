@@ -117,7 +117,8 @@ int main(int argc, char *argv[]) {
     GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
     return filesystem::path(moduleFileName);
   }();
-#elifdef __APPLE__
+#else
+#ifdef __APPLE__
   auto exePath = []() {
     char moduleFileName[PATH_MAX] = {0};
     uint32_t moduleFileNameSize = std::size(moduleFileName);
@@ -126,6 +127,7 @@ int main(int argc, char *argv[]) {
   }();
 #else
   auto exePath = filesystem::canonical("/proc/self/exe");
+#endif
 #endif
 
   if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {

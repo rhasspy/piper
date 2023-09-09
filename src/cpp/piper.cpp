@@ -482,7 +482,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       // DEBUG log for phonemes
       std::string phonemesStr;
       for (auto phoneme : sentencePhonemes) {
-        utf8::append(phoneme, &phonemesStr);
+        utf8::append(phoneme, std::back_inserter(phonemesStr));
       }
 
       spdlog::debug("Converting {} phoneme(s) to ids: {}",
@@ -596,7 +596,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
     for (auto phonemeCount : missingPhonemes) {
       std::string phonemeStr;
-      utf8::append(phonemeCount.first, &phonemeStr);
+      utf8::append(phonemeCount.first, std::back_inserter(phonemeStr));
       spdlog::warn("Missing \"{}\" (\\u{:04X}): {} time(s)", phonemeStr,
                    (uint32_t)phonemeCount.first, phonemeCount.second);
     }
