@@ -15,6 +15,7 @@ htmlcov
 /dist/
 /lib/
 /install/
+/download/
 *.so
 
 .venv/

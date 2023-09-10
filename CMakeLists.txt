@@ -18,7 +18,9 @@ elseif(NOT APPLE)
 endif()
 
 add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
+add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
 
+# NOTE: external project prefix are shortened because of path length restrictions on Windows
 # NOTE: onnxruntime is pulled from piper-phonemize
 
 # ---- fmt ---
@@ -36,6 +38,7 @@ if(NOT DEFINED FMT_DIR)
     CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
   )
   add_dependencies(piper fmt_external)
+  add_dependencies(test_piper fmt_external)
 endif()
 
 # ---- spdlog ---
@@ -50,6 +53,7 @@ if(NOT DEFINED SPDLOG_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${SPDLOG_DIR}
   )
   add_dependencies(piper spdlog_external)
+  add_dependencies(test_piper spdlog_external)
 endif()
 
 # ---- piper-phonemize ---
@@ -59,10 +63,11 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
   ExternalProject_Add(
     piper_phonemize_external
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
-    URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/workflow.zip"
+    URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/master.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
   )
   add_dependencies(piper piper_phonemize_external)
+  add_dependencies(test_piper piper_phonemize_external)
 endif()
 
 # ---- Declare executable ----
@@ -100,38 +105,36 @@ target_include_directories(piper PUBLIC
 target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 
 # ---- Declare test ----
+include(CTest)
+enable_testing()
+add_test(
+  NAME test_piper
+  COMMAND test_piper "${CMAKE_SOURCE_DIR}/etc/test_voice.onnx" "${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data" "${CMAKE_CURRENT_BINARY_DIR}/test.wav"
+)
 
-# include(CTest)
-# enable_testing()
-# add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
-# add_test(
-#   NAME test_piper
-#   COMMAND test_piper "${CMAKE_SOURCE_DIR}/etc/test_voice.onnx" "${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data" "${CMAKE_CURRENT_BINARY_DIR}/test.wav"
+target_compile_features(test_piper PUBLIC cxx_std_17)
 
-# )
-# target_compile_features(test_piper PUBLIC cxx_std_17)
+target_include_directories(
+  test_piper PUBLIC
+  ${FMT_DIR}/include
+  ${SPDLOG_DIR}/include
+  ${PIPER_PHONEMIZE_DIR}/include
+)
 
-# target_include_directories(
-#   test_piper PUBLIC
-#   ${FMT_DIR}/include
-#   ${SPDLOG_DIR}/include
-#   ${PIPER_PHONEMIZE_DIR}/include
-# )
+target_link_directories(
+  test_piper PUBLIC
+  ${FMT_DIR}/lib
+  ${SPDLOG_DIR}/lib
+  ${PIPER_PHONEMIZE_DIR}/lib
+)
 
-# target_link_directories(
-#   test_piper PUBLIC
-#   ${FMT_DIR}/lib
-#   ${SPDLOG_DIR}/lib
-#   ${PIPER_PHONEMIZE_DIR}/lib
-# )
-
-# target_link_libraries(test_piper PUBLIC
-#   fmt
-#   spdlog
-#   espeak-ng
-#   piper_phonemize
-#   onnxruntime
-# )
+target_link_libraries(test_piper PUBLIC
+  fmt
+  spdlog
+  espeak-ng
+  piper_phonemize
+  onnxruntime
+)
 
 # ---- Declare install targets ----
 
