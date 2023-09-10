@@ -72,6 +72,12 @@ def main() -> None:
     )
     #
     parser.add_argument(
+        "--update-voices",
+        action="store_true",
+        help="Download latest voices.json during startup",
+    )
+    #
+    parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to console"
     )
     args = parser.parse_args()
@@ -86,7 +92,7 @@ def main() -> None:
     model_path = Path(args.model)
     if not model_path.exists():
         # Load voice info
-        voices_info = get_voices()
+        voices_info = get_voices(args.download_dir, update_voices=args.update_voices)
 
         # Resolve aliases for backwards compatibility with old voice names
         aliases_info: Dict[str, Any] = {}

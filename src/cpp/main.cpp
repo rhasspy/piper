@@ -95,6 +95,11 @@ int main(int argc, char *argv[]) {
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
+#ifdef _WIN32
+  // Required on Windows to show IPA symbols
+  SetConsoleOutputCP(CP_UTF8);
+#endif
+
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
@@ -117,7 +122,8 @@ int main(int argc, char *argv[]) {
     GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
     return filesystem::path(moduleFileName);
   }();
-#elifdef __APPLE__
+#else
+#ifdef __APPLE__
   auto exePath = []() {
     char moduleFileName[PATH_MAX] = {0};
     uint32_t moduleFileNameSize = std::size(moduleFileName);
@@ -126,6 +132,7 @@ int main(int argc, char *argv[]) {
   }();
 #else
   auto exePath = filesystem::canonical("/proc/self/exe");
+#endif
 #endif
 
   if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {

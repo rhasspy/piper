@@ -2,6 +2,10 @@
 
 Check out a [video training guide by Thorsten Müller](https://www.youtube.com/watch?v=b_we_jma220)
 
+For Windows, see [ssamjh's guide using WSL](https://ssamjh.nz/create-custom-piper-tts-voice/)
+
+---
+
 Training a voice for Piper involves 3 main steps:
 
 1. Preparing the dataset

@@ -283,7 +283,16 @@ void loadModel(std::string modelPath, ModelSession &session) {
   session.options.DisableProfiling();
 
   auto startTime = std::chrono::steady_clock::now();
-  session.onnx = Ort::Session(session.env, modelPath.c_str(), session.options);
+
+#ifdef _WIN32
+  auto modelPathW = std::wstring(modelPath.begin(), modelPath.end());
+  auto modelPathStr = modelPathW.c_str();
+#else
+  auto modelPathStr = modelPath.c_str();
+#endif
+
+  session.onnx = Ort::Session(session.env, modelPathStr, session.options);
+
   auto endTime = std::chrono::steady_clock::now();
   spdlog::debug("Loaded onnx model in {} second(s)",
                 std::chrono::duration<double>(endTime - startTime).count());
@@ -473,7 +482,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       // DEBUG log for phonemes
       std::string phonemesStr;
       for (auto phoneme : sentencePhonemes) {
-        utf8::append(phoneme, phonemesStr);
+        utf8::append(phoneme, std::back_inserter(phonemesStr));
       }
 
       spdlog::debug("Converting {} phoneme(s) to ids: {}",
@@ -587,7 +596,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
     for (auto phonemeCount : missingPhonemes) {
       std::string phonemeStr;
-      utf8::append(phonemeCount.first, phonemeStr);
+      utf8::append(phonemeCount.first, std::back_inserter(phonemeStr));
       spdlog::warn("Missing \"{}\" (\\u{:04X}): {} time(s)", phonemeStr,
                    (uint32_t)phonemeCount.first, phonemeCount.second);
     }
