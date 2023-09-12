@@ -295,6 +295,9 @@ def phonemize_batch_espeak(
 
             for utt in utt_batch:
                 try:
+                    if args.tashkeel:
+                        utt.text = tashkeel_run(utt.text)
+
                     _LOGGER.debug(utt)
                     all_phonemes = phonemize_espeak(casing(utt.text), args.language)
 
@@ -341,6 +344,9 @@ def phonemize_batch_text(
 
             for utt in utt_batch:
                 try:
+                    if args.tashkeel:
+                        utt.text = tashkeel_run(utt.text)
+
                     _LOGGER.debug(utt)
                     all_phonemes = phonemize_codepoints(casing(utt.text))
                     # Flatten
