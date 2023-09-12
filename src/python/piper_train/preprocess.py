@@ -83,6 +83,21 @@ def main() -> None:
     )
     #
     parser.add_argument(
+        "--dataset-name",
+        help="Name of dataset to put in config (default: name of <ouput_dir>/../)",
+    )
+    parser.add_argument(
+        "--audio-quality",
+        help="Audio quality to put in config (default: name of <output_dir>)",
+    )
+    #
+    parser.add_argument(
+        "--tashkeel",
+        action="store_true",
+        help="Diacritize Arabic text with libtashkeel",
+    )
+    #
+    parser.add_argument(
         "--skip-audio", action="store_true", help="Don't preprocess audio"
     )
     parser.add_argument(
@@ -147,14 +162,22 @@ def main() -> None:
         _LOGGER.info("Single speaker dataset")
 
     # Write config
+    audio_quality = args.audio_quality or args.output_dir.name
+    dataset_name = args.dataset_name or args.output_dir.parent.name
+
     with open(args.output_dir / "config.json", "w", encoding="utf-8") as config_file:
         json.dump(
             {
+                "dataset": dataset_name,
                 "audio": {
                     "sample_rate": args.sample_rate,
+                    "quality": audio_quality,
                 },
                 "espeak": {
                     "voice": args.language,
+                },
+                "language": {
+                    "code": args.language,
                 },
                 "inference": {"noise_scale": 0.667, "length_scale": 1, "noise_w": 0.8},
                 "phoneme_type": args.phoneme_type.value,
