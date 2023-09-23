@@ -1,12 +1,12 @@
 {
     "ar": {
-        "qasr-low": "1H9y8nlJ3K6_elXsB6YaJKsnbEBYCSF-_",
-        "qasr-high": "10xcE_l1DMQorjnQoRcUF7KP2uRgSr11q"
+        "kareem-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ar/ar_JO/kareem/medium/epoch%3D5079-step%3D1682020.ckpt"
     },
     "ca": {
         "upc_ona-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/ca/ca_ES/upc_ona/medium/epoch%3D3184-step%3D1641140.ckpt"
     },
     "cs": {
+        "jirka-low (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/cs/cs_CZ/jirka/low/epoch%3D9119-step%3D1294098.ckpt",
         "jirka-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/cs/cs_CZ/jirka/medium/epoch%3D8819-step%3D1435400.ckpt"
     },
     "da": {
@@ -35,6 +35,7 @@
         "lessac-high": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/high/epoch%3D2218-step%3D838782.ckpt",
         "lessac-low": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/low/epoch%3D2307-step%3D558536.ckpt",
         "lessac-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/medium/epoch%3D2164-step%3D1355540.ckpt",
+        "libritts_r-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/libritts_r/medium/epoch%3D404-step%3D1887300.ckpt",
         "Ryan-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/ryan/medium/epoch%3D4641-step%3D3104302.ckpt"
     },
     "es": {
@@ -107,7 +108,7 @@
         "fahrettin-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/tr/tr_TR/fahrettin/medium/epoch%3D8099-step%3D1497980.ckpt"
     },
     "uk": {
-        "ukrainian_tts-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/uk/uk_UK/ukrainian_tts/medium/epoch%3D2090-step%3D1166778.ckpt"
+        "ukrainian_tts-medium": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/uk/uk_UA/ukrainian_tts/medium/epoch%3D2090-step%3D1166778.ckpt"
     },
     "vi": {
         "vais1000-medium (fine-tuned)": "https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/vi/vi_VN/vais1000/medium/epoch%3D4769-step%3D919580.ckpt"
