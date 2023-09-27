@@ -14,7 +14,7 @@ class SileroVoiceActivityDetector:
     def __init__(self, onnx_path: typing.Union[str, Path]):
         onnx_path = str(onnx_path)
 
-        self.session = onnxruntime.InferenceSession(onnx_path)
+        self.session = onnxruntime.InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
         self.session.intra_op_num_threads = 1
         self.session.inter_op_num_threads = 1
 
