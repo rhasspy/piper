@@ -20,14 +20,17 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 
 [Download voices](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) for the supported languages:
 
+* Arabic (ar_JO)
 * Catalan (ca_ES)
+* Czech (cs_CZ)
 * Danish (da_DK)
 * German (de_DE)
+* Greek (el_GR)
 * English (en_GB, en_US)
 * Spanish (es_ES, es_MX)
 * Finnish (fi_FI)
 * French (fr_FR)
-* Greek (el_GR)
+* Hungarian (hu_HU)
 * Icelandic (is_IS)
 * Italian (it_IT)
 * Georgian (ka_GE)
@@ -37,7 +40,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Dutch (nl_BE, nl_NL)
 * Norwegian (no_NO)
 * Polish (pl_PL)
-* Portuguese (pt_BR)
+* Portuguese (pt_BR, pt_PT)
 * Romanian (ro_RO)
 * Russian (ru_RU)
 * Serbian (sr_RS)
