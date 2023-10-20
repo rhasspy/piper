@@ -219,7 +219,10 @@ int main(int argc, char *argv[]) {
 
   string line;
   piper::SynthesisResult result;
-  while (getline(cin, line)) {
+  fstream textinput;
+  textinput.open("input.txt");
+
+  while (getline(textinput, line)) {
     auto outputType = runConfig.outputType;
     auto speakerId = voice.synthesisConfig.speakerId;
     std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
@@ -284,7 +287,7 @@ int main(int argc, char *argv[]) {
         // Otherwise, we would overwrite the output file for each line.
         stringstream text;
         text << line;
-        while (getline(cin, line)) {
+        while (getline(textinput, line)) {
           text << " " << line;
         }
 
@@ -347,6 +350,8 @@ int main(int argc, char *argv[]) {
   } // for each line
 
   piper::terminate(piperConfig);
+
+  std::cout << "\ntest konsta" << endl;
 
   return EXIT_SUCCESS;
 }
