@@ -218,135 +218,142 @@ int main(int argc, char *argv[]) {
   }
 
   string line;
+  string linechange = "";
   piper::SynthesisResult result;
   fstream textinput;
-  textinput.open("input.txt");
 
-  while (getline(textinput, line)) {
-    auto outputType = runConfig.outputType;
-    auto speakerId = voice.synthesisConfig.speakerId;
-    std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
+  while (1) {
+    sleep(1);
+    line = "";
+    textinput.open("input.txt");
+    getline(textinput, line);
+    if (line != linechange) {
+      linechange = line;
+      auto outputType = runConfig.outputType;
+      auto speakerId = voice.synthesisConfig.speakerId;
+      std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
 
-    if (runConfig.jsonInput) {
-      // Each line is a JSON object
-      json lineRoot = json::parse(line);
+      if (runConfig.jsonInput) {
+        // Each line is a JSON object
+        json lineRoot = json::parse(line);
 
-      // Text is required
-      line = lineRoot["text"].get<std::string>();
+        // Text is required
+        line = lineRoot["text"].get<std::string>();
 
-      if (lineRoot.contains("output_file")) {
-        // Override output WAV file path
-        outputType = OUTPUT_FILE;
-        maybeOutputPath =
-            filesystem::path(lineRoot["output_file"].get<std::string>());
-      }
+        if (lineRoot.contains("output_file")) {
+          // Override output WAV file path
+          outputType = OUTPUT_FILE;
+          maybeOutputPath =
+              filesystem::path(lineRoot["output_file"].get<std::string>());
+        }
 
-      if (lineRoot.contains("speaker_id")) {
-        // Override speaker id
-        voice.synthesisConfig.speakerId =
-            lineRoot["speaker_id"].get<piper::SpeakerId>();
-      } else if (lineRoot.contains("speaker")) {
-        // Resolve to id using speaker id map
-        auto speakerName = lineRoot["speaker"].get<std::string>();
-        if ((voice.modelConfig.speakerIdMap) &&
-            (voice.modelConfig.speakerIdMap->count(speakerName) > 0)) {
+        if (lineRoot.contains("speaker_id")) {
+          // Override speaker id
           voice.synthesisConfig.speakerId =
-              (*voice.modelConfig.speakerIdMap)[speakerName];
-        } else {
-          spdlog::warn("No speaker named: {}", speakerName);
+              lineRoot["speaker_id"].get<piper::SpeakerId>();
+        } else if (lineRoot.contains("speaker")) {
+          // Resolve to id using speaker id map
+          auto speakerName = lineRoot["speaker"].get<std::string>();
+          if ((voice.modelConfig.speakerIdMap) &&
+              (voice.modelConfig.speakerIdMap->count(speakerName) > 0)) {
+            voice.synthesisConfig.speakerId =
+                (*voice.modelConfig.speakerIdMap)[speakerName];
+          } else {
+            spdlog::warn("No speaker named: {}", speakerName);
+          }
         }
       }
-    }
 
-    // Timestamp is used for path to output WAV file
-    const auto now = chrono::system_clock::now();
-    const auto timestamp =
-        chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
-            .count();
+      // Timestamp is used for path to output WAV file
+      const auto now = chrono::system_clock::now();
+      const auto timestamp =
+          chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
+              .count();
 
-    if (outputType == OUTPUT_DIRECTORY) {
-      // Generate path using timestamp
-      stringstream outputName;
-      outputName << timestamp << ".wav";
-      filesystem::path outputPath = runConfig.outputPath.value();
-      outputPath.append(outputName.str());
+      if (outputType == OUTPUT_DIRECTORY) {
+        // Generate path using timestamp
+        stringstream outputName;
+        outputName << timestamp << ".wav";
+        filesystem::path outputPath = runConfig.outputPath.value();
+        outputPath.append(outputName.str());
 
-      // Output audio to automatically-named WAV file in a directory
-      ofstream audioFile(outputPath.string(), ios::binary);
-      piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath.string() << endl;
-    } else if (outputType == OUTPUT_FILE) {
-      if (!maybeOutputPath || maybeOutputPath->empty()) {
-        throw runtime_error("No output path provided");
-      }
-
-      filesystem::path outputPath = maybeOutputPath.value();
-
-      if (!runConfig.jsonInput) {
-        // Read all of standard input before synthesizing.
-        // Otherwise, we would overwrite the output file for each line.
-        stringstream text;
-        text << line;
-        while (getline(textinput, line)) {
-          text << " " << line;
+        // Output audio to automatically-named WAV file in a directory
+        ofstream audioFile(outputPath.string(), ios::binary);
+        piper::textToWavFile(piperConfig, voice, line, audioFile, result);
+        cout << outputPath.string() << endl;
+      } else if (outputType == OUTPUT_FILE) {
+        if (!maybeOutputPath || maybeOutputPath->empty()) {
+          throw runtime_error("No output path provided");
         }
 
-        line = text.str();
-      }
+        filesystem::path outputPath = maybeOutputPath.value();
 
-      // Output audio to WAV file
-      ofstream audioFile(outputPath.string(), ios::binary);
-      piper::textToWavFile(piperConfig, voice, line, audioFile, result);
-      cout << outputPath.string() << endl;
-    } else if (outputType == OUTPUT_STDOUT) {
-      // Output WAV to stdout
-      piper::textToWavFile(piperConfig, voice, line, cout, result);
-    } else if (outputType == OUTPUT_RAW) {
-      // Raw output to stdout
-      mutex mutAudio;
-      condition_variable cvAudio;
-      bool audioReady = false;
-      bool audioFinished = false;
-      vector<int16_t> audioBuffer;
-      vector<int16_t> sharedAudioBuffer;
+        // if (!runConfig.jsonInput) {
+        //   // Read all of standard input before synthesizing.
+        //   // Otherwise, we would overwrite the output file for each line.
+        //   stringstream text;
+        //   text << line;
+        //   while (getline(textinput, line)) {
+        //     text << " " << line;
+        //   }
 
-      thread rawOutputThread(rawOutputProc, ref(sharedAudioBuffer),
-                             ref(mutAudio), ref(cvAudio), ref(audioReady),
-                             ref(audioFinished));
-      auto audioCallback = [&audioBuffer, &sharedAudioBuffer, &mutAudio,
-                            &cvAudio, &audioReady]() {
-        // Signal thread that audio is ready
+        //   line = text.str();
+        // }
+
+        // Output audio to WAV file
+        ofstream audioFile(outputPath.string(), ios::binary);
+        piper::textToWavFile(piperConfig, voice, line, audioFile, result);
+        cout << outputPath.string() << endl;
+      } else if (outputType == OUTPUT_STDOUT) {
+        // Output WAV to stdout
+        piper::textToWavFile(piperConfig, voice, line, cout, result);
+      } else if (outputType == OUTPUT_RAW) {
+        // Raw output to stdout
+        mutex mutAudio;
+        condition_variable cvAudio;
+        bool audioReady = false;
+        bool audioFinished = false;
+        vector<int16_t> audioBuffer;
+        vector<int16_t> sharedAudioBuffer;
+
+        thread rawOutputThread(rawOutputProc, ref(sharedAudioBuffer),
+                               ref(mutAudio), ref(cvAudio), ref(audioReady),
+                               ref(audioFinished));
+        auto audioCallback = [&audioBuffer, &sharedAudioBuffer, &mutAudio,
+                              &cvAudio, &audioReady]() {
+          // Signal thread that audio is ready
+          {
+            unique_lock lockAudio(mutAudio);
+            copy(audioBuffer.begin(), audioBuffer.end(),
+                 back_inserter(sharedAudioBuffer));
+            audioReady = true;
+            cvAudio.notify_one();
+          }
+        };
+        piper::textToAudio(piperConfig, voice, line, audioBuffer, result,
+                           audioCallback);
+
+        // Signal thread that there is no more audio
         {
           unique_lock lockAudio(mutAudio);
-          copy(audioBuffer.begin(), audioBuffer.end(),
-               back_inserter(sharedAudioBuffer));
           audioReady = true;
+          audioFinished = true;
           cvAudio.notify_one();
         }
-      };
-      piper::textToAudio(piperConfig, voice, line, audioBuffer, result,
-                         audioCallback);
 
-      // Signal thread that there is no more audio
-      {
-        unique_lock lockAudio(mutAudio);
-        audioReady = true;
-        audioFinished = true;
-        cvAudio.notify_one();
+        // Wait for audio output to finish
+        spdlog::info("Waiting for audio to finish playing...");
+        rawOutputThread.join();
       }
 
-      // Wait for audio output to finish
-      spdlog::info("Waiting for audio to finish playing...");
-      rawOutputThread.join();
+      spdlog::info("Real-time factor: {} (infer={} sec, audio={} sec)",
+                   result.realTimeFactor, result.inferSeconds,
+                   result.audioSeconds);
+
+      // Restore config (--json-input)
+      voice.synthesisConfig.speakerId = speakerId;
     }
-
-    spdlog::info("Real-time factor: {} (infer={} sec, audio={} sec)",
-                 result.realTimeFactor, result.inferSeconds,
-                 result.audioSeconds);
-
-    // Restore config (--json-input)
-    voice.synthesisConfig.speakerId = speakerId;
-
+    textinput.close();
   } // for each line
 
   piper::terminate(piperConfig);
