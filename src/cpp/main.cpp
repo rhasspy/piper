@@ -226,18 +226,21 @@ int main(int argc, char *argv[]) {
     spdlog::info("Output directory: {}", runConfig.outputPath.value().string());
   }
 
-  string line;
-  string linechange = "";
+  string line; // string of input text
+  string linechange =
+      ""; // will be used to compare with line and see if there is new text
   piper::SynthesisResult result;
-  fstream textinput;
+  fstream textinput; // filestream for opening input.txt
 
+  // [TODO] Figure out signal catch  ctrl+c to break this loop
   while (1) {
-    sleep(1);
-    line = "";
-    textinput.open("input.txt");
+    sleep(1);  // [TODO] figure out other way to control loop speed
+    line = ""; // Reset line (idk why but it works this way)
+    textinput.open("input.txt"); // Open input.txt
     getline(textinput, line);
-    if (line != linechange) {
+    if (line != linechange) { // Only synthesize if file contents change
       linechange = line;
+      // Evetything below is piper magic
       auto outputType = runConfig.outputType;
       auto speakerId = voice.synthesisConfig.speakerId;
       std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
