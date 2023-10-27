@@ -1,0 +1,9 @@
+name italian-mbrola-3
+language it 7
+gender male
+
+pitch 82 117
+voicing 65
+mbrola it3 it3_phtrans
+
+replace 03 i I       // final unstressed "i"

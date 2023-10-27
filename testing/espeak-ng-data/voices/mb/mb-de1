@@ -1,0 +1,9 @@
+name german-mbrola-1
+language de 6
+gender female
+voicing 80
+pitch 140 220
+
+stressLength 400 400 400 400 500 500 500 500
+mbrola de1 de2_phtrans
+

@@ -1,0 +1,22 @@
+name persian-mb-ir1
+language fa
+gender male
+phonemes fa
+mbrola ir1 ir1_phtrans
+
+// "speed 82" adjust default speed of "mb-ir1" with eSpeak "fa". 
+speed 82
+// Please don't change this value. It's result of several tests.
+
+// "voicing 125" adjust output volume of "mb-ir1" with eSpeak "fa". 
+voicing 125	
+// Please don't change this value. It's result of several tests.
+
+// "pitch 82 118" adjust default pitch of "mb-ir1" like other male voices.
+pitch 82 118
+// Please don't change this value. The result male voice is good and natural.
+
+// If you want use Pinglish instead of English for reading, just delete // from start of next line. 
+// dictrules 1
+// "dictrules 1" read English text as Pinglish (Persian text that written with English alphabets). 
+

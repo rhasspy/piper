@@ -1,0 +1,10 @@
+name german-mbrola-5
+language de 7
+gender female
+stressLength 400 400 400 400 500 500 500 500
+pitch 140 220
+mbrola de5 de6_phtrans 22050
+
+// avoid glottal stops. de5 assumes [?] between pause and vowel
+replace 00 _!  _
+replace 00 _|  _

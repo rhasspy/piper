@@ -1,0 +1,12 @@
+name us-mbrola-1
+language en-us
+language en 8
+gender female
+
+phonemes en-us
+dictrules 3 6
+
+stressLength 170 135 205 205 0 0  245 275
+
+pitch 140 220
+mbrola us1 us_phtrans

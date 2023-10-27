@@ -1,0 +1,11 @@
+language pt-br 6
+language pt 8
+name brazil-mbrola-3
+gender male
+pitch 80 120
+
+dictrules 2 3 4
+voicing 120
+
+mbrola br3 ptbr_phtrans
+

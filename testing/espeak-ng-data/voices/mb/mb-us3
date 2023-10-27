@@ -1,0 +1,13 @@
+name us-mbrola-3
+language en-us
+language en 8
+gender male
+
+phonemes en-us
+dictrules 3 6
+
+stressLength 170 135 205 205 0 0  245 275
+
+voicing 150
+pitch 82 117
+mbrola us3 us3_phtrans

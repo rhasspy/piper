@@ -1,0 +1,6 @@
+name chinese-mb-cn1
+language zh
+mbrola cn1 zh_phtrans
+pitch 100 280
+speed 90
+status testing

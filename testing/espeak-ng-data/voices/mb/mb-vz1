@@ -1,0 +1,11 @@
+language es-vz 7
+language es  8
+name venezuala-mbrola-1
+gender male
+pitch 82 117
+
+mbrola vz1 vz_phtrans
+
+dictrules 3
+replace 00 T s
+voicing 200
