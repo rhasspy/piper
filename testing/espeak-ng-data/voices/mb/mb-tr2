@@ -1,0 +1,10 @@
+name turkish-mbrola-1
+language tr 7
+gender female
+
+pitch 160 230
+voicing 170
+
+mbrola tr2 tr1_phtrans
+dictrules 1
+

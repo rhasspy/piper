@@ -1,0 +1,11 @@
+language pt-pt 7
+language pt 7
+name portugal-mbrola-1
+gender female
+pitch 145 240
+
+dictrules 1
+voicing 70
+
+mbrola pt1 pt1_phtrans
+

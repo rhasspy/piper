@@ -1,0 +1,10 @@
+language es-mx 7
+language es  8
+name mexican-mbrola-1
+gender male
+pitch 82 117
+
+mbrola mx1 mx1_phtrans
+
+replace 00 T s
+
