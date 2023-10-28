@@ -138,12 +138,27 @@ def main():
     parser.add_argument("--noise-scale", type=float, default=0.667)
     parser.add_argument("--noise-scale-w", type=float, default=0.8)
     parser.add_argument("--length-scale", type=float, default=1.0)
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=45,
+        help="Number of mel frames to decode at each step"
+    )
+    parser.add_argument(
+        "--chunk-padding",
+        type=int,
+        default=5,
+        help="Number of mel frames to add to the start and end of the current chunk to reduce decoding artifacts"
+    )
+
     args = parser.parse_args()
 
     streamer = SpeechStreamer(
         encoder_path=os.fspath(args.encoder),
         decoder_path=os.fspath(args.decoder),
         sample_rate=args.sample_rate,
+        chunk_size=args.chunk_size,
+        chunk_padding=args.chunk_padding,
     )
 
     output_buffer = sys.stdout.buffer
