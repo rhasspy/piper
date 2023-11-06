@@ -3,53 +3,64 @@ name: main
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
-  # push:
-  #   tags:
-  #     - "*"
+    tags:
+      - "*"
 
 jobs:
-  # create_release:
-  #   name: Create release
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-  #   steps:
-  #     - name: Create release
-  #       id: create_release
-  #       uses: actions/create-release@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ github.token }}
-  #       with:
-  #         tag_name: ${{ github.ref }}
-  #         release_name: ${{ github.ref }}
-  #         draft: false
-  #         prerelease: false
+  create_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
   build_linux:
     name: "linux build"
     runs-on: ubuntu-latest
-    # needs: create_release  # we need to know the upload URL
+    needs: create_release  # we need to know the upload URL
     steps:
       - uses: actions/checkout@v3
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
       - name: build
         run: |
-          docker buildx build . --platform linux/arm64 --output 'type=local,dest=dist'
-      # - name: package
-      #   run: |
-      #     cd _install && \
-      #     tar -czf piper_linux_${{ matrix.arch }}.tar.gz piper/
-      # - name: upload
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ github.token }}
-      #   with:
-      #     upload_url: ${{ needs.create_release.outputs.upload_url }}
-      #     asset_path: _install/piper_linux_${{ matrix.arch }}.tar.gz
-      #     asset_name: piper_linux_${{ matrix.arch }}.tar.gz
-      #     asset_content_type: application/octet-stream
+          docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 --output 'type=local,dest=dist'
+      - name: upload-amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: dist/piper_amd64.tar.gz
+          asset_name: piper_linux_x86_64.tar.gz
+          asset_content_type: application/octet-stream
+      - name: upload-arm64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: dist/piper_arm64.tar.gz
+          asset_name: piper_linux_aarch64.tar.gz
+          asset_content_type: application/octet-stream
+      - name: upload-armv7
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: dist/piper_armv7.tar.gz
+          asset_name: piper_linux_armv7l.tar.gz
+          asset_content_type: application/octet-stream
   # build_windows:
   #   runs-on: windows-latest
   #   name: "windows build: ${{ matrix.arch }}"
