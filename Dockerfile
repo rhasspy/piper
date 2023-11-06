@@ -12,7 +12,7 @@ RUN apt-get update && \
 WORKDIR /build
 
 COPY ./ ./
-RUN cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install
+RUN cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install -D_FILE_OFFSET_BITS=64
 RUN cmake --build build --config Release
 RUN cmake --install build
 
