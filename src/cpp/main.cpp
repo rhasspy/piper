@@ -18,6 +18,11 @@
 #include <windows.h>
 #endif
 
+#ifdef _WIN32
+  #include <io.h>
+  #include <fcntl.h>
+#endif
+
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
@@ -306,6 +311,12 @@ int main(int argc, char *argv[]) {
       bool audioFinished = false;
       vector<int16_t> audioBuffer;
       vector<int16_t> sharedAudioBuffer;
+
+#ifdef _WIN32
+      // Needed on Windows to avoid terminal conversions
+      setmode(fileno(stdout),O_BINARY);
+      setmode(fileno(stdin),O_BINARY);
+#endif
 
       thread rawOutputThread(rawOutputProc, ref(sharedAudioBuffer),
                              ref(mutAudio), ref(cvAudio), ref(audioReady),
