@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import wave
 from dataclasses import dataclass
 from pathlib import Path
@@ -103,30 +104,48 @@ class PiperVoice:
             wav_file.writeframes(audio_bytes)
 
     def synthesize_stream_raw(
-        self,
-        text: str,
-        speaker_id: Optional[int] = None,
-        length_scale: Optional[float] = None,
-        noise_scale: Optional[float] = None,
-        noise_w: Optional[float] = None,
-        sentence_silence: float = 0.0,
+            self,
+            text: str,
+            speaker_id: Optional[int] = None,
+            length_scale: Optional[float] = None,
+            noise_scale: Optional[float] = None,
+            noise_w: Optional[float] = None,
+            sentence_silence: float = 0.0,
     ) -> Iterable[bytes]:
-        """Synthesize raw audio per sentence from text."""
-        sentence_phonemes = self.phonemize(text)
+        """Synthesize raw audio per sentence from text with variable pauses."""
+        # Define the base pause duration
+        base_pause_duration = 5  # seconds
 
         # 16-bit mono
         num_silence_samples = int(sentence_silence * self.config.sample_rate)
         silence_bytes = bytes(num_silence_samples * 2)
 
-        for phonemes in sentence_phonemes:
-            phoneme_ids = self.phonemes_to_ids(phonemes)
-            yield self.synthesize_ids_to_raw(
-                phoneme_ids,
-                speaker_id=speaker_id,
-                length_scale=length_scale,
-                noise_scale=noise_scale,
-                noise_w=noise_w,
-            ) + silence_bytes
+        # Split text using regex to match [pause] and [pause N]
+        text_chunks = re.split(r'(\[pause(?: \d+)?\])', text)
+
+        for chunk in text_chunks:
+            # Check if the chunk is a pause command
+            pause_match = re.match(r'\[pause(?: (\d+))?\]', chunk)
+            if pause_match:
+                # Get the pause multiplier if specified, default to 1
+                pause_multiplier = int(pause_match.group(1)) if pause_match.group(1) else 1
+                num_pause_samples = int(base_pause_duration * pause_multiplier * self.config.sample_rate)
+                pause_bytes = bytes(num_pause_samples * 2)
+                yield pause_bytes
+            else:
+                if chunk:  # Avoid empty chunks that can occur after splitting
+                    print(chunk)
+                    sentence_phonemes = self.phonemize(chunk)
+                    for phonemes in sentence_phonemes:
+                        phoneme_ids = self.phonemes_to_ids(phonemes)
+                        yield self.synthesize_ids_to_raw(
+                            phoneme_ids,
+                            speaker_id=speaker_id,
+                            length_scale=length_scale,
+                            noise_scale=noise_scale,
+                            noise_w=noise_w,
+                        ) + silence_bytes
+
 
     def synthesize_ids_to_raw(
         self,
