@@ -113,9 +113,6 @@ class PiperVoice:
             sentence_silence: float = 0.0,
     ) -> Iterable[bytes]:
         """Synthesize raw audio per sentence from text with variable pauses."""
-        # Define the base pause duration
-        base_pause_duration = 5  # seconds
-
         # 16-bit mono
         num_silence_samples = int(sentence_silence * self.config.sample_rate)
         silence_bytes = bytes(num_silence_samples * 2)
@@ -129,7 +126,7 @@ class PiperVoice:
             if pause_match:
                 # Get the pause multiplier if specified, default to 1
                 pause_multiplier = int(pause_match.group(1)) if pause_match.group(1) else 1
-                num_pause_samples = int(base_pause_duration * pause_multiplier * self.config.sample_rate)
+                num_pause_samples = int(sentence_silence * pause_multiplier * self.config.sample_rate)
                 pause_bytes = bytes(num_pause_samples * 2)
                 yield pause_bytes
             else:
