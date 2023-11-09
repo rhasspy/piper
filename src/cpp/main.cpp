@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <signal.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -37,6 +38,10 @@ using namespace std;
 using json = nlohmann::json;
 
 enum OutputType { OUTPUT_FILE, OUTPUT_DIRECTORY, OUTPUT_STDOUT, OUTPUT_RAW };
+
+volatile sig_atomic_t stop;
+
+void inthand(int signum) { stop = 1; }
 
 struct RunConfig {
   // Path to .onnx voice file
@@ -233,7 +238,10 @@ int main(int argc, char *argv[]) {
   fstream textinput; // filestream for opening input.txt
 
   // [TODO] Figure out signal catch  ctrl+c to break this loop
-  while (1) {
+
+  signal(SIGINT, inthand);
+
+  while (!stop) {
     sleep(1);  // [TODO] figure out other way to control loop speed
     line = ""; // Reset line (idk why but it works this way)
     textinput.open("input.txt"); // Open input.txt
@@ -370,7 +378,7 @@ int main(int argc, char *argv[]) {
 
   piper::terminate(piperConfig);
 
-  std::cout << "\ntest konsta" << endl;
+  // std::cout << "Exiting loop" << endl;
 
   return EXIT_SUCCESS;
 }
