@@ -436,6 +436,8 @@ void printUsage(char *argv[]) {
        << endl;
   cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
+  cerr << "   -q       --quiet              disable logging"
+       << endl;
   cerr << endl;
 }
 
@@ -522,6 +524,9 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--debug") {
       // Set DEBUG logging
       spdlog::set_level(spdlog::level::debug);
+    } else if (arg == "-q" || arg == "--quiet") {
+      // diable logging
+      spdlog::set_level(spdlog::level::off);
     } else if (arg == "-h" || arg == "--help") {
       printUsage(argv);
       exit(0);
