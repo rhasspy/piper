@@ -40,7 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: dist/piper_amd64.tar.gz
+          asset_path: dist/linux_amd64/piper_amd64.tar.gz
           asset_name: piper_linux_x86_64.tar.gz
           asset_content_type: application/octet-stream
       - name: upload-arm64
@@ -49,7 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: dist/piper_arm64.tar.gz
+          asset_path: dist/linux_arm64/piper_arm64.tar.gz
           asset_name: piper_linux_aarch64.tar.gz
           asset_content_type: application/octet-stream
       - name: upload-armv7
@@ -58,7 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: dist/piper_armv7.tar.gz
+          asset_path: dist/linux_arm_v7/piper_armv7.tar.gz
           asset_name: piper_linux_armv7l.tar.gz
           asset_content_type: application/octet-stream
   build_windows:
