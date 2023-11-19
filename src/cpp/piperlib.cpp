@@ -1,5 +1,5 @@
 #include "piper.hpp"
-#include "piperlib.h"
+#include "piperlib.hpp"
 #include <cstring>
 
 extern "C"

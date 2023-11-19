@@ -10,9 +10,7 @@ using namespace piper;
 #    define PIPER_API __attribute__ ((visibility ("default")))
 #endif
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 	typedef void (*AudioCallback)(int16_t* audioBuffer, int length);
 
 	PIPER_API eSpeakConfig* create_eSpeakConfig();
@@ -42,6 +40,4 @@ extern "C" {
 	PIPER_API void textToAudio(PiperConfig* config, Voice* voice, const char* text, SynthesisResult* result, AudioCallback audioCallback);
 	PIPER_API void textToWavFile(PiperConfig* config, Voice* voice, const char* text, const char* audioFile, SynthesisResult* result);
 
-#ifdef __cplusplus
 }
-#endif
