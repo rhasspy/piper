@@ -268,6 +268,7 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
   if (useCuda) {
     // Use CUDA provider
     OrtCUDAProviderOptions cuda_options{};
+    cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
     session.options.AppendExecutionProvider_CUDA(cuda_options);
   }
 
