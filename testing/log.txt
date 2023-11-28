@@ -1,0 +1,8 @@
+[2023-11-28 11:21:03.352] [piper] [info] Loaded voice in 0.385390582 second(s)
+[2023-11-28 11:21:03.354] [piper] [info] Initialized piper
+output.wav
+[2023-11-28 11:21:04.537] [piper] [info] Real-time factor: 0.12607754559481532 (infer=0.161013319 sec, audio=1.2770975056689342 sec)
+Playing WAVE 'output.wav' : Signed 16 bit Little Endian, Rate 22050 Hz, Mono
+[2023-11-28 11:21:15.096] [piper] [info] Terminated piper
+
+test konsta
