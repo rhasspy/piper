@@ -1,6 +1,6 @@
 #!/bin/bash
 
-inotifywait -q -m -e close_write welcome.wav |
+inotifywait -q -m -e close_write output.wav |
 	while read -r filename event; do
-		aplay welcome.wav # or "./$filename"
+		aplay output.wav # or "./$filename"
 	done
