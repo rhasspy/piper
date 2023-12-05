@@ -1,8 +1,8 @@
 # Training Guide
 
-Check out a [video training guide by Thorsten Müller](https://www.youtube.com/watch?v=b_we_jma220)
-
-For Windows, see [ssamjh's guide using WSL](https://ssamjh.nz/create-custom-piper-tts-voice/)
+* Check out a [video training guide by Thorsten Müller](https://www.youtube.com/watch?v=b_we_jma220)
+* Checkout a video to [train/fine-tune through colab](https://www.youtube.com/watch?v=67QvWOp3dkU) (Natlamir)
+* For Windows, see [ssamjh's guide using WSL](https://ssamjh.nz/create-custom-piper-tts-voice/)
 
 ---
 
@@ -21,6 +21,12 @@ Choices must be made at each step, including:
 * Single or multiple speakers
 * Fine-tuning an [existing model](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main) or training from scratch
 * Exporting to [onnx](https://github.com/microsoft/onnxruntime/) or PyTorch
+
+Note: This tutorial is focused on training in local mode. If you want to train in the cloud, explore our colab notebooks:
+* [training notebook](https://colab.research.google.com/github/rmcpantoja/piper/blob/master/notebooks/piper_multilingual_training_notebook.ipynb)
+* [Inference notebook for the full checkpoints](https://colab.research.google.com/github/rmcpantoja/piper/blob/master/notebooks/piper_inference_(ckpt).ipynb)
+* [Model exporter notebook](https://colab.research.google.com/github/rmcpantoja/piper/blob/master/notebooks/piper_model_exporter.ipynb)
+* [Inference notebook](https://colab.research.google.com/github/rmcpantoja/piper/blob/master/notebooks/piper_inference_(ONNX).ipynb)
 
 ## Getting Started
 
