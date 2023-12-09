@@ -128,13 +128,13 @@ class PiperVoice:
                 noise_w=noise_w,
             ) + silence_bytes
 
-        def synthesize_ids_to_raw(
-            self,
-            phoneme_ids: List[int],
-            speaker_id: Optional[int] = None,
-            length_scale: Optional[float] = None,
-            noise_scale: Optional[float] = None,
-            noise_w: Optional[float] = None,
+    def synthesize_ids_to_raw(
+        self,
+        phoneme_ids: List[int],
+        speaker_id: Optional[int] = None,
+        length_scale: Optional[float] = None,
+        noise_scale: Optional[float] = None,
+        noise_w: Optional[float] = None,
     ) -> bytes:
         """Synthesize raw audio from phoneme ids."""
         if length_scale is None:
