@@ -128,13 +128,13 @@ class PiperVoice:
                 noise_w=noise_w,
             ) + silence_bytes
 
-    def synthesize_ids_to_raw(
-        self,
-        phoneme_ids: List[int],
-        speaker_id: Optional[int] = None,
-        length_scale: Optional[float] = None,
-        noise_scale: Optional[float] = None,
-        noise_w: Optional[float] = None,
+        def synthesize_ids_to_raw(
+            self,
+            phoneme_ids: List[int],
+            speaker_id: Optional[int] = None,
+            length_scale: Optional[float] = None,
+            noise_scale: Optional[float] = None,
+            noise_w: Optional[float] = None,
     ) -> bytes:
         """Synthesize raw audio from phoneme ids."""
         if length_scale is None:
@@ -153,25 +153,24 @@ class PiperVoice:
             dtype=np.float32,
         )
 
+        args = {
+            "input": phoneme_ids_array,
+            "input_lengths": phoneme_ids_lengths,
+            "scales": scales
+        }
+
+        if self.config.num_speakers <= 1:
+            speaker_id = None
+
         if (self.config.num_speakers > 1) and (speaker_id is None):
             # Default speaker
             speaker_id = 0
 
-        sid = None
-
         if speaker_id is not None:
             sid = np.array([speaker_id], dtype=np.int64)
+            args["sid"] = sid
 
         # Synthesize through Onnx
-        audio = self.session.run(
-            None,
-            {
-                "input": phoneme_ids_array,
-                "input_lengths": phoneme_ids_lengths,
-                "scales": scales,
-                "sid": sid,
-            },
-        )[0].squeeze((0, 1))
+        audio = self.session.run(None, args, )[0].squeeze((0, 1))
         audio = audio_float_to_int16(audio.squeeze())
-
         return audio.tobytes()
