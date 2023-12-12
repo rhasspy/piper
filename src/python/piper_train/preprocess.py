@@ -24,7 +24,7 @@ from piper_phonemize import (
     get_max_phonemes,
     tashkeel_run,
 )
-from glob import glob
+
 from .norm_audio import cache_norm_audio, make_silence_detector
 
 _DIR = Path(__file__).parent
