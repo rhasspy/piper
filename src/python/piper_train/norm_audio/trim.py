@@ -21,12 +21,12 @@ def trim_silence(
     last_chunk: Optional[int] = None
     seconds_per_chunk: float = samples_per_chunk / sample_rate
 
-    chunk = audio_array[:samples_per_chunk]
-    audio_array = audio_array[samples_per_chunk:]
-    chunk_idx: int = 0
+    num_chunks = len(audio_array) // samples_per_chunk
 
     # Determine main block of speech
-    while len(audio_array) > 0:
+    for chunk_idx in range(num_chunks):
+        chunk_offset = chunk_idx * samples_per_chunk
+        chunk = audio_array[chunk_offset : chunk_offset + samples_per_chunk]
         prob = detector(chunk, sample_rate=sample_rate)
         is_speech = prob >= threshold
 
@@ -37,10 +37,6 @@ def trim_silence(
             else:
                 # Last speech so far
                 last_chunk = chunk_idx
-
-        chunk = audio_array[:samples_per_chunk]
-        audio_array = audio_array[samples_per_chunk:]
-        chunk_idx += 1
 
     if (first_chunk is not None) and (last_chunk is not None):
         first_chunk = max(0, first_chunk - keep_chunks_before)

@@ -282,7 +282,7 @@ class VitsModel(pl.LightningModule):
     def validation_step(self, batch: Batch, batch_idx: int):
         val_loss = self.training_step_g(batch) + self.training_step_d(batch)
         self.log("val_loss", val_loss)
-        print(f"Training progress:\nEpoch: {self.current_epoch}. Steps: {self.global_step}")
+        print(f"Epoch: {self.current_epoch}. Steps: {self.global_step}")
         # Generate audio examples
         for utt_idx, test_utt in enumerate(self._test_dataset):
             text = test_utt.phoneme_ids.unsqueeze(0).to(self.device)
