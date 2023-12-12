@@ -17,7 +17,10 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--dataset-dir", required=True, help="Path to pre-processed dataset directory"
+        "--dataset-dir",
+        type=str,
+        required=True,
+        help="Path to pre-processed dataset directory"
     )
     parser.add_argument(
         "--checkpoint-epochs",
@@ -36,12 +39,22 @@ def main():
     )
     Trainer.add_argparse_args(parser)
     VitsModel.add_model_specific_args(parser)
-    parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument(
-        "--num_ckpt", default=1, help="# of ckpts saved."
+        "--seed",
+        type=int,
+        default=1234
     )
     parser.add_argument(
-        "--save_last", default=False, help="Always save the last checkpoint."
+        "--num_ckpt",
+        type=int,
+        default=1,
+        help="# of ckpts saved."
+    )
+    parser.add_argument(
+        "--save_last",
+        type=bool,
+        default=False,
+        help="Always save the last checkpoint."
     )
     args = parser.parse_args()
     _LOGGER.debug(args)
