@@ -1,7 +1,8 @@
 # Training Guide
 
 * Check out a [video training guide by Thorsten Müller](https://www.youtube.com/watch?v=b_we_jma220)
-* Checkout a video to [train/fine-tune through colab](https://www.youtube.com/watch?v=67QvWOp3dkU) (Natlamir)
+* Checkout a video to [train/fine-tune through colab](https://www.youtube.com/watch?v=67QvWOp3dkU) (by Natlamir)
+	* Also, [A text tutorial](https://github.com/rmcpantoja/Piper-Training-Guide-with-Screen-Reader) is available for screen readers users, although it may also be useful for general use, originally written by [Zach Bennoui](https://github.com/ZachB100/Piper-Training-Guide-with-Screen-Reader). The rmcpantoja's fork contains an updated guide.
 * For Windows, see [ssamjh's guide using WSL](https://ssamjh.nz/create-custom-piper-tts-voice/)
 
 ---
