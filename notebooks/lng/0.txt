@@ -28,3 +28,4 @@ The Use GPU checkbox is unchecked, however you are using a GPU runtime environme
 Invalid link or ID!=
 Silence between sentences=
 Save to mp3=
+Too long text=

@@ -1,7 +1,7 @@
 [language info]
 Name=Español
 code=Es
-version=0.1
+version=1.0
 author=Mateo Cedillo
 Copyright=© 2018-2023 MT Programs, todos los derechos Reservados 
 [Strings]
@@ -28,3 +28,4 @@ The Use GPU checkbox is unchecked, however you are using a GPU runtime environme
 Invalid link or ID!=¡Enlace o ID no válido!
 Silence between sentences=Silencio entre oraciones
 Save to mp3=Guardar a mp3
+Too long text=Texto demasiado largo
