@@ -41,7 +41,7 @@ class PiperVoice:
                 sess_options=onnxruntime.SessionOptions(),
                 providers=["CPUExecutionProvider"]
                 if not use_cuda
-                else ["CUDAExecutionProvider"],
+                else [("CUDAExecutionProvider", {"cudnn_conv_algo_search": "HEURISTIC"})],
             ),
         )
 

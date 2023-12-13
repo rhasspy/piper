@@ -36,14 +36,16 @@ int main(int argc, char *argv[]) {
   auto outputPath = std::string(argv[3]);
 
   optional<piper::SpeakerId> speakerId;
-  loadVoice(piperConfig, modelPath, modelPath + ".json", voice, speakerId);
+  loadVoice(piperConfig, modelPath, modelPath + ".json", voice, speakerId,
+            false);
   piper::initialize(piperConfig);
 
   // Output audio to WAV file
   ofstream audioFile(outputPath, ios::binary);
 
   piper::SynthesisResult result;
-  piper::textToWavFile(piperConfig, voice, "This is a test.", audioFile, result);
+  piper::textToWavFile(piperConfig, voice, "This is a test.", audioFile,
+                       result);
   piper::terminate(piperConfig);
 
   // Verify that file has some data
