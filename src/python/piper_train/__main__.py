@@ -53,7 +53,7 @@ def main():
     parser.add_argument(
         "--save_last",
         type=bool,
-        default=False,
+        default=None,
         help="Always save the last checkpoint."
     )
     args = parser.parse_args()
@@ -80,7 +80,6 @@ def main():
     if args.checkpoint_epochs is not None:
         trainer.callbacks = [ModelCheckpoint(
             every_n_epochs=args.checkpoint_epochs,
-            filename="model",
             save_top_k=args.num_ckpt,
             save_last=args.save_last
         )]
