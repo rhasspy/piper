@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import subprocess
+import venv
+from pathlib import Path
+
+_DIR = Path(__file__).parent
+_PROGRAM_DIR = _DIR.parent
+_VENV_DIR = _PROGRAM_DIR / ".venv"
+_MODULE_DIR = _PROGRAM_DIR / "piper"
+
+context = venv.EnvBuilder().ensure_directories(_VENV_DIR)
+subprocess.check_call([context.env_exe, "-m", "black", str(_MODULE_DIR)])
+subprocess.check_call([context.env_exe, "-m", "isort", str(_MODULE_DIR)])
