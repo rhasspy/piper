@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+import subprocess
+import venv
+from pathlib import Path
+
+_DIR = Path(__file__).parent
+_PROGRAM_DIR = _DIR.parent
+_VENV_DIR = _PROGRAM_DIR / ".venv"
+
+
+# Create virtual environment
+builder = venv.EnvBuilder(with_pip=True)
+context = builder.ensure_directories(_VENV_DIR)
+builder.create(_VENV_DIR)
+
+# Upgrade dependencies
+pip = [context.env_exe, "-m", "pip"]
+subprocess.check_call(pip + ["install", "--upgrade", "pip"])
+subprocess.check_call(pip + ["install", "--upgrade", "setuptools", "wheel"])
+
+# Install requirements
+subprocess.check_call(
+    pip
+    + [
+        "install",
+        "-f",
+        "https://synesthesiam.github.io/prebuilt-apps/",
+        "-r",
+        str(_PROGRAM_DIR / "requirements.txt"),
+    ]
+)
