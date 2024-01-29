@@ -58,50 +58,56 @@ def ensure_voice_exists(
     voice_info = voices_info[name]
     voice_files = voice_info["files"]
     files_to_download: Set[str] = set()
+    data_dirs = set([Path(x) for x in data_dirs])
 
-    for data_dir in data_dirs:
-        data_dir = Path(data_dir)
+    # Check sizes/hashes
+    for file_path, file_info in voice_files.items():
+        if file_path in files_to_download:
+            # Already planning to download
+            continue
 
-        # Check sizes/hashes
-        for file_path, file_info in voice_files.items():
-            if file_path in files_to_download:
-                # Already planning to download
-                continue
+        file_name = Path(file_path).name
+        if file_name in _SKIP_FILES:
+            continue
 
-            file_name = Path(file_path).name
-            if file_name in _SKIP_FILES:
-                continue
+        file_found = False
 
+        for data_dir in data_dirs:
             data_file_path = data_dir / file_name
             _LOGGER.debug("Checking %s", data_file_path)
+
             if not data_file_path.exists():
-                _LOGGER.debug("Missing %s", data_file_path)
-                files_to_download.add(file_path)
                 continue
 
             expected_size = file_info["size_bytes"]
             actual_size = data_file_path.stat().st_size
             if expected_size != actual_size:
                 _LOGGER.warning(
-                    "Wrong size (expected=%s, actual=%s) for %s",
+                    "Deleting model file with wrong size (expected=%s, actual=%s) for %s",
                     expected_size,
                     actual_size,
                     data_file_path,
                 )
-                files_to_download.add(file_path)
+                Path(data_file_path).unlink(missing_ok=True)
                 continue
 
             expected_hash = file_info["md5_digest"]
             actual_hash = get_file_hash(data_file_path)
             if expected_hash != actual_hash:
                 _LOGGER.warning(
-                    "Wrong hash (expected=%s, actual=%s) for %s",
+                    "Deleting model file with wrong hash (expected=%s, actual=%s) for %s",
                     expected_hash,
                     actual_hash,
                     data_file_path,
                 )
-                files_to_download.add(file_path)
+                Path(data_file_path).unlink(missing_ok=True)
                 continue
+
+            file_found = True
+
+        if not file_found:
+            _LOGGER.debug("Missing %s", data_file_path)
+            files_to_download.add(file_path)
 
     if (not voice_files) and (not files_to_download):
         raise ValueError(f"Unable to find or download voice: {name}")
