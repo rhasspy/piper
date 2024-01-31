@@ -83,24 +83,22 @@ def ensure_voice_exists(
             actual_size = data_file_path.stat().st_size
             if expected_size != actual_size:
                 _LOGGER.warning(
-                    "Deleting model file with wrong size (expected=%s, actual=%s) for %s",
+                    "Skipping model file with wrong size (expected=%s, actual=%s) for %s",
                     expected_size,
                     actual_size,
                     data_file_path,
                 )
-                Path(data_file_path).unlink(missing_ok=True)
                 continue
 
             expected_hash = file_info["md5_digest"]
             actual_hash = get_file_hash(data_file_path)
             if expected_hash != actual_hash:
                 _LOGGER.warning(
-                    "Deleting model file with wrong hash (expected=%s, actual=%s) for %s",
+                    "Skipping model file with wrong hash (expected=%s, actual=%s) for %s",
                     expected_hash,
                     actual_hash,
                     data_file_path,
                 )
-                Path(data_file_path).unlink(missing_ok=True)
                 continue
 
             file_found = True
