@@ -5,7 +5,7 @@ Pi 4. Piper is used in a [variety of projects](#people-using-piper).
 
 ```sh
 echo 'Welcome to the world of speech synthesis!' | \
-  ./piper --model en_US-lessac-medium.onnx --output_file welcome.wav
+  piper --model en_US-lessac-medium --output_file welcome.wav
 ```
 
 [Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a
