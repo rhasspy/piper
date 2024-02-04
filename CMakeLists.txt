@@ -56,14 +56,18 @@ if(NOT DEFINED SPDLOG_DIR)
   add_dependencies(test_piper spdlog_external)
 endif()
 
-# ---- piper-phonemize ---
 
+# ---- piper-phonemize ---
+set(PIPER_PHONEMIZE_REPO $ENV{PIPER_PHONEMIZE_REPO})
+if(NOT DEFINED PIPER_PHONEMIZE_REPO)
+  set(ESPEAK_NG_REPO "https://github.com/jmfrank63/piper-phonemize.git")
+endif()
 if(NOT DEFINED PIPER_PHONEMIZE_DIR)
   set(PIPER_PHONEMIZE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pi")
   ExternalProject_Add(
     piper_phonemize_external
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
-    URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/master.zip"
+    URL "${PIPER_PHONEMIZE_REPO/archive/refs/heads/master.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
   )
   add_dependencies(piper piper_phonemize_external)
