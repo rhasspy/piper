@@ -162,6 +162,10 @@ void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
     if (inferenceValue.contains("noise_scale")) {
       synthesisConfig.noiseScale = inferenceValue.value("noise_scale", 0.667f);
     }
+	
+    if (inferenceValue.contains("volume_level")) {
+      synthesisConfig.volumeLevel = inferenceValue.value("volume_level", 1.0f);
+    }
 
     if (inferenceValue.contains("length_scale")) {
       synthesisConfig.lengthScale = inferenceValue.value("length_scale", 1.0f);
@@ -421,6 +425,10 @@ void synthesize(std::vector<PhonemeId> &phonemeIds,
 
   // Scale audio to fill range and convert to int16
   float audioScale = (MAX_WAV_VALUE / std::max(0.01f, maxAudioValue));
+  
+  // Scale to desired volume level
+  audioScale = audioScale * synthesisConfig.volumeLevel;
+  
   for (int64_t i = 0; i < audioCount; i++) {
     int16_t intAudioValue = static_cast<int16_t>(
         std::clamp(audio[i] * audioScale,

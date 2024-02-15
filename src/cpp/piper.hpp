@@ -52,6 +52,7 @@ struct PhonemizeConfig {
 struct SynthesisConfig {
   // VITS inference settings
   float noiseScale = 0.667f;
+  float volumeLevel = 1.0f;
   float lengthScale = 1.0f;
   float noiseW = 0.8f;
 

@@ -60,6 +60,9 @@ struct RunConfig {
 
   // Amount of noise to add during audio generation
   optional<float> noiseScale;
+  
+  // Audio output volume
+  optional<float> volumeLevel;
 
   // Speed of speaking (1 = normal, < 1 is faster, > 1 is slower)
   optional<float> lengthScale;
@@ -204,6 +207,10 @@ int main(int argc, char *argv[]) {
   if (runConfig.noiseScale) {
     voice.synthesisConfig.noiseScale = runConfig.noiseScale.value();
   }
+  
+  if (runConfig.volumeLevel) {
+    voice.synthesisConfig.volumeLevel = runConfig.volumeLevel.value();
+  }
 
   if (runConfig.lengthScale) {
     voice.synthesisConfig.lengthScale = runConfig.lengthScale.value();
@@ -246,6 +253,7 @@ int main(int argc, char *argv[]) {
     while (getline(cin, line)) {
       auto outputType = runConfig.outputType;
       auto speakerId = voice.synthesisConfig.speakerId;
+	  auto volumeLevel = voice.synthesisConfig.volumeLevel;
       std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
 
       if (runConfig.jsonInput) {
@@ -266,6 +274,10 @@ int main(int argc, char *argv[]) {
           // Override speaker id
           voice.synthesisConfig.speakerId =
               lineRoot["speaker_id"].get<piper::SpeakerId>();
+        } else if (lineRoot.contains("volume_level")) {
+          // Override volume level
+          voice.synthesisConfig.volumeLevel = 
+			  std::stof(lineRoot["volume_level"].get<std::string>());
         } else if (lineRoot.contains("speaker")) {
           // Resolve to id using speaker id map
           auto speakerName = lineRoot["speaker"].get<std::string>();
@@ -373,6 +385,7 @@ int main(int argc, char *argv[]) {
 
       // Restore config (--json-input)
       voice.synthesisConfig.speakerId = speakerId;
+	  voice.synthesisConfig.volumeLevel = volumeLevel;
 
     } // for each line
 	
@@ -446,6 +459,8 @@ void printUsage(char *argv[]) {
   cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
   cerr << "   --noise_scale           NUM   generator noise (default: 0.667)"
        << endl;
+  cerr << "   -v  NUM   --volume      NUM   Volume level (default: 1.0)"
+       << endl;
   cerr << "   --length_scale          NUM   phoneme length (default: 1.0)"
        << endl;
   cerr << "   --noise_w               NUM   phoneme width noise (default: 0.8)"
@@ -514,6 +529,9 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--noise_scale" || arg == "--noise-scale") {
       ensureArg(argc, argv, i);
       runConfig.noiseScale = stof(argv[++i]);
+    } else if (arg == "-v" || arg == "--volume") {
+      ensureArg(argc, argv, i);
+      runConfig.volumeLevel = stof(argv[++i]);
     } else if (arg == "--length_scale" || arg == "--length-scale") {
       ensureArg(argc, argv, i);
       runConfig.lengthScale = stof(argv[++i]);
