@@ -75,7 +75,10 @@ class PiperVoice:
                     continue
                 if next_phoneme_input:
                     # add raw phoneme input, always merged to last segment
-                    phonemes[-1].extend(text_part)
+                    sentences = text_part.split("\n")
+                    phonemes[-1].extend(sentences[0])
+                    for p in sentences[1:]:
+                        phonemes.append(list(p))
                 else:
                     if self.config.espeak_voice == "ar":
                         # Arabic diacritization
