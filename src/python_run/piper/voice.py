@@ -56,18 +56,46 @@ class PiperVoice:
 
     def phonemize(self, text: str) -> List[List[str]]:
         """Text to phonemes grouped by sentence."""
+        phonemes = []
+        next_phoneme_input = False
+        merge_phonemes = False
         if self.config.phoneme_type == PhonemeType.ESPEAK:
-            if self.config.espeak_voice == "ar":
-                # Arabic diacritization
-                # https://github.com/mush42/libtashkeel/
-                text = tashkeel_run(text)
-
-            return phonemize_espeak(text, self.config.espeak_voice)
-
-        if self.config.phoneme_type == PhonemeType.TEXT:
-            return phonemize_codepoints(text)
-
-        raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
+            import re
+            regex = re.compile(r"(\[\[|\]\])")
+            split_text = re.split(regex, text)
+            for text_part in split_text:
+                if text_part == "]]":
+                    merge_phonemes = True
+                    next_phoneme_input = False
+                if text_part == "[[":
+                    next_phoneme_input = True
+                if text_part == "[[" or text_part == "]]":
+                    # add pause
+                    phonemes[-1].append(" ")
+                    continue
+                if isPhoneme:
+                    # add raw phoneme input, always merged to last segment
+                    phonemes[-1].extend(text_part)
+                else:
+                    if self.config.espeak_voice == "ar":
+                        # Arabic diacritization
+                        # https://github.com/mush42/libtashkeel/
+                        text = tashkeel_run(text_part)
+                    ps = phonemize_espeak(text_part, self.config.espeak_voice)
+                    if join:
+                        # merge first list of token
+                        phonemes[-1].extend(ps[0])
+                        #add remaining list (more sentences)
+                        for p in ps[1:]:
+                            phonemes.append(p)
+                        join = False;
+                    else:
+                       phonemes.extend(ps)
+        elif self.config.phoneme_type == PhonemeType.TEXT:
+            phonemes.extend(phonemize_codepoints(text_part))
+        else:
+            raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
+        return phonemes
 
     def phonemes_to_ids(self, phonemes: List[str]) -> List[int]:
         """Phonemes to ids."""
