@@ -36,6 +36,12 @@ def main() -> None:
         action="store_true",
         help="Stream raw audio to stdout",
     )
+    parser.add_argument(
+        "-p",
+        "--phoneme-input",
+        action="store_true",
+        help="Flag to use pure phonemes as input"
+    )
     #
     parser.add_argument("-s", "--speaker", type=int, help="Id of speaker (default: 0)")
     parser.add_argument(
@@ -107,6 +113,7 @@ def main() -> None:
     # Load voice
     voice = PiperVoice.load(args.model, config_path=args.config, use_cuda=args.cuda)
     synthesize_args = {
+        "phoneme_input": args.phoneme_input,
         "speaker_id": args.speaker,
         "length_scale": args.length_scale,
         "noise_scale": args.noise_scale,
