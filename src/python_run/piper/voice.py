@@ -73,7 +73,7 @@ class PiperVoice:
                     # add pause
                     phonemes[-1].append(" ")
                     continue
-                if isPhoneme:
+                if next_phoneme_input:
                     # add raw phoneme input, always merged to last segment
                     phonemes[-1].extend(text_part)
                 else:
@@ -82,13 +82,13 @@ class PiperVoice:
                         # https://github.com/mush42/libtashkeel/
                         text = tashkeel_run(text_part)
                     ps = phonemize_espeak(text_part, self.config.espeak_voice)
-                    if join:
+                    if merge_phonemes:
                         # merge first list of token
                         phonemes[-1].extend(ps[0])
                         #add remaining list (more sentences)
                         for p in ps[1:]:
                             phonemes.append(p)
-                        join = False;
+                        merge_phonemes = False;
                     else:
                        phonemes.extend(ps)
         elif self.config.phoneme_type == PhonemeType.TEXT:
