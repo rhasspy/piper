@@ -138,6 +138,7 @@ Piper has been used in the following projects/papers:
 * [JetsonGPT](https://github.com/shahizat/jetsonGPT)
 * [LocalAI](https://github.com/go-skynet/LocalAI)
 * [Lernstick EDU / EXAM: reading clipboard content aloud with language detection](https://lernstick.ch/)
+* [Natural Speech - A plugin for Runelite, an OSRS Client](https://github.com/phyce/rl-natural-speech)
 
 ## Training
 
