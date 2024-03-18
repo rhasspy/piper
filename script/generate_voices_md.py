@@ -115,10 +115,7 @@ def main() -> None:
 
     for lang_code in sorted(voices_by_lang_code):
         lang_info = _LANGUAGES[lang_code]
-        if lang_code.startswith("en_"):
-            print("*", lang_info.native, f"({lang_code})")
-        else:
-            print("*", lang_info.native, f"(`{lang_code}`, {lang_info.english})")
+        print("*", lang_info.english, f"({lang_code})")
 
         last_dataset = None
         for voice in sorted(
