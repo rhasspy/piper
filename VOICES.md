@@ -1,23 +1,23 @@
 # Voices
 
-* Arabic (ar_JO)
+* Arabic (`ar_JO`, العربية)
     * kareem
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ar/ar_JO/kareem/low/ar_JO-kareem-low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ar/ar_JO/kareem/medium/ar_JO-kareem-medium.onnx?download=true)
-* Catalan (ca_ES)
+* Catalan (`ca_ES`, Català)
     * upc_ona
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ca/ca_ES/upc_ona/x_low/ca_ES-upc_ona-x_low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ca/ca_ES/upc_ona/medium/ca_ES-upc_ona-medium.onnx?download=true)
     * upc_pau
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ca/ca_ES/upc_pau/x_low/ca_ES-upc_pau-x_low.onnx?download=true)
-* Czech (cs_CZ)
+* Czech (`cs_CZ`, Čeština)
     * jirka
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cs/cs_CZ/jirka/low/cs_CZ-jirka-low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx?download=true)
-* Danish (da_DK)
+* Danish (`da_DK`, Dansk)
     * talesyntese
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/da/da_DK/talesyntese/medium/da_DK-talesyntese-medium.onnx?download=true)
-* German (de_DE)
+* German (`de_DE`, Deutsch)
     * eva_k
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/eva_k/x_low/de_DE-eva_k-x_low.onnx?download=true)
     * karlsson
@@ -36,7 +36,7 @@
         * [high](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/high/de_DE-thorsten-high.onnx?download=true)
     * thorsten_emotional
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten_emotional/medium/de_DE-thorsten_emotional-medium.onnx?download=true)
-* Greek (el_GR)
+* Greek (`el_GR`, Ελληνικά)
     * rapunzelina
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/el/el_GR/rapunzelina/low/el_GR-rapunzelina-low.onnx?download=true)
 * English (en_GB)
@@ -97,7 +97,7 @@
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/low/en_US-ryan-low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/medium/en_US-ryan-medium.onnx?download=true)
         * [high](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx?download=true)
-* Spanish (es_ES)
+* Spanish (`es_ES`, Español)
     * carlfm
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx?download=true)
     * davefx
@@ -108,21 +108,21 @@
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/mls_9972/low/es_ES-mls_9972-low.onnx?download=true)
     * sharvard
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx?download=true)
-* Spanish (es_MX)
+* Spanish (`es_MX`, Español)
     * ald
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_MX/ald/medium/es_MX-ald-medium.onnx?download=true)
     * claude
         * [high](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_MX/claude/high/es_MX-claude-high.onnx?download=true)
-* Farsi (fa_IR)
+* Farsi (`fa_IR`, فارسی)
     * amir
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx?download=true)
     * gyro
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/gyro/medium/fa_IR-gyro-medium.onnx?download=true)
-* Finnish (fi_FI)
+* Finnish (`fi_FI`, Suomi)
     * harri
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fi/fi_FI/harri/low/fi_FI-harri-low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fi/fi_FI/harri/medium/fi_FI-harri-medium.onnx?download=true)
-* French (fr_FR)
+* French (`fr_FR`, Français)
     * gilles
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/gilles/low/fr_FR-gilles-low.onnx?download=true)
     * mls
@@ -136,14 +136,14 @@
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/tom/medium/fr_FR-tom-medium.onnx?download=true)
     * upmc
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx?download=true)
-* Hungarian (hu_HU)
+* Hungarian (`hu_HU`, Magyar)
     * anna
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx?download=true)
     * berta
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/berta/medium/hu_HU-berta-medium.onnx?download=true)
     * imre
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/imre/medium/hu_HU-imre-medium.onnx?download=true)
-* Icelandic (is_IS)
+* Icelandic (`is_IS`, íslenska)
     * bui
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/is/is_IS/bui/medium/is_IS-bui-medium.onnx?download=true)
     * salka
@@ -152,44 +152,44 @@
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/is/is_IS/steinn/medium/is_IS-steinn-medium.onnx?download=true)
     * ugla
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/is/is_IS/ugla/medium/is_IS-ugla-medium.onnx?download=true)
-* Italian (it_IT)
+* Italian (`it_IT`, Italiano)
     * riccardo
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx?download=true)
-* Georgian (ka_GE)
+* Georgian (`ka_GE`, ქართული ენა)
     * natia
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ka/ka_GE/natia/medium/ka_GE-natia-medium.onnx?download=true)
-* Kazakh (kk_KZ)
+* Kazakh (`kk_KZ`, қазақша)
     * iseke
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/kk/kk_KZ/iseke/x_low/kk_KZ-iseke-x_low.onnx?download=true)
     * issai
         * [high](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/kk/kk_KZ/issai/high/kk_KZ-issai-high.onnx?download=true)
     * raya
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/kk/kk_KZ/raya/x_low/kk_KZ-raya-x_low.onnx?download=true)
-* Luxembourgish (lb_LU)
+* Luxembourgish (`lb_LU`, Lëtzebuergesch)
     * marylux
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/lb/lb_LU/marylux/medium/lb_LU-marylux-medium.onnx?download=true)
-* Nepali (ne_NP)
+* Nepali (`ne_NP`, नेपाली)
     * google
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/medium/ne_NP-google-medium.onnx?download=true)
-* Dutch (nl_BE)
+* Dutch (`nl_BE`, Nederlands)
     * nathalie
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_BE/nathalie/x_low/nl_BE-nathalie-x_low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_BE/nathalie/medium/nl_BE-nathalie-medium.onnx?download=true)
     * rdh
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_BE/rdh/x_low/nl_BE-rdh-x_low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_BE/rdh/medium/nl_BE-rdh-medium.onnx?download=true)
-* Dutch (nl_NL)
+* Dutch (`nl_NL`, Nederlands)
     * mls
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx?download=true)
     * mls_5809
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls_5809/low/nl_NL-mls_5809-low.onnx?download=true)
     * mls_7432
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls_7432/low/nl_NL-mls_7432-low.onnx?download=true)
-* Norwegian (no_NO)
+* Norwegian (`no_NO`, Norsk)
     * talesyntese
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/no/no_NO/talesyntese/medium/no_NO-talesyntese-medium.onnx?download=true)
-* Polish (pl_PL)
+* Polish (`pl_PL`, Polski)
     * darkman
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pl/pl_PL/darkman/medium/pl_PL-darkman-medium.onnx?download=true)
     * gosia
@@ -198,18 +198,18 @@
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pl/pl_PL/mc_speech/medium/pl_PL-mc_speech-medium.onnx?download=true)
     * mls_6892
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx?download=true)
-* Portuguese (pt_BR)
+* Portuguese (`pt_BR`, Português)
     * edresson
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/edresson/low/pt_BR-edresson-low.onnx?download=true)
     * faber
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx?download=true)
-* Portuguese (pt_PT)
+* Portuguese (`pt_PT`, Português)
     * tugão
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_PT/tugão/medium/pt_PT-tugão-medium.onnx?download=true)
-* Romanian (ro_RO)
+* Romanian (`ro_RO`, Română)
     * mihai
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ro/ro_RO/mihai/medium/ro_RO-mihai-medium.onnx?download=true)
-* Russian (ru_RU)
+* Russian (`ru_RU`, Русский)
     * denis
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ru/ru_RU/denis/medium/ru_RU-denis-medium.onnx?download=true)
     * dmitri
@@ -218,41 +218,41 @@
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx?download=true)
     * ruslan
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ru/ru_RU/ruslan/medium/ru_RU-ruslan-medium.onnx?download=true)
-* Slovak (sk_SK)
+* Slovak (`sk_SK`, Slovenčina)
     * lili
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sk/sk_SK/lili/medium/sk_SK-lili-medium.onnx?download=true)
-* Slovenian (sl_SI)
+* Slovenian (`sl_SI`, Slovenščina)
     * artur
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sl/sl_SI/artur/medium/sl_SI-artur-medium.onnx?download=true)
-* Serbian (sr_RS)
+* Serbian (`sr_RS`, srpski)
     * serbski_institut
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sr/sr_RS/serbski_institut/medium/sr_RS-serbski_institut-medium.onnx?download=true)
-* Swedish (sv_SE)
+* Swedish (`sv_SE`, Svenska)
     * nst
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sv/sv_SE/nst/medium/sv_SE-nst-medium.onnx?download=true)
-* Swahili (sw_CD)
+* Swahili (`sw_CD`, Kiswahili)
     * lanfrica
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx?download=true)
-* Turkish (tr_TR)
+* Turkish (`tr_TR`, Türkçe)
     * dfki
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/tr/tr_TR/dfki/medium/tr_TR-dfki-medium.onnx?download=true)
     * fahrettin
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/tr/tr_TR/fahrettin/medium/tr_TR-fahrettin-medium.onnx?download=true)
     * fettah
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/tr/tr_TR/fettah/medium/tr_TR-fettah-medium.onnx?download=true)
-* Ukrainian (uk_UA)
+* Ukrainian (`uk_UA`, украї́нська мо́ва)
     * lada
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/uk/uk_UA/lada/x_low/uk_UA-lada-x_low.onnx?download=true)
     * ukrainian_tts
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/uk/uk_UA/ukrainian_tts/medium/uk_UA-ukrainian_tts-medium.onnx?download=true)
-* Vietnamese (vi_VN)
+* Vietnamese (`vi_VN`, Tiếng Việt)
     * 25hours_single
         * [low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/vi/vi_VN/25hours_single/low/vi_VN-25hours_single-low.onnx?download=true)
     * vais1000
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/vi/vi_VN/vais1000/medium/vi_VN-vais1000-medium.onnx?download=true)
     * vivos
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/vi/vi_VN/vivos/x_low/vi_VN-vivos-x_low.onnx?download=true)
-* Chinese (zh_CN)
+* Chinese (`zh_CN`, 简体中文)
     * huayan
         * [x_low](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/zh/zh_CN/huayan/x_low/zh_CN-huayan-x_low.onnx?download=true)
         * [medium](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/zh/zh_CN/huayan/medium/zh_CN-huayan-medium.onnx?download=true)
