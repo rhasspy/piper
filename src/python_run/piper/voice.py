@@ -12,6 +12,7 @@ from piper_phonemize import phonemize_codepoints, phonemize_espeak, tashkeel_run
 from .config import PhonemeType, PiperConfig
 from .const import BOS, EOS, PAD
 from .util import audio_float_to_int16
+import struct
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 class PiperVoice:
     session: onnxruntime.InferenceSession
     config: PiperConfig
+    global_time: int
 
     @staticmethod
     def load(
@@ -45,6 +47,9 @@ class PiperVoice:
         else:
             providers = ["CPUExecutionProvider"]
 
+        # set a seed ro reduce randomness (for debug)
+        # onnxruntime.set_seed(0)
+
         return PiperVoice(
             config=PiperConfig.from_dict(config_dict),
             session=onnxruntime.InferenceSession(
@@ -52,6 +57,7 @@ class PiperVoice:
                 sess_options=onnxruntime.SessionOptions(),
                 providers=providers,
             ),
+            global_time = 0
         )
 
     def phonemize(self, text: str) -> List[List[str]]:
@@ -95,6 +101,7 @@ class PiperVoice:
         noise_scale: Optional[float] = None,
         noise_w: Optional[float] = None,
         sentence_silence: float = 0.0,
+        alignment_data: Optional[list] = None
     ):
         """Synthesize WAV audio from text."""
         wav_file.setframerate(self.config.sample_rate)
@@ -108,6 +115,7 @@ class PiperVoice:
             noise_scale=noise_scale,
             noise_w=noise_w,
             sentence_silence=sentence_silence,
+            alignment_data=alignment_data
         ):
             wav_file.writeframes(audio_bytes)
 
@@ -119,6 +127,7 @@ class PiperVoice:
         noise_scale: Optional[float] = None,
         noise_w: Optional[float] = None,
         sentence_silence: float = 0.0,
+        alignment_data: Optional[list] = None
     ) -> Iterable[bytes]:
         """Synthesize raw audio per sentence from text."""
         sentence_phonemes = self.phonemize(text)
@@ -127,15 +136,70 @@ class PiperVoice:
         num_silence_samples = int(sentence_silence * self.config.sample_rate)
         silence_bytes = bytes(num_silence_samples * 2)
 
+        fulltext = text.split(" ")
         for phonemes in sentence_phonemes:
+            if alignment_data != None:
+                sentence_length = 0
+                word_length = []
+                sentence_phonemes = []
+                sentence_text = []
+                word = []
+                # split sentence in words by ' '
+                for letter in phonemes:
+                    if letter != ' ':
+                        word.append(letter)
+                    else:
+                      sentence_phonemes.append(word)
+                      word = []
+                if (len(word) > 0):
+                    sentence_phonemes.append(word)
+                # create temp audio for words
+                for wordphonemes in sentence_phonemes:
+                    phoneme_ids = self.phonemes_to_ids(wordphonemes)
+                    wordraw = self.synthesize_ids_to_raw(
+                        phoneme_ids,
+                        speaker_id=speaker_id,
+                        length_scale=length_scale,
+                        noise_scale=noise_scale,
+                        noise_w=noise_w,
+                    )
+                    length = len(wordraw)
+                    word = fulltext[0]
+                    fulltext.pop(0)
+                    sentence_text.append(word)
+                    sentence_length += length
+                    word_length.append(length)
+            # create real audio
             phoneme_ids = self.phonemes_to_ids(phonemes)
-            yield self.synthesize_ids_to_raw(
+            raw = self.synthesize_ids_to_raw(
                 phoneme_ids,
                 speaker_id=speaker_id,
                 length_scale=length_scale,
                 noise_scale=noise_scale,
                 noise_w=noise_w,
-            ) + silence_bytes
+            )
+            if alignment_data != None:
+                # fix length discrepancy
+                start = 0
+                end = 0
+                is_start = True
+                # detect "silence" at start and end
+                for index in range(0, len(raw) - 2, 2):
+                    a = struct.unpack('<h',raw[index:index + 2])[0]
+                    if abs(a) > 1500:
+                        if is_start:
+                            start = index
+                            is_start = False;
+                        end = index
+                # forward global time with found silence
+                self.global_time = self.global_time + start / 2 / self.config.sample_rate
+                # length correction factor, single word vs sentence
+                correction_factor = ((end - start) / sentence_length) / (2 * self.config.sample_rate)
+                for index, w in enumerate(word_length):
+                    length = w * correction_factor
+                    alignment_data.append({"word": sentence_text[index], "start": self.global_time, "end": self.global_time + length})
+                    self.global_time += length
+            yield raw + silence_bytes
 
     def synthesize_ids_to_raw(
         self,
