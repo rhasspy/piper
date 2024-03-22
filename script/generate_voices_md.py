@@ -12,7 +12,8 @@ class Voice:
     lang_code: str
     dataset: str
     quality: str
-    url: str
+    model_url: str
+    config_url: str
 
 
 @dataclass
@@ -74,9 +75,14 @@ def main() -> None:
         "--piper-voices", required=True, help="Path to piper-voices root"
     )
     parser.add_argument(
-        "--url-format",
+        "--model-url-format",
         default="https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/{lang_family}/{lang_code}/{dataset}/{quality}/{lang_code}-{dataset}-{quality}.onnx?download=true",
-        help="URL format string with lang_family, lang_code, dataset, and quality",
+        help="URL format for models with lang_family, lang_code, dataset, and quality",
+    )
+    parser.add_argument(
+        "--config-url-format",
+        default="https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/{lang_family}/{lang_code}/{dataset}/{quality}/{lang_code}-{dataset}-{quality}.onnx.json?download=true",
+        help="URL format for configs with lang_family, lang_code, dataset, and quality",
     )
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG)
@@ -93,7 +99,13 @@ def main() -> None:
         lang_code, dataset, quality = parts
         assert lang_code in _LANGUAGES, f"Missing {lang_code}"
         lang_family = lang_code.split("_")[0]
-        url = args.url_format.format(
+        model_url = args.model_url_format.format(
+            lang_family=lang_family,
+            lang_code=lang_code,
+            dataset=dataset,
+            quality=quality,
+        )
+        config_url = args.config_url_format.format(
             lang_family=lang_family,
             lang_code=lang_code,
             dataset=dataset,
@@ -106,7 +118,8 @@ def main() -> None:
                 lang_code=lang_code,
                 dataset=dataset,
                 quality=quality,
-                url=url,
+                model_url=model_url,
+                config_url=config_url,
             )
         )
 
@@ -129,7 +142,13 @@ def main() -> None:
                 print("    *", voice.dataset)
                 last_dataset = voice.dataset
 
-            print("        *", f"[{voice.quality}]({voice.url})")
+            print(
+                "        *",
+                voice.quality,
+                "-",
+                f"[[model]({voice.model_url})]",
+                f"[[config]({voice.config_url}.json)]",
+            )
 
 
 if __name__ == "__main__":
