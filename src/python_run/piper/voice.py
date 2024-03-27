@@ -26,6 +26,7 @@ class PiperVoice:
         model_path: Union[str, Path],
         config_path: Optional[Union[str, Path]] = None,
         use_cuda: bool = False,
+        device_id: int = 0,
     ) -> "PiperVoice":
         """Load an ONNX model and config."""
         if config_path is None:
@@ -42,6 +43,7 @@ class PiperVoice:
                     {"cudnn_conv_algo_search": "HEURISTIC"},
                 )
             ]
+            pvovider_options = [{'device_id': device_id}]
         else:
             providers = ["CPUExecutionProvider"]
 
@@ -51,6 +53,7 @@ class PiperVoice:
                 str(model_path),
                 sess_options=onnxruntime.SessionOptions(),
                 providers=providers,
+                provider_options=provider_options,
             ),
         )
 
