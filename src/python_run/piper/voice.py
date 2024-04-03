@@ -13,9 +13,32 @@ from .config import PhonemeType, PiperConfig
 from .const import BOS, EOS, PAD
 from .util import audio_float_to_int16
 import struct
+import numpy
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def levenshteinDistanceDP(list1, list2):
+    distances = numpy.zeros((len(list1) + 1, len(list2) + 1))
+    for l1 in range(len(list1) + 1):
+        distances[l1][0] = l1
+    for l2 in range(len(list2) + 1):
+        distances[0][l2] = l2
+    for l1 in range(1, len(list1) + 1):
+        for l2 in range(1, len(list2) + 1):
+            if (list1[l1-1] == list2[l2-1]):
+                distances[l1][l2] = distances[l1 - 1][l2 - 1]
+            else:
+                a = distances[l1][l2 - 1]
+                b = distances[l1 - 1][l2]
+                c = distances[l1 - 1][l2 - 1]
+                if (a <= b and a <= c):
+                    distances[l1][l2] = a + 1
+                elif (b <= a and b <= c):
+                    distances[l1][l2] = b + 1
+                else:
+                    distances[l1][l2] = c + 1
+    return distances[len(list1)][len(list2)]
 
 @dataclass
 class PiperVoice:
@@ -135,7 +158,7 @@ class PiperVoice:
         # 16-bit mono
         num_silence_samples = int(sentence_silence * self.config.sample_rate)
         silence_bytes = bytes(num_silence_samples * 2)
-
+        text = text.replace("/", " / ")
         fulltext = text.split(" ")
         for phonemes in sentence_phonemes:
             if alignment_data != None:
@@ -155,7 +178,22 @@ class PiperVoice:
                     sentence_phonemes.append(word)
                 # create temp audio for words
                 for wordphonemes in sentence_phonemes:
-                    phoneme_ids = self.phonemes_to_ids(wordphonemes)
+                    word = fulltext[0]
+                    fulltext.pop(0)
+                    wordph = self.phonemize(word)[0]
+                    # different phonemes and do we have just a phoneme more in the end?
+                    if wordph != wordphonemes and wordph[1:] == wordphonemes[0:len(wordph)-1]:
+                            wordph.pop(0)
+                    # different phonemes do we get a match if we combine with the next word?
+                    if wordph != wordphonemes and len(wordphonemes) > len(wordph):
+                        nextword = fulltext[0]
+                        combinedword = word + " " + nextword
+                        combinedph = self.phonemize(combinedword)[0]
+                        if combinedph == wordphonemes or levenshteinDistanceDP(combinedph, wordphonemes) <= 2:
+                          word = combinedword
+                          wordph = combinedph
+                          fulltext.pop(0)
+                    phoneme_ids = self.phonemes_to_ids(wordph)
                     wordraw = self.synthesize_ids_to_raw(
                         phoneme_ids,
                         speaker_id=speaker_id,
@@ -164,8 +202,6 @@ class PiperVoice:
                         noise_w=noise_w,
                     )
                     length = len(wordraw)
-                    word = fulltext[0]
-                    fulltext.pop(0)
                     sentence_text.append(word)
                     sentence_length += length
                     word_length.append(length)
@@ -183,6 +219,7 @@ class PiperVoice:
                 start = 0
                 end = 0
                 is_start = True
+                global_time_start = self.global_time
                 # detect "silence" at start and end
                 for index in range(0, len(raw) - 2, 2):
                     a = struct.unpack('<h',raw[index:index + 2])[0]
@@ -200,7 +237,7 @@ class PiperVoice:
                     alignment_data.append({"word": sentence_text[index], "start": self.global_time, "end": self.global_time + length})
                     self.global_time += length
                 # forward global time with found silence at the end
-                self.global_time = self.global_time + (len(raw) - end) / 2 / self.config.sample_rate
+                self.global_time = global_time_start + (len(raw) + len(silence_bytes)) / 2 / self.config.sample_rate
             yield raw + silence_bytes
 
     def synthesize_ids_to_raw(
