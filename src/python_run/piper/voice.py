@@ -199,6 +199,8 @@ class PiperVoice:
                     length = w * correction_factor
                     alignment_data.append({"word": sentence_text[index], "start": self.global_time, "end": self.global_time + length})
                     self.global_time += length
+                # forward global time with found silence at the end
+                self.global_time = self.global_time + (len(raw) - end) / 2 / self.config.sample_rate
             yield raw + silence_bytes
 
     def synthesize_ids_to_raw(
