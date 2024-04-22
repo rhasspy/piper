@@ -18,7 +18,7 @@ Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and export
 
 Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
-[Download voices](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) for the supported languages:
+[Download voices](VOICES.md) for the supported languages:
 
 * Arabic (ar_JO)
 * Catalan (ca_ES)
@@ -138,6 +138,8 @@ Piper has been used in the following projects/papers:
 * [JetsonGPT](https://github.com/shahizat/jetsonGPT)
 * [LocalAI](https://github.com/go-skynet/LocalAI)
 * [Lernstick EDU / EXAM: reading clipboard content aloud with language detection](https://lernstick.ch/)
+* [Natural Speech - A plugin for Runelite, an OSRS Client](https://github.com/phyce/rl-natural-speech)
+* [mintPiper](https://github.com/evuraan/mintPiper)
 
 ## Training
 
