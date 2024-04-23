@@ -282,28 +282,31 @@ class VitsModel(pl.LightningModule):
     def validation_step(self, batch: Batch, batch_idx: int):
         val_loss = self.training_step_g(batch) + self.training_step_d(batch)
         self.log("val_loss", val_loss)
-
-        # Generate audio examples
-        for utt_idx, test_utt in enumerate(self._test_dataset):
-            text = test_utt.phoneme_ids.unsqueeze(0).to(self.device)
-            text_lengths = torch.LongTensor([len(test_utt.phoneme_ids)]).to(self.device)
-            scales = [0.667, 1.0, 0.8]
-            sid = (
-                test_utt.speaker_id.to(self.device)
-                if test_utt.speaker_id is not None
-                else None
-            )
-            test_audio = self(text, text_lengths, scales, sid=sid).detach()
-
-            # Scale to make louder in [-1, 1]
-            test_audio = test_audio * (1.0 / max(0.01, abs(test_audio.max())))
-
-            tag = test_utt.text or str(utt_idx)
-            self.logger.experiment.add_audio(
-                tag, test_audio, sample_rate=self.hparams.sample_rate
-            )
-
         return val_loss
+
+    def on_validation_end(self) -> None:
+        # Generate audio examples after validation, but not during sanity check
+        if not self.trainer.sanity_checking:
+            for utt_idx, test_utt in enumerate(self._test_dataset):
+                text = test_utt.phoneme_ids.unsqueeze(0).to(self.device)
+                text_lengths = torch.LongTensor([len(test_utt.phoneme_ids)]).to(self.device)
+                scales = [0.667, 1.0, 0.8]
+                sid = (
+                    test_utt.speaker_id.to(self.device)
+                    if test_utt.speaker_id is not None
+                    else None
+                )
+                test_audio = self(text, text_lengths, scales, sid=sid).detach()
+
+                # Scale to make louder in [-1, 1]
+                test_audio = test_audio * (1.0 / max(0.01, abs(test_audio.max())))
+
+                tag = test_utt.text or str(utt_idx)
+                self.logger.experiment.add_audio(
+                    tag, test_audio, sample_rate=self.hparams.sample_rate
+                )
+
+            return super().on_validation_end()
 
     def configure_optimizers(self):
         optimizers = [
