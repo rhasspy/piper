@@ -64,7 +64,7 @@ def main():
 
     callbacks = []
     if args.checkpoint_epochs is not None:
-        callbacks.append(ModelCheckpoint(every_n_epochs=args.checkpoint_epochs))
+        callbacks.append(ModelCheckpoint(every_n_epochs=args.checkpoint_epochs, monitor="val_loss", save_top_k=1, mode="min"))
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
         )
