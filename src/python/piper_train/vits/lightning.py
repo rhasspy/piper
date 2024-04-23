@@ -299,7 +299,7 @@ class VitsModel(pl.LightningModule):
                 test_audio = self(text, text_lengths, scales, sid=sid).detach()
 
                 # Scale to make louder in [-1, 1]
-                test_audio = test_audio * (1.0 / max(0.01, abs(test_audio.max())))
+                test_audio = test_audio * (1.0 / max(0.01, abs(test_audio).max()))
 
                 tag = test_utt.text or str(utt_idx)
                 self.logger.experiment.add_audio(
