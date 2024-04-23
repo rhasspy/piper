@@ -5,7 +5,7 @@ from pathlib import Path
 
 import torch
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 from .vits.lightning import VitsModel
 
@@ -23,6 +23,11 @@ def main():
         "--checkpoint-epochs",
         type=int,
         help="Save checkpoint every N epochs (default: 1)",
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        help="Number of validation cycles to allow to pass without improvement before stopping training"
     )
     parser.add_argument(
         "--quality",
@@ -63,6 +68,8 @@ def main():
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
         )
+    if args.patience is not None:
+        callbacks.append(EarlyStopping(monitor="val_loss", min_delta=0.00, patience=args.patience, verbose=True, mode="min"))
     trainer = Trainer.from_argparse_args(args, callbacks=callbacks)
 
     dict_args = vars(args)
