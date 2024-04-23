@@ -57,12 +57,13 @@ def main():
         num_speakers = int(config["num_speakers"])
         sample_rate = int(config["audio"]["sample_rate"])
 
-    trainer = Trainer.from_argparse_args(args)
+    callbacks = []
     if args.checkpoint_epochs is not None:
-        trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs)]
+        callbacks.append(ModelCheckpoint(every_n_epochs=args.checkpoint_epochs))
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
         )
+    trainer = Trainer.from_argparse_args(args, callbacks=callbacks)
 
     dict_args = vars(args)
     if args.quality == "x-low":
