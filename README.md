@@ -10,9 +10,9 @@ echo 'Welcome to the world of speech synthesis!' | \
 
 [Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a [video tutorial by Thorsten Müller](https://youtu.be/rjq5eZoWWSo)
 
-[![Sponsored by Nabu Casa](etc/nabu_casa_sponsored.png)](https://nabucasa.com)
-
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
+
+This is a project of the [Open Home Foundation](https://www.openhomefoundation.org/).
 
 ## Voices
 
