@@ -1,3 +1,5 @@
+DISCLAIMER: This a messy "fork" of piper tts that doesnt use espeak or piper-phonemizer because we wanna keep it MIT. The phone conversion is not nearly perfect but it should work for simple applications. See the ipa.data file if you have words that are not recognized.
+
 ![Piper logo](etc/logo.png)
 
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.

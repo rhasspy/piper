@@ -21,18 +21,12 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if (argc < 3) {
-    std::cerr << "Need espeak-ng-data path" << std::endl;
-    return 1;
-  }
-
   if (argc < 4) {
     std::cerr << "Need output WAV path" << std::endl;
     return 1;
   }
 
   auto modelPath = std::string(argv[1]);
-  piperConfig.eSpeakDataPath = std::string(argv[2]);
   auto outputPath = std::string(argv[3]);
 
   optional<piper::SpeakerId> speakerId;

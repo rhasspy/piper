@@ -9,123 +9,118 @@
 #include <vector>
 
 #include <onnxruntime_cxx_api.h>
-#include <piper-phonemize/phoneme_ids.hpp>
-#include <piper-phonemize/phonemize.hpp>
-#include <piper-phonemize/tashkeel.hpp>
 
 #include "json.hpp"
 
 using json = nlohmann::json;
 
-namespace piper {
+namespace piper
+{
+  typedef char32_t Phoneme;
 
-typedef int64_t SpeakerId;
+  typedef int64_t PhonemeId;
 
-struct eSpeakConfig {
-  std::string voice = "en-us";
-};
+  typedef int64_t SpeakerId;
 
-struct PiperConfig {
-  std::string eSpeakDataPath;
-  bool useESpeak = true;
+  struct PiperConfig
+  {
+  };
 
-  bool useTashkeel = false;
-  std::optional<std::string> tashkeelModelPath;
-  std::unique_ptr<tashkeel::State> tashkeelState;
-};
+  enum PhonemeType
+  {
+    TextPhonemes
+  };
 
-enum PhonemeType { eSpeakPhonemes, TextPhonemes };
+  struct PhonemizeConfig
+  {
+    PhonemeType phonemeType = TextPhonemes;
+    std::optional<std::map<Phoneme, std::vector<Phoneme>>> phonemeMap;
+    std::map<Phoneme, std::vector<PhonemeId>> phonemeIdMap;
 
-struct PhonemizeConfig {
-  PhonemeType phonemeType = eSpeakPhonemes;
-  std::optional<std::map<Phoneme, std::vector<Phoneme>>> phonemeMap;
-  std::map<Phoneme, std::vector<PhonemeId>> phonemeIdMap;
+    PhonemeId idPad = 0; // padding (optionally interspersed)
+    PhonemeId idBos = 1; // beginning of sentence
+    PhonemeId idEos = 2; // end of sentence
+    bool interspersePad = true;
+  };
 
-  PhonemeId idPad = 0; // padding (optionally interspersed)
-  PhonemeId idBos = 1; // beginning of sentence
-  PhonemeId idEos = 2; // end of sentence
-  bool interspersePad = true;
+  struct SynthesisConfig
+  {
+    // VITS inference settings
+    float noiseScale = 0.667f;
+    float lengthScale = 1.0f;
+    float noiseW = 0.8f;
 
-  eSpeakConfig eSpeak;
-};
+    // Audio settings
+    int sampleRate = 22050;
+    int sampleWidth = 2; // 16-bit
+    int channels = 1;    // mono
 
-struct SynthesisConfig {
-  // VITS inference settings
-  float noiseScale = 0.667f;
-  float lengthScale = 1.0f;
-  float noiseW = 0.8f;
+    // Speaker id from 0 to numSpeakers - 1
+    std::optional<SpeakerId> speakerId;
 
-  // Audio settings
-  int sampleRate = 22050;
-  int sampleWidth = 2; // 16-bit
-  int channels = 1;    // mono
+    // Extra silence
+    float sentenceSilenceSeconds = 0.2f;
+    std::optional<std::map<piper::Phoneme, float>> phonemeSilenceSeconds;
+  };
 
-  // Speaker id from 0 to numSpeakers - 1
-  std::optional<SpeakerId> speakerId;
+  struct ModelConfig
+  {
+    int numSpeakers;
 
-  // Extra silence
-  float sentenceSilenceSeconds = 0.2f;
-  std::optional<std::map<piper::Phoneme, float>> phonemeSilenceSeconds;
-};
+    // speaker name -> id
+    std::optional<std::map<std::string, SpeakerId>> speakerIdMap;
+  };
 
-struct ModelConfig {
-  int numSpeakers;
+  struct ModelSession
+  {
+    Ort::Session onnx;
+    Ort::AllocatorWithDefaultOptions allocator;
+    Ort::SessionOptions options;
+    Ort::Env env;
 
-  // speaker name -> id
-  std::optional<std::map<std::string, SpeakerId>> speakerIdMap;
-};
+    ModelSession() : onnx(nullptr){};
+  };
 
-struct ModelSession {
-  Ort::Session onnx;
-  Ort::AllocatorWithDefaultOptions allocator;
-  Ort::SessionOptions options;
-  Ort::Env env;
+  struct SynthesisResult
+  {
+    double inferSeconds;
+    double audioSeconds;
+    double realTimeFactor;
+  };
 
-  ModelSession() : onnx(nullptr){};
-};
+  struct Voice
+  {
+    json configRoot;
+    SynthesisConfig synthesisConfig;
+    ModelConfig modelConfig;
+    ModelSession session;
+  };
 
-struct SynthesisResult {
-  double inferSeconds;
-  double audioSeconds;
-  double realTimeFactor;
-};
+  // True if the string is a single UTF-8 codepoint
+  bool isSingleCodepoint(std::string s);
 
-struct Voice {
-  json configRoot;
-  PhonemizeConfig phonemizeConfig;
-  SynthesisConfig synthesisConfig;
-  ModelConfig modelConfig;
-  ModelSession session;
-};
+  // Get version of Piper
+  std::string getVersion();
 
-// True if the string is a single UTF-8 codepoint
-bool isSingleCodepoint(std::string s);
+  // Must be called before using textTo* functions
+  void initialize(PiperConfig &config);
 
-// Get the first UTF-8 codepoint of a string
-Phoneme getCodepoint(std::string s);
+  // Clean up
+  void terminate(PiperConfig &config);
 
-// Get version of Piper
-std::string getVersion();
+  // Load Onnx model and JSON config file
+  void loadVoice(PiperConfig &config, std::string modelPath,
+                 std::string modelConfigPath, Voice &voice,
+                 std::optional<SpeakerId> &speakerId, bool useCuda);
 
-// Must be called before using textTo* functions
-void initialize(PiperConfig &config);
+  // Phonemize text and synthesize audio
+  void textToAudio(PiperConfig &config, Voice &voice, std::string text,
+                   std::vector<int16_t> &audioBuffer, SynthesisResult &result,
+                   const std::function<void()> &audioCallback);
 
-// Clean up
-void terminate(PiperConfig &config);
-
-// Load Onnx model and JSON config file
-void loadVoice(PiperConfig &config, std::string modelPath,
-               std::string modelConfigPath, Voice &voice,
-               std::optional<SpeakerId> &speakerId, bool useCuda);
-
-// Phonemize text and synthesize audio
-void textToAudio(PiperConfig &config, Voice &voice, std::string text,
-                 std::vector<int16_t> &audioBuffer, SynthesisResult &result,
-                 const std::function<void()> &audioCallback);
-
-// Phonemize text and synthesize audio to WAV file
-void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
-                   std::ostream &audioFile, SynthesisResult &result);
+  // Phonemize text and synthesize audio to WAV file
+  void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
+                     std::ostream &audioFile, SynthesisResult &result);
 
 } // namespace piper
 
