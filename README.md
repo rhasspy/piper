@@ -1,4 +1,4 @@
-DISCLAIMER: This a messy "fork" of piper tts that doesnt use espeak or piper-phonemizer because we wanna keep it MIT. The phone conversion is not nearly perfect but it should work for simple applications. See the ipa.data file if you have words that are not recognized. You will also notice that the app no works very different. Now it does not have to restart every time but reuses the model and can with std input / std output communicate with your app. 
+DISCLAIMER: This a messy "fork" of piper tts that doesnt use espeak or piper-phonemizer because we wanna keep it MIT. The phone conversion is not nearly perfect but it should work for simple applications. Only english. You will have to add your own ipa.data for your language. See the ipa.data file if you have words that are not recognized. You will also notice that the app no works very different. Now it does not have to restart every time but reuses the model and can with std input / std output communicate with your app. 
 
 ![Piper logo](etc/logo.png)
 
