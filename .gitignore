@@ -20,3 +20,5 @@ htmlcov
 
 .venv/
 lightning_logs/
+
+.vscode

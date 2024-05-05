@@ -674,7 +674,38 @@ namespace piper
         }
         else
         {
-          std::cout << "Could not load IPA for " << rep << std::endl;
+          std::cout << "[" << rep << "] = ";
+
+          int pos = 0;
+          int length = rep.length();
+          int remaining = rep.length();
+
+          std::stringstream repcopy;
+
+          while (remaining > 0)
+          {
+            auto testword = rep.substr(pos, length);
+
+            if (length == 0)
+            {
+              repcopy << rep.substr(pos, remaining);
+              break;
+            }
+
+            if (IPA_DICTIONARY.count(testword) == 1)
+            {
+              repcopy << IPA_DICTIONARY[testword];
+              pos = length + pos;
+              remaining = remaining - length;
+              length = remaining;
+            }
+            else
+            {
+              length--;
+            }
+          }
+
+          rep = repcopy.str();
         }
 
         auto convertedString = utf8_to_utf32(rep);
@@ -686,8 +717,6 @@ namespace piper
           sentence_phonemes.push_back(char32array[i]);
         }
         sentence_phonemes.push_back(U' ');
-        std::cout << rep;
-        std::cout << ' ';
       }
 
       phonemes.push_back(sentence_phonemes);
@@ -722,50 +751,39 @@ namespace piper
     Phoneme bos = U'^';
     Phoneme eos = U'$';
 
-    auto phonemeIdMap = DEFAULT_PHONEME_ID_MAP;
+    auto bosId = DEFAULT_PHONEME_ID_MAP.at(bos);
+    auto padId = DEFAULT_PHONEME_ID_MAP.at(pad);
+    auto eosId = DEFAULT_PHONEME_ID_MAP.at(eos);
 
     // Beginning of sentence symbol (^)
-    auto bosIds = phonemeIdMap.at(bos);
-    phonemeIds.push_back(bosIds);
+    phonemeIds.push_back(bosId);
 
     // Pad after bos (_)
-    auto padIds = phonemeIdMap.at(pad);
-    phonemeIds.push_back(padIds);
+    phonemeIds.push_back(padId);
 
     for (auto const phoneme : phonemes)
     {
-      if (phonemeIdMap.count(phoneme) < 1)
+      if (DEFAULT_PHONEME_ID_MAP.count(phoneme) < 1)
       {
         missingPhonemes.push_back(phoneme);
         continue;
       }
 
-      auto mappedIds = phonemeIdMap.at(phoneme);
-      phonemeIds.push_back(mappedIds);
+      auto mappedId = DEFAULT_PHONEME_ID_MAP.at(phoneme);
+      phonemeIds.push_back(mappedId);
 
       // pad (_)
-      phonemeIds.push_back(padIds);
+      phonemeIds.push_back(padId);
     }
 
     // End of sentence symbol ($)
-    auto eosIds = phonemeIdMap.at(eos);
-    phonemeIds.push_back(eosIds);
+    phonemeIds.push_back(eosId);
   }
 
   void textToAudio(PiperConfig &config, Voice &voice, std::string text,
                    std::vector<int16_t> &audioBuffer, SynthesisResult &result,
                    const std::function<void()> &audioCallback)
   {
-
-    std::size_t sentenceSilenceSamples = 0;
-
-    if (voice.synthesisConfig.sentenceSilenceSeconds > 0)
-    {
-      sentenceSilenceSamples = (std::size_t)(
-          voice.synthesisConfig.sentenceSilenceSeconds *
-          voice.synthesisConfig.sampleRate * voice.synthesisConfig.channels);
-    }
-
     // Phonemes for each sentence
     spdlog::debug("Phonemizing text: {}", text);
     std::vector<std::vector<Phoneme>> phonemes;
@@ -785,6 +803,15 @@ namespace piper
       // ids -> audio
       synthesize(phonemeIds, voice.synthesisConfig, voice.session, audioBuffer,
                  synthresult);
+
+      auto sentenceSilenceSamples = (std::size_t)(
+          voice.synthesisConfig.sentenceSilenceSeconds *
+          voice.synthesisConfig.sampleRate * voice.synthesisConfig.channels);
+
+      for (std::size_t i = 0; i < sentenceSilenceSamples; i++)
+      {
+        audioBuffer.push_back(0);
+      }
 
       result.audioSeconds += synthresult.audioSeconds;
       result.inferSeconds += synthresult.inferSeconds;

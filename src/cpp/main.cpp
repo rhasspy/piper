@@ -200,10 +200,18 @@ int main(int argc, char *argv[])
 
   cout << "-READY-" << endl;
 
+  int waittime = 0;
+
   while (true)
   {
     if (getline(cin, line))
     {
+      waittime = 0;
+      if (line == "-KEEPALIVE-")
+      {
+        std::cout << "-KEEPALIVE- signal received" << std::endl;
+        continue;
+      }
       auto speaker_string = line.substr(0, 3);
       auto text_string = line.substr(3);
 
@@ -235,7 +243,14 @@ int main(int argc, char *argv[])
     }
     else
     {
-      std::this_thread::sleep_for(10ms);
+      std::this_thread::sleep_for(20ms);
+      waittime += 21;
+      if (waittime > 30000)
+      {
+        // Terminate the app if inactive too long. Makes sure it terminates eventually after parent process does.
+        std::cout << "Terminating because of timeout" << std::endl;
+        break;
+      }
     }
   }
 
