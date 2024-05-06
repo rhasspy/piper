@@ -315,12 +315,12 @@ namespace piper
     return s;
   }
 
-  void initialize(PiperConfig &config)
+  void initialize(PiperConfig &config, std::string ipaDataPath)
   {
     spdlog::info("Initialized piper");
 
     std::string line;
-    std::ifstream file("ipa.data");
+    std::ifstream file(ipaDataPath);
     int kvCount = 0;
     if (file.is_open())
     {
@@ -352,7 +352,7 @@ namespace piper
     }
     else
     {
-      spdlog::error("Could not load ipa.data file. This file should be next to the binary and contain only lines in the following format: WORD, IPA");
+      spdlog::error("Could not load ipa data file from '" + ipaDataPath + "'. This file should contain only lines in the following format: WORD, IPA");
       terminate(config);
     }
   }

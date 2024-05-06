@@ -74,6 +74,9 @@ struct RunConfig
   // Seconds of silence to add after each sentence
   optional<float> sentenceSilenceSeconds;
 
+  // path to the ipa data file
+  optional<std::string> ipaPath;
+
   // stdin input is lines of JSON instead of text with format:
   // {
   //   "text": str,               (required)
@@ -145,7 +148,7 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-  piper::initialize(piperConfig);
+  piper::initialize(piperConfig, runConfig.ipaPath.has_value() ? runConfig.ipaPath.value() : "./ipa.data");
 
   // Scales
   if (runConfig.noiseScale)
@@ -408,6 +411,11 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig)
     {
       ensureArg(argc, argv, i);
       runConfig.lengthScale = stof(argv[++i]);
+    }
+    else if (arg == "--ipa-path")
+    {
+      ensureArg(argc, argv, i);
+      runConfig.ipaPath = argv[++i];
     }
     else if (arg == "--noise_w" || arg == "--noise-w")
     {

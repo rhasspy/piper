@@ -103,7 +103,7 @@ namespace piper
   std::string getVersion();
 
   // Must be called before using textTo* functions
-  void initialize(PiperConfig &config);
+  void initialize(PiperConfig &config, std::string ipaPath);
 
   // Clean up
   void terminate(PiperConfig &config);
