@@ -643,7 +643,7 @@ namespace piper
 
   bool is_sentence_ending(char c)
   {
-    return (c == '.' || c == '!' || c == '?' || c == ',' || c == ';' || c == ':');
+    return (c == '.' || c == '!' || c == '?' || c == ';' || c == ':' | c == ',');
   }
 
   std::vector<std::string> split_into_sentences(const std::string &text)
@@ -754,7 +754,19 @@ namespace piper
       {
         auto wordcopy = word.substr(0);
 
-        auto rep = remove_all_non_alphanum_chars(wordcopy);
+        auto rep = trim(remove_all_non_alphanum_chars(wordcopy));
+
+        if (rep.empty())
+        {
+          continue;
+        }
+
+        bool is_all_uppercase = std::all_of(rep.begin(), rep.end(), [](unsigned char c)
+                                            { return std::isupper(c); });
+
+        std::transform(rep.begin(), rep.end(), rep.begin(),
+                       [](unsigned char c)
+                       { return std::tolower(c); });
 
         bool is_a_number = true;
 
@@ -769,73 +781,75 @@ namespace piper
 
         if (is_a_number)
         {
-          std::stringstream number_ipa;
           rep = number_to_text(std::stod(rep));
           auto number_text = split(rep, ' ');
           for (auto number : number_text)
           {
-            number_ipa << (IPA_DICTIONARY.count(number) == 1 ? IPA_DICTIONARY[number] : number);
+            rep = (IPA_DICTIONARY.count(number) == 1 ? IPA_DICTIONARY[number] : number);
+
+            std::cout << rep;
+
+            auto convertedString = utf8_to_utf32(rep);
+            auto length = convertedString.length();
+            auto char32array = convertedString.c_str();
+
+            for (size_t i = 0; i < length; i++)
+            {
+              sentence_phonemes.push_back(char32array[i]);
+            }
+            sentence_phonemes.push_back(U' ');
           }
-          rep = number_ipa.str();
+          continue;
+        }
+
+        if (is_all_uppercase)
+        {
+          std::stringstream repcopy;
+          for (auto c : rep)
+          {
+            auto str = std::string(1, c);
+            repcopy << (IPA_DICTIONARY.count(str) == 1 ? IPA_DICTIONARY[str] : str);
+          }
+          rep = repcopy.str();
+        }
+        else if (IPA_DICTIONARY.count(rep) == 1)
+        {
+          rep = IPA_DICTIONARY[rep];
         }
         else
         {
-          bool is_all_uppercase = std::all_of(rep.begin(), rep.end(), [](unsigned char c)
-                                              { return std::isupper(c); });
+          std::cout << "[" << rep << "] = ";
 
-          std::transform(rep.begin(), rep.end(), rep.begin(),
-                         [](unsigned char c)
-                         { return std::tolower(c); });
+          int pos = 0;
+          int length = rep.length();
+          int remaining = rep.length();
 
-          if (is_all_uppercase)
+          std::stringstream repcopy;
+
+          while (remaining > 0)
           {
-            std::stringstream repcopy;
-            for (auto c : rep)
+            auto testword = rep.substr(pos, length);
+
+            if (length == 0)
             {
-              auto str = std::string(1, c);
-              repcopy << (IPA_DICTIONARY.count(str) == 1 ? IPA_DICTIONARY[str] : str);
-            }
-            rep = repcopy.str();
-          }
-          else if (IPA_DICTIONARY.count(rep) == 1)
-          {
-            rep = IPA_DICTIONARY[rep];
-          }
-          else
-          {
-            std::cout << "[" << rep << "] = ";
-
-            int pos = 0;
-            int length = rep.length();
-            int remaining = rep.length();
-
-            std::stringstream repcopy;
-
-            while (remaining > 0)
-            {
-              auto testword = rep.substr(pos, length);
-
-              if (length == 0)
-              {
-                repcopy << rep.substr(pos, remaining);
-                break;
-              }
-
-              if (IPA_DICTIONARY.count(testword) == 1)
-              {
-                repcopy << IPA_DICTIONARY[testword];
-                pos = length + pos;
-                remaining = remaining - length;
-                length = remaining;
-              }
-              else
-              {
-                length--;
-              }
+              repcopy << rep.substr(pos, remaining);
+              break;
             }
 
-            rep = repcopy.str();
+            if (IPA_DICTIONARY.count(testword) == 1)
+            {
+              repcopy << IPA_DICTIONARY[testword];
+              pos = length + pos;
+              remaining = remaining - length;
+              length = remaining;
+            }
+            else
+            {
+              length--;
+            }
           }
+
+          rep = repcopy.str();
         }
 
         std::cout << rep;
