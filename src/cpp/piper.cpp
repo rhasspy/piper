@@ -328,18 +328,21 @@ namespace piper
       {
         auto first = line.find(",");
         auto second = line.find(",", first + 1);
-        auto key = trim(line.substr(0, first));
+        auto textrep = line.substr(0, first);
+        auto key = trim(textrep);
         std::transform(key.begin(), key.end(), key.begin(),
                        [](unsigned char c)
                        { return std::tolower(c); });
         std::string value;
         if (second == std::string::npos)
         {
-          value = trim(line.substr(first + 1));
+          auto iparep = line.substr(first + 1);
+          value = trim(iparep);
         }
         else
         {
-          value = trim(line.substr(first + 1, second - first - 1));
+          auto iparep = line.substr(first + 1, second - first - 1);
+          value = trim(iparep);
         }
         IPA_DICTIONARY[key] = value;
         kvCount++;
@@ -633,7 +636,7 @@ namespace piper
     return convert.from_bytes(utf8str);
   }
 
-  std::string remove_all_on_alphanum_chars(std::string &str)
+  std::string remove_all_non_alphanum_chars(std::string &str)
   {
     auto strlength = str.length();
     std::stringstream ss;
@@ -662,7 +665,8 @@ namespace piper
 
       for (auto word : words)
       {
-        auto rep = remove_all_on_alphanum_chars(word.substr(0));
+        auto wordcopy = word.substr(0);
+        auto rep = remove_all_non_alphanum_chars(wordcopy);
 
         std::transform(rep.begin(), rep.end(), rep.begin(),
                        [](unsigned char c)
