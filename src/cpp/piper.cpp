@@ -178,6 +178,77 @@ namespace piper
       {U'\u031d', 157},
       {U'\u030a', 158}};
 
+  static std::vector<std::string> numbers_units = {"zero", "one", "two", "three",
+                                                   "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+                                                   "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+                                                   "seventeen", "eighteen", "nineteen"};
+
+  static std::vector<std::string> numbers_tens = {"", "", "twenty", "thirty", "forty",
+                                                  "fifty", "sixty", "seventy", "eighty", "ninety"};
+
+  std::string convert_decimal_places_to_text(std::string i)
+  {
+    std::string ss;
+    for (auto c : i)
+    {
+      // numbers are consecutive on the encoding page, so substracting the char 0 will result in what number it is
+      ss += numbers_units[c - '0'] + ' ';
+    }
+    return ss;
+  }
+
+  std::string convert_number_to_text(int64_t i)
+  {
+    if (i < 20)
+    {
+      return numbers_units[i];
+    }
+
+    if (i < 100)
+    {
+      return numbers_tens[i / 10] + ((i % 10 > 0) ? " " + convert_number_to_text(i % 10) : "");
+    }
+
+    if (i < 1'000)
+    {
+      return numbers_units[i / 100] + " hundred" + ((i % 100 > 0) ? " " + convert_number_to_text(i % 100) : "");
+    }
+
+    if (i < 1'000'000)
+    {
+      return convert_number_to_text(i / 1'000) + " thousand" + ((i % 1'000 > 0) ? " " + convert_number_to_text(i % 1'000) : "");
+    }
+
+    if (i < 1'000'000'000)
+    {
+      return convert_number_to_text(i / 1'000'000) + " million" + ((i % 1'000'000 > 0) ? " " + convert_number_to_text(i % 1'000'000) : "");
+    }
+
+    if (i < 1'000'000'000'000)
+    {
+      return convert_number_to_text(i / 1'000'000'000) + " billion" + ((i % 1'000'000'000 > 0) ? " " + convert_number_to_text(i % 1'000'000'000) : "");
+    }
+
+    return convert_number_to_text(i / 1'000'000'000'000) + " trillion" + ((i % 1'000'000'000'000 > 0) ? " " + convert_number_to_text(i % 1'000'000'000'000) : "");
+  }
+
+  std::string number_to_text(double number)
+  {
+    int64_t number_int = (int64_t)number;
+    std::string number_dec = std::to_string(number - (double)(number_int)).substr(2);
+    number_dec.erase(number_dec.find_last_not_of('0') + 1, std::string::npos);
+    number_dec.erase(number_dec.find_last_not_of('.') + 1, std::string::npos);
+
+    if (number_dec == "0" || number_dec == "")
+    {
+      return convert_number_to_text(number_int);
+    }
+    else
+    {
+      return convert_number_to_text(number_int) + " point " + convert_decimal_places_to_text(number_dec);
+    }
+  }
+
 #ifdef _PIPER_VERSION
 // https://stackoverflow.com/questions/47346133/how-to-use-a-define-inside-a-format-string
 #define _STR(x) #x
@@ -560,6 +631,16 @@ namespace piper
 
   using Phoneme = char32_t;
 
+  bool could_be_number(std::string text, int index)
+  {
+    if (index >= text.length() || index <= 0)
+    {
+      return false;
+    }
+
+    return isnumber(text[index - 1]) && text[index] == '.' && isnumber(text[index + 1]);
+  }
+
   bool is_sentence_ending(char c)
   {
     return (c == '.' || c == '!' || c == '?' || c == ',' || c == ';' || c == ':');
@@ -573,17 +654,23 @@ namespace piper
 
     while (end < text.length())
     {
+      int decimal_dot = -1;
+
       // Find the end of the current sentence
-      while (end < text.length() && !is_sentence_ending(text[end]))
+      while (end < text.length() && (decimal_dot == -1 && could_be_number(text, end) || !is_sentence_ending(text[end])))
       {
+        if (text[end] == '.')
+        {
+          decimal_dot = end;
+        }
         end++;
       }
 
-      // Include the sentence-ending punctuation
-      end++;
-
       // Extract the sentence
       std::string sentence = text.substr(start, end - start);
+
+      // Exclude the sentence-ending punctuation
+      end++;
 
       // Trim any leading/trailing whitespace
       size_t first_non_space = sentence.find_first_not_of(" \t\n\r");
@@ -644,7 +731,7 @@ namespace piper
     {
       auto c = str[i];
 
-      if (isalnum(c))
+      if (isalnum(c) || c == '\'' || c == '-' || c == '.')
       {
         ss << c;
       }
@@ -666,51 +753,92 @@ namespace piper
       for (auto word : words)
       {
         auto wordcopy = word.substr(0);
+
         auto rep = remove_all_non_alphanum_chars(wordcopy);
 
-        std::transform(rep.begin(), rep.end(), rep.begin(),
-                       [](unsigned char c)
-                       { return std::tolower(c); });
+        bool is_a_number = true;
 
-        if (IPA_DICTIONARY.count(rep) == 1)
+        for (auto c : rep)
         {
-          rep = IPA_DICTIONARY[rep];
+          if (!isnumber(c) && c != '.')
+          {
+            is_a_number = false;
+            break;
+          }
+        }
+
+        if (is_a_number)
+        {
+          std::stringstream number_ipa;
+          rep = number_to_text(std::stod(rep));
+          auto number_text = split(rep, ' ');
+          for (auto number : number_text)
+          {
+            number_ipa << (IPA_DICTIONARY.count(number) == 1 ? IPA_DICTIONARY[number] : number);
+          }
+          rep = number_ipa.str();
         }
         else
         {
-          std::cout << "[" << rep << "] = ";
+          bool is_all_uppercase = std::all_of(rep.begin(), rep.end(), [](unsigned char c)
+                                              { return std::isupper(c); });
 
-          int pos = 0;
-          int length = rep.length();
-          int remaining = rep.length();
+          std::transform(rep.begin(), rep.end(), rep.begin(),
+                         [](unsigned char c)
+                         { return std::tolower(c); });
 
-          std::stringstream repcopy;
-
-          while (remaining > 0)
+          if (is_all_uppercase)
           {
-            auto testword = rep.substr(pos, length);
-
-            if (length == 0)
+            std::stringstream repcopy;
+            for (auto c : rep)
             {
-              repcopy << rep.substr(pos, remaining);
-              break;
+              auto str = std::string(1, c);
+              repcopy << (IPA_DICTIONARY.count(str) == 1 ? IPA_DICTIONARY[str] : str);
             }
-
-            if (IPA_DICTIONARY.count(testword) == 1)
-            {
-              repcopy << IPA_DICTIONARY[testword];
-              pos = length + pos;
-              remaining = remaining - length;
-              length = remaining;
-            }
-            else
-            {
-              length--;
-            }
+            rep = repcopy.str();
           }
+          else if (IPA_DICTIONARY.count(rep) == 1)
+          {
+            rep = IPA_DICTIONARY[rep];
+          }
+          else
+          {
+            std::cout << "[" << rep << "] = ";
 
-          rep = repcopy.str();
+            int pos = 0;
+            int length = rep.length();
+            int remaining = rep.length();
+
+            std::stringstream repcopy;
+
+            while (remaining > 0)
+            {
+              auto testword = rep.substr(pos, length);
+
+              if (length == 0)
+              {
+                repcopy << rep.substr(pos, remaining);
+                break;
+              }
+
+              if (IPA_DICTIONARY.count(testword) == 1)
+              {
+                repcopy << IPA_DICTIONARY[testword];
+                pos = length + pos;
+                remaining = remaining - length;
+                length = remaining;
+              }
+              else
+              {
+                length--;
+              }
+            }
+
+            rep = repcopy.str();
+          }
         }
+
+        std::cout << rep;
 
         auto convertedString = utf8_to_utf32(rep);
         auto length = convertedString.length();
@@ -836,7 +964,7 @@ namespace piper
 
       for (auto phon : missingPhonemes)
       {
-        ss << phon;
+        ss << (char)phon;
       }
 
       spdlog::warn("Missing {} phoneme(s) from phoneme/id map! {}",
