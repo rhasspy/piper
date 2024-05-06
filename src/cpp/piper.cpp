@@ -638,7 +638,7 @@ namespace piper
       return false;
     }
 
-    return isnumber(text[index - 1]) && text[index] == '.' && isnumber(text[index + 1]);
+    return isdigit(text[index - 1]) && text[index] == '.' && isdigit(text[index + 1]);
   }
 
   bool is_sentence_ending(char c)
@@ -760,7 +760,7 @@ namespace piper
 
         for (auto c : rep)
         {
-          if (!isnumber(c) && c != '.')
+          if (!isdigit(c) && c != '.')
           {
             is_a_number = false;
             break;
