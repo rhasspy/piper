@@ -192,7 +192,7 @@ namespace piper
     for (auto c : i)
     {
       // numbers are consecutive on the encoding page, so substracting the char 0 will result in what number it is
-      ss += numbers_units[c - '0'] + ' ';
+      ss += numbers_units[c - '0'] + " ";
     }
     return ss;
   }
@@ -363,7 +363,7 @@ namespace piper
 
   } /* parseModelConfig */
 
-  static std::map<std::string, std::string> IPA_DICTIONARY;
+  static std::map<std::string, std::string> IPA_MAP;
 
   inline void ltrim(std::string &s)
   {
@@ -401,9 +401,6 @@ namespace piper
         auto second = line.find(",", first + 1);
         auto textrep = line.substr(0, first);
         auto key = trim(textrep);
-        std::transform(key.begin(), key.end(), key.begin(),
-                       [](unsigned char c)
-                       { return std::tolower(c); });
         std::string value;
         if (second == std::string::npos)
         {
@@ -415,7 +412,7 @@ namespace piper
           auto iparep = line.substr(first + 1, second - first - 1);
           value = trim(iparep);
         }
-        IPA_DICTIONARY[key] = value;
+        IPA_MAP[key] = value;
         kvCount++;
       }
       spdlog::info("Loaded {}  key/value pairs from IPA.data", kvCount);
@@ -723,7 +720,9 @@ namespace piper
     return convert.from_bytes(utf8str);
   }
 
-  std::string remove_all_non_alphanum_chars(std::string &str)
+  std::string acceptable_chars = "\'-./+=&%$§*#";
+
+  std::string remove_all_unwanted_chars(std::string &str)
   {
     auto strlength = str.length();
     std::stringstream ss;
@@ -731,7 +730,7 @@ namespace piper
     {
       auto c = str[i];
 
-      if (isalnum(c) || c == '\'' || c == '-' || c == '.')
+      if (isalnum(c) || acceptable_chars.find(c) != std::string::npos)
       {
         ss << c;
       }
@@ -753,7 +752,7 @@ namespace piper
       for (auto word : words)
       {
         auto wordcopy = word.substr(0);
-        auto word_copy_reduced = remove_all_non_alphanum_chars(wordcopy);
+        auto word_copy_reduced = remove_all_unwanted_chars(wordcopy);
         auto rep = trim(word_copy_reduced);
 
         if (rep.empty())
@@ -781,25 +780,37 @@ namespace piper
 
         if (is_a_number)
         {
-          rep = number_to_text(std::stod(rep));
-          auto number_text = split(rep, ' ');
-          for (auto number : number_text)
+          try
           {
-            rep = (IPA_DICTIONARY.count(number) == 1 ? IPA_DICTIONARY[number] : number);
+            rep = number_to_text(std::stod(rep));
 
-            std::cout << rep;
-
-            auto convertedString = utf8_to_utf32(rep);
-            auto length = convertedString.length();
-            auto char32array = convertedString.c_str();
-
-            for (size_t i = 0; i < length; i++)
+            auto number_text = split(rep, ' ');
+            for (auto number : number_text)
             {
-              sentence_phonemes.push_back(char32array[i]);
+              rep = (IPA_MAP.count(number) == 1 ? IPA_MAP[number] : number);
+
+              std::cout << rep;
+
+              auto convertedString = utf8_to_utf32(rep);
+              auto length = convertedString.length();
+              auto char32array = convertedString.c_str();
+
+              for (size_t i = 0; i < length; i++)
+              {
+                sentence_phonemes.push_back(char32array[i]);
+              }
+              sentence_phonemes.push_back(U' ');
             }
-            sentence_phonemes.push_back(U' ');
+            continue;
           }
-          continue;
+          catch (const std::invalid_argument &)
+          {
+            std::cerr << "Could not convert number, because argument is invalid: " << rep << std::endl;
+          }
+          catch (const std::out_of_range &)
+          {
+            std::cerr << "Could not convert number, because argument is out of range for a double" << rep << std::endl;
+          }
         }
 
         if (is_all_uppercase)
@@ -808,13 +819,14 @@ namespace piper
           for (auto c : rep)
           {
             auto str = std::string(1, c);
-            repcopy << (IPA_DICTIONARY.count(str) == 1 ? IPA_DICTIONARY[str] : str);
+            auto str_uppercase = std::string(1, toupper(c));
+            repcopy << (IPA_MAP.count(str_uppercase) == 1 ? IPA_MAP[str_uppercase] : (IPA_MAP.count(str) == 1 ? IPA_MAP[str] : str));
           }
           rep = repcopy.str();
         }
-        else if (IPA_DICTIONARY.count(rep) == 1)
+        else if (IPA_MAP.count(rep) == 1)
         {
-          rep = IPA_DICTIONARY[rep];
+          rep = IPA_MAP[rep];
         }
         else
         {
@@ -836,9 +848,9 @@ namespace piper
               break;
             }
 
-            if (IPA_DICTIONARY.count(testword) == 1)
+            if (IPA_MAP.count(testword) == 1)
             {
-              repcopy << IPA_DICTIONARY[testword];
+              repcopy << IPA_MAP[testword];
               pos = length + pos;
               remaining = remaining - length;
               length = remaining;
