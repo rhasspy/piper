@@ -753,8 +753,8 @@ namespace piper
       for (auto word : words)
       {
         auto wordcopy = word.substr(0);
-
-        auto rep = trim(remove_all_non_alphanum_chars(wordcopy));
+        auto word_copy_reduced = remove_all_non_alphanum_chars(wordcopy);
+        auto rep = trim(word_copy_reduced);
 
         if (rep.empty())
         {
