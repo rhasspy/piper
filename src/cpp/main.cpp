@@ -215,11 +215,21 @@ int main(int argc, char *argv[])
         std::cout << "-KEEPALIVE- signal received" << std::endl;
         continue;
       }
-      auto speaker_string = line.substr(0, 3);
-      auto text_string = line.substr(3);
+
+      std::cout << "Received data to process: " << line << std::endl;
 
       auto outputType = runConfig.outputType;
-      auto speakerId = stoi(speaker_string);
+      auto speaker_string = line.substr(0, 3);
+      int speakerId = 0;
+      try
+      {
+        speakerId = stoi(speaker_string);
+      }
+      catch (...)
+      {
+        std::cout << "-ERROR- There was an error getting the speaker id from the string " << speaker_string << std::endl;
+      }
+      auto text_string = line.substr(3);
       voice.synthesisConfig.speakerId = speakerId;
       std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
 
