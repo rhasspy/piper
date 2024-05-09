@@ -789,8 +789,6 @@ namespace piper
             {
               rep = (IPA_MAP.count(number) == 1 ? IPA_MAP[number] : number);
 
-              std::cout << rep;
-
               auto convertedString = utf8_to_utf32(rep);
               auto length = convertedString.length();
               auto char32array = convertedString.c_str();
@@ -844,8 +842,11 @@ namespace piper
 
             if (length == 0)
             {
-              repcopy << rep.substr(pos, remaining);
-              break;
+              length = 1;
+              pos = length + pos;
+              remaining = remaining - length;
+              length = remaining;
+              continue;
             }
 
             if (IPA_MAP.count(testword) == 1)
@@ -864,6 +865,11 @@ namespace piper
           rep = repcopy.str();
         }
 
+        if (rep.length() == 0)
+        {
+          continue;
+        }
+
         std::cout << rep;
 
         auto convertedString = utf8_to_utf32(rep);
@@ -877,7 +883,9 @@ namespace piper
         sentence_phonemes.push_back(U' ');
       }
 
-      phonemes.push_back(sentence_phonemes);
+      if (sentence_phonemes.size())
+
+        phonemes.push_back(sentence_phonemes);
     }
   }
 
