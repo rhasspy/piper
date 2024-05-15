@@ -883,9 +883,10 @@ namespace piper
         sentence_phonemes.push_back(U' ');
       }
 
-      if (sentence_phonemes.size())
-
+      if (sentence_phonemes.size() > 0)
+      {
         phonemes.push_back(sentence_phonemes);
+      }
     }
   }
 
