@@ -742,7 +742,7 @@ namespace piper
   void phonemize_text(std::string &str, std::vector<std::vector<Phoneme>> &phonemes)
   {
     auto sentences = split_into_sentences(str);
-
+    std::cout << "-IPA-";
     for (auto sentence : sentences)
     {
       auto words = split(sentence, ' ');
@@ -993,6 +993,8 @@ namespace piper
       phonemeIds.clear();
     }
 
+    std::cout << std::endl;
+
     if (missingPhonemes.size() > 0)
     {
       std::stringstream ss;
@@ -1014,8 +1016,7 @@ namespace piper
   } /* textToAudio */
 
   // Phonemize text and synthesize audio to WAV file
-  void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
-                     std::ostream &audioFile, SynthesisResult &result)
+  char *textToVoice(PiperConfig &config, Voice &voice, std::string text, SynthesisResult &result, uint32_t &dataSize)
   {
 
     std::vector<int16_t> audioBuffer;
@@ -1023,13 +1024,19 @@ namespace piper
 
     // Write WAV
     auto synthesisConfig = voice.synthesisConfig;
-    writeWavHeader(synthesisConfig.sampleRate, synthesisConfig.sampleWidth,
-                   synthesisConfig.channels, (int32_t)audioBuffer.size(),
-                   audioFile);
 
-    audioFile.write((const char *)audioBuffer.data(),
-                    sizeof(int16_t) * audioBuffer.size());
+    auto audioHeaderData = getWavHeader(synthesisConfig.sampleRate, synthesisConfig.sampleWidth, synthesisConfig.channels, (int32_t)audioBuffer.size());
+    auto audioHeaderSize = sizeof(audioHeaderData);
+    auto audioBufferData = (const char *)audioBuffer.data();
+    auto audioBufferSize = audioBuffer.size() * 2;
+    dataSize = audioBufferSize + audioHeaderSize;
 
+    char *full_data;
+    full_data = (char *)malloc(dataSize);                                                 /* make space for the new string (should check the return value ...) */
+    memcpy(full_data, reinterpret_cast<const char *>(&audioHeaderData), audioHeaderSize); /* copy name into the new var */
+    memcpy(full_data + audioHeaderSize, audioBufferData, audioBufferSize);                /* add the extension */
+
+    return full_data;
   } /* textToWavFile */
 
 } // namespace piper

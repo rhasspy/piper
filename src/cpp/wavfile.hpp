@@ -3,7 +3,8 @@
 
 #include <iostream>
 
-struct WavHeader {
+struct WavHeader
+{
   uint8_t RIFF[4] = {'R', 'I', 'F', 'F'};
   uint32_t chunkSize;
   uint8_t WAVE[4] = {'W', 'A', 'V', 'E'};
@@ -24,8 +25,8 @@ struct WavHeader {
 };
 
 // Write WAV file header only
-void writeWavHeader(int sampleRate, int sampleWidth, int channels,
-                    uint32_t numSamples, std::ostream &audioFile) {
+WavHeader getWavHeader(int sampleRate, int sampleWidth, int channels, uint32_t numSamples)
+{
   WavHeader header;
   header.dataSize = numSamples * sampleWidth * channels;
   header.chunkSize = header.dataSize + sizeof(WavHeader) - 8;
@@ -33,7 +34,7 @@ void writeWavHeader(int sampleRate, int sampleWidth, int channels,
   header.numChannels = channels;
   header.bytesPerSec = sampleRate * sampleWidth * channels;
   header.blockAlign = sampleWidth * channels;
-  audioFile.write(reinterpret_cast<const char *>(&header), sizeof(header));
+  return header;
 
 } /* writeWavHeader */
 

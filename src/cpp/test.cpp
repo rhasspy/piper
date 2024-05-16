@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
   ofstream audioFile(outputPath, ios::binary);
 
   piper::SynthesisResult result;
-  piper::textToWavFile(piperConfig, voice, "This is a test.", audioFile,
-                       result);
+  uint32_t dataSize = 0;
+  free(piper::textToVoice(piperConfig, voice, "This is a test.", result, dataSize));
   piper::terminate(piperConfig);
 
   // Verify that file has some data

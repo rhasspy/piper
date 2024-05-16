@@ -30,6 +30,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include "base64.hpp"
 #include "json.hpp"
 #include "piper.hpp"
 
@@ -233,14 +234,18 @@ int main(int argc, char *argv[])
       voice.synthesisConfig.speakerId = speakerId;
       std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
 
-      // Timestamp is used for path to output WAV file
-      const auto now = chrono::system_clock::now();
-      const auto timestamp =
-          chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
-              .count();
+      uint32_t dataSize = 0;
+      auto data = piper::textToVoice(piperConfig, voice, text_string, result, dataSize);
+
+      std::cout << "-WAVDATASTART-" << base64_encode(reinterpret_cast<const unsigned char *>(data), dataSize) << std::endl;
 
       if (outputType == OUTPUT_DIRECTORY)
       {
+        // Timestamp is used for path to output WAV file
+        const auto now = chrono::system_clock::now();
+        const auto timestamp =
+            chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
+                .count();
         // Generate path using timestamp
         stringstream outputName;
         outputName << timestamp << ".wav";
@@ -249,10 +254,11 @@ int main(int argc, char *argv[])
 
         // Output audio to automatically-named WAV file in a directory
         ofstream audioFile(outputPath.string(), ios::binary);
-        piper::textToWavFile(piperConfig, voice, text_string, audioFile, result);
-        std::cout << std::endl
-                  << "-FILEPATH-" << outputPath.string() << std::endl;
+        audioFile.write(data, dataSize);
+        audioFile.close();
       }
+      
+      free(data);
     }
     else
     {

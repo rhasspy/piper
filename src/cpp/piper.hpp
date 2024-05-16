@@ -119,8 +119,7 @@ namespace piper
                    const std::function<void()> &audioCallback);
 
   // Phonemize text and synthesize audio to WAV file
-  void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
-                     std::ostream &audioFile, SynthesisResult &result);
+  char *textToVoice(PiperConfig &config, Voice &voice, std::string text, SynthesisResult &result, uint32_t &dataSize);
 
 } // namespace piper
 
