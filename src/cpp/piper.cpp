@@ -739,10 +739,49 @@ namespace piper
     return ss.str();
   }
 
+  void remove_chars_from_string(std::string &str, char *charsToRemove)
+  {
+    for (unsigned int i = 0; i < strlen(charsToRemove); ++i)
+    {
+      str.erase(remove(str.begin(), str.end(), charsToRemove[i]), str.end());
+    }
+  }
+
+  void phonemize_number(std::string rep, std::vector<Phoneme> &sentence_phonemes)
+  {
+    try
+    {
+      rep = number_to_text(std::stod(rep));
+
+      auto number_text = split(rep, ' ');
+      for (auto number : number_text)
+      {
+        rep = (IPA_MAP.count(number) == 1 ? IPA_MAP[number] : number);
+
+        auto convertedString = utf8_to_utf32(rep);
+        auto length = convertedString.length();
+        auto char32array = convertedString.c_str();
+
+        for (size_t i = 0; i < length; i++)
+        {
+          sentence_phonemes.push_back(char32array[i]);
+        }
+        sentence_phonemes.push_back(U' ');
+      }
+    }
+    catch (const std::invalid_argument &)
+    {
+      std::cerr << "Could not convert number, because argument is invalid: " << rep << std::endl;
+    }
+    catch (const std::out_of_range &)
+    {
+      std::cerr << "Could not convert number, because argument is out of range for a double" << rep << std::endl;
+    }
+  }
+
   void phonemize_text(std::string &str, std::vector<std::vector<Phoneme>> &phonemes)
   {
     auto sentences = split_into_sentences(str);
-    std::cout << "-IPA-";
     for (auto sentence : sentences)
     {
       auto words = split(sentence, ' ');
@@ -751,6 +790,7 @@ namespace piper
 
       for (auto word : words)
       {
+
         auto wordcopy = word.substr(0);
         auto word_copy_reduced = remove_all_unwanted_chars(wordcopy);
         auto rep = trim(word_copy_reduced);
@@ -768,10 +808,18 @@ namespace piper
                        { return std::tolower(c); });
 
         bool is_a_number = true;
+        bool is_multipoint_number = false; // TODO
+        bool is_estimation = false;
 
         for (auto c : rep)
         {
-          if (!isdigit(c) && c != '.')
+          if (c == '-' && !is_estimation)
+          {
+            is_estimation = true;
+            continue;
+          }
+
+          if (!isdigit(c) && c != '.' && c != ',')
           {
             is_a_number = false;
             break;
@@ -780,35 +828,32 @@ namespace piper
 
         if (is_a_number)
         {
-          try
-          {
-            rep = number_to_text(std::stod(rep));
+          remove_chars_from_string(rep, ",");
+        }
 
-            auto number_text = split(rep, ' ');
-            for (auto number : number_text)
-            {
-              rep = (IPA_MAP.count(number) == 1 ? IPA_MAP[number] : number);
+        std::cout << "WRD " << word << std::endl;
+        std::cout << " TYP " << (int)is_all_uppercase << (int)is_a_number << (int)is_estimation << std::endl;
 
-              auto convertedString = utf8_to_utf32(rep);
-              auto length = convertedString.length();
-              auto char32array = convertedString.c_str();
-
-              for (size_t i = 0; i < length; i++)
-              {
-                sentence_phonemes.push_back(char32array[i]);
-              }
-              sentence_phonemes.push_back(U' ');
-            }
-            continue;
-          }
-          catch (const std::invalid_argument &)
+        if (is_estimation)
+        {
+          auto numbers = split(rep, '-');
+          phonemize_number(numbers[0], sentence_phonemes);
+          auto to_phones = IPA_MAP.count("to") == 1 ? IPA_MAP["to"] : "to";
+          auto convertedString = utf8_to_utf32(to_phones);
+          auto length = convertedString.length();
+          auto char32array = convertedString.c_str();
+          for (size_t i = 0; i < length; i++)
           {
-            std::cerr << "Could not convert number, because argument is invalid: " << rep << std::endl;
+            sentence_phonemes.push_back(char32array[i]);
           }
-          catch (const std::out_of_range &)
-          {
-            std::cerr << "Could not convert number, because argument is out of range for a double" << rep << std::endl;
-          }
+          sentence_phonemes.push_back(U' ');
+          phonemize_number(numbers[1], sentence_phonemes);
+          continue;
+        }
+        else if (is_a_number)
+        {
+          phonemize_number(rep, sentence_phonemes);
+          continue;
         }
 
         if (is_all_uppercase)
@@ -819,6 +864,7 @@ namespace piper
             auto str = std::string(1, c);
             auto str_uppercase = std::string(1, toupper(c));
             repcopy << (IPA_MAP.count(str_uppercase) == 1 ? IPA_MAP[str_uppercase] : (IPA_MAP.count(str) == 1 ? IPA_MAP[str] : str));
+            repcopy << ' ';
           }
           rep = repcopy.str();
         }
@@ -870,7 +916,7 @@ namespace piper
           continue;
         }
 
-        std::cout << rep;
+        std::cout << "IPA " << rep << std::endl;
 
         auto convertedString = utf8_to_utf32(rep);
         auto length = convertedString.length();
