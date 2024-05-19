@@ -272,22 +272,17 @@ namespace piper
   }
 
   // Load JSON config for audio synthesis
-  void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig)
+  SynthesisConfig *LoadSynthesisConfig(std::string configPath)
   {
-    // {
-    //     "audio": {
-    //         "sample_rate": 22050
-    //     },
-    //     "inference": {
-    //         "noise_scale": 0.667,
-    //         "length_scale": 1,
-    //         "noise_w": 0.8,
-    //         "phoneme_silence": {
-    //           "<phoneme>": <seconds of silence>,
-    //           ...
-    //         }
-    //     }
-    // }
+    std::ifstream f(configPath);
+    if (!f.good())
+    {
+      throw std::invalid_argument("Model config file does not exist!");
+    }
+
+    auto configRoot = json::parse(configPath);
+
+    SynthesisConfig *synthesisConfig = (SynthesisConfig *)malloc(sizeof(SynthesisConfig));
 
     if (configRoot.contains("audio"))
     {
@@ -295,7 +290,7 @@ namespace piper
       if (audioValue.contains("sample_rate"))
       {
         // Default sample rate is 22050 Hz
-        synthesisConfig.sampleRate = audioValue.value("sample_rate", 22050);
+        synthesisConfig->sampleRate = audioValue.value("sample_rate", 22050);
       }
     }
 
@@ -305,23 +300,23 @@ namespace piper
       auto inferenceValue = configRoot["inference"];
       if (inferenceValue.contains("noise_scale"))
       {
-        synthesisConfig.noiseScale = inferenceValue.value("noise_scale", 0.667f);
+        synthesisConfig->noiseScale = inferenceValue.value("noise_scale", 0.667f);
       }
 
       if (inferenceValue.contains("length_scale"))
       {
-        synthesisConfig.lengthScale = inferenceValue.value("length_scale", 1.0f);
+        synthesisConfig->lengthScale = inferenceValue.value("length_scale", 1.0f);
       }
 
       if (inferenceValue.contains("noise_w"))
       {
-        synthesisConfig.noiseW = inferenceValue.value("noise_w", 0.8f);
+        synthesisConfig->noiseW = inferenceValue.value("noise_w", 0.8f);
       }
 
       if (inferenceValue.contains("phoneme_silence"))
       {
         // phoneme -> seconds of silence to add after
-        synthesisConfig.phonemeSilenceSeconds.emplace();
+        synthesisConfig->phonemeSilenceSeconds.emplace();
         auto phonemeSilenceValue = inferenceValue["phoneme_silence"];
         for (auto &phonemeItem : phonemeSilenceValue.items())
         {
@@ -338,30 +333,42 @@ namespace piper
 
     } // if inference
 
+    return synthesisConfig;
   } /* parseSynthesisConfig */
 
-  void parseModelConfig(json &configRoot, ModelConfig &modelConfig)
+  /* load the model config from a json file*/
+  ModelConfig *LoadModelConfig(const char *configPath)
   {
+    ModelConfig *modelConfig = (ModelConfig *)malloc(sizeof(ModelConfig));
 
-    modelConfig.numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
+    std::ifstream f(configPath);
+    if (!f.good())
+    {
+      throw std::invalid_argument("Model config file does not exist!");
+    }
+
+    auto configRoot = json::parse(configPath);
+
+    modelConfig->numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
 
     if (configRoot.contains("speaker_id_map"))
     {
-      if (!modelConfig.speakerIdMap)
+      if (!modelConfig->speakerIdMap)
       {
-        modelConfig.speakerIdMap.emplace();
+        modelConfig->speakerIdMap.emplace();
       }
 
       auto speakerIdMapValue = configRoot["speaker_id_map"];
       for (auto &speakerItem : speakerIdMapValue.items())
       {
         std::string speakerName = speakerItem.key();
-        (*modelConfig.speakerIdMap)[speakerName] =
+        (*modelConfig->speakerIdMap)[speakerName] =
             speakerItem.value().get<SpeakerId>();
       }
     }
 
-  } /* parseModelConfig */
+    return modelConfig;
+  }
 
   static std::map<std::string, std::string> IPA_MAP;
 
@@ -386,10 +393,8 @@ namespace piper
     return s;
   }
 
-  void initialize(PiperConfig &config, std::string ipaDataPath)
+  void LoadIPAData(std::string ipaDataPath)
   {
-    spdlog::info("Initialized piper");
-
     std::string line;
     std::ifstream file(ipaDataPath);
     int kvCount = 0;
@@ -415,22 +420,15 @@ namespace piper
         IPA_MAP[key] = value;
         kvCount++;
       }
-      spdlog::info("Loaded {}  key/value pairs from IPA.data", kvCount);
       file.close();
     }
     else
     {
-      spdlog::error("Could not load ipa data file from '" + ipaDataPath + "'. This file should contain only lines in the following format: WORD, IPA");
-      terminate(config);
+      throw new std::invalid_argument("Could not load ipa data file from '" + ipaDataPath + "'. This file should contain only lines in the following format: WORD, IPA");
     }
   }
 
-  void terminate(PiperConfig &config)
-  {
-    spdlog::info("Terminated piper");
-  }
-
-  void loadModel(std::string modelPath, ModelSession &session, bool useCuda)
+  void LoadModel(std::string modelPath, ModelSession &session, bool useCuda)
   {
     spdlog::debug("Loading onnx model from {}", modelPath);
     session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
@@ -477,38 +475,22 @@ namespace piper
     spdlog::debug("Loaded onnx model in {} second(s)",
                   std::chrono::duration<double>(endTime - startTime).count());
   }
-  loadVoice(piperConfig, runConfig.modelPath.string(),
-            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
-            runConfig.useCuda);
 
   // Load Onnx model and JSON config file
-  void loadVoice(PiperConfig &config, RunConfig &runConfig, bool useCuda)
+  Voice *LoadVoice(SynthesisConfig &synthConfig, ModelConfig &modelConfig)
   {
-    spdlog::debug("Parsing voice config at {}", modelConfigPath);
-    std::ifstream modelConfigFile(modelConfigPath);
-    voice.configRoot = json::parse(modelConfigFile);
+    Voice *voice = (Voice *)malloc(sizeof(Voice));
 
-    parseSynthesisConfig(voice.configRoot, voice.synthesisConfig);
-    parseModelConfig(voice.configRoot, voice.modelConfig);
+    voice->synthesisConfig = synthConfig;
 
-    if (voice.modelConfig.numSpeakers > 1)
-    {
-      // Multi-speaker model
-      if (speakerId)
-      {
-        voice.synthesisConfig.speakerId = speakerId;
-      }
-      else
-      {
-        // Default speaker
-        voice.synthesisConfig.speakerId = 0;
-      }
-    }
+    std::ifstream modelConfigFile(synthConfig.modelConfigPath);
+    voice->configRoot = json::parse(modelConfigFile);
 
-    spdlog::debug("Voice contains {} speaker(s)", voice.modelConfig.numSpeakers);
+    voice->modelConfig = modelConfig;
 
-    loadModel(modelPath, voice.session, useCuda);
+    LoadModel(synthConfig.modelPath, voice->session, synthConfig.useCuda);
 
+    return voice;
   } /* loadVoice */
 
   // Phoneme ids to WAV audio
@@ -545,8 +527,7 @@ namespace piper
 
     // Add speaker id.
     // NOTE: These must be kept outside the "if" below to avoid being deallocated.
-    std::vector<int64_t> speakerId{
-        (int64_t)synthesisConfig.speakerId.value_or(0)};
+    std::vector<int64_t> speakerId{synthesisConfig.speakerId};
     std::vector<int64_t> speakerIdShape{(int64_t)speakerId.size()};
 
     if (synthesisConfig.speakerId)
@@ -994,8 +975,8 @@ namespace piper
     phonemeIds.push_back(eosId);
   }
 
-  void textToAudio(PiperConfig &config, Voice &voice, std::string text,
-                   std::vector<int16_t> &audioBuffer, SynthesisResult &result,
+  void textToAudio(Voice &voice, std::string text,
+                   std::vector<int16_t> &audioBuffer,
                    const std::function<void()> &audioCallback)
   {
     // Phonemes for each sentence
@@ -1027,9 +1008,6 @@ namespace piper
         audioBuffer.push_back(0);
       }
 
-      result.audioSeconds += synthresult.audioSeconds;
-      result.inferSeconds += synthresult.inferSeconds;
-
       if (audioCallback)
       {
         // Call back must copy audio since it is cleared afterwards.
@@ -1055,19 +1033,14 @@ namespace piper
                    missingPhonemes.size(), ss.str());
     }
 
-    if (result.audioSeconds > 0)
-    {
-      result.realTimeFactor = result.inferSeconds / result.audioSeconds;
-    }
-
   } /* textToAudio */
 
   // Phonemize text and synthesize audio to WAV file
-  char *textToVoice(PiperConfig &config, Voice &voice, std::string text, SynthesisResult &result, uint32_t &dataSize)
+  char *textToVoice(Voice &voice, std::string text, uint32_t &dataSize)
   {
 
     std::vector<int16_t> audioBuffer;
-    textToAudio(config, voice, text, audioBuffer, result, NULL);
+    textToAudio(voice, text, audioBuffer, NULL);
 
     // Write WAV
     auto synthesisConfig = voice.synthesisConfig;

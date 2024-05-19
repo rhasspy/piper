@@ -75,10 +75,8 @@ elseif(NOT APPLE)
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
-add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
-add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
 add_library(piper_lib SHARED src/cpp/lib.cpp src/cpp/piper.cpp)
-set_target_properties(piper_lib PROPERTIES PUBLIC_HEADER lib.hpp)
+#set_target_properties(piper_lib PROPERTIES PUBLIC_HEADER lib.hpp)
 
 # NOTE: external project prefix are shortened because of path length restrictions on Windows
 
@@ -96,9 +94,7 @@ if(NOT DEFINED FMT_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${FMT_DIR}
     CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
   )
-  add_dependencies(piper fmt_external)
   add_dependencies(piper_lib fmt_external)
-  add_dependencies(test_piper fmt_external)
 endif()
 
 # ---- spdlog ---
@@ -112,42 +108,8 @@ if(NOT DEFINED SPDLOG_DIR)
     URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${SPDLOG_DIR}
   )
-  add_dependencies(piper spdlog_external)
   add_dependencies(piper_lib spdlog_external)
-  add_dependencies(test_piper spdlog_external)
 endif()
-
-# ---- Declare executable ----
-
-if((NOT MSVC) AND (NOT APPLE))
-  # Linux flags
-  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
-  string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
-  target_link_libraries(piper -static-libgcc -static-libstdc++)
-
-  set(PIPER_EXTRA_LIBRARIES "pthread")
-endif()
-
-target_link_libraries(piper
-  fmt
-  spdlog
-  onnxruntime
-  ${PIPER_EXTRA_LIBRARIES}
-)
-
-target_link_directories(piper PUBLIC
-  ${FMT_DIR}/lib
-  ${SPDLOG_DIR}/lib
-  ${ONNXRUNTIME_DIR}/lib
-)
-
-target_include_directories(piper PUBLIC
-  ${FMT_DIR}/include
-  ${SPDLOG_DIR}/include
-  ${ONNXRUNTIME_DIR}/include
-)
-
-target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 
 # ---- Declare lib ----
 
@@ -181,31 +143,6 @@ target_include_directories(piper_lib PUBLIC
 
 target_compile_definitions(piper_lib PUBLIC _PIPER_VERSION=${piper_version})
 
-
-# ---- Declare test ----
-include(CTest)
-
-target_compile_features(test_piper PUBLIC cxx_std_17)
-
-target_include_directories(
-  test_piper PUBLIC
-  ${FMT_DIR}/include
-  ${SPDLOG_DIR}/include
-  ${ONNXRUNTIME_DIR}/include
-)
-
-target_link_directories(
-  test_piper PUBLIC
-  ${FMT_DIR}/lib
-  ${SPDLOG_DIR}/lib
-  ${ONNXRUNTIME_DIR}/lib
-)
-
-target_link_libraries(test_piper PUBLIC
-  fmt
-  spdlog
-  onnxruntime
-)
 
 # ---- Declare install targets ----
 
