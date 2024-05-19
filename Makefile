@@ -1,4 +1,5 @@
 .PHONY: clean docker
+.RECIPEPREFIX = \t
 
 all:
 	cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install

@@ -477,11 +477,12 @@ namespace piper
     spdlog::debug("Loaded onnx model in {} second(s)",
                   std::chrono::duration<double>(endTime - startTime).count());
   }
+  loadVoice(piperConfig, runConfig.modelPath.string(),
+            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
+            runConfig.useCuda);
 
   // Load Onnx model and JSON config file
-  void loadVoice(PiperConfig &config, std::string modelPath,
-                 std::string modelConfigPath, Voice &voice,
-                 std::optional<SpeakerId> &speakerId, bool useCuda)
+  void loadVoice(PiperConfig &config, RunConfig &runConfig, bool useCuda)
   {
     spdlog::debug("Parsing voice config at {}", modelConfigPath);
     std::ifstream modelConfigFile(modelConfigPath);
