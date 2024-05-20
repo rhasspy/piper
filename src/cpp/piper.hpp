@@ -22,17 +22,6 @@ namespace piper
 
   typedef int64_t SpeakerId;
 
-  struct PhonemizeConfig
-  {
-    std::optional<std::map<Phoneme, std::vector<Phoneme>>> phonemeMap;
-    std::map<Phoneme, std::vector<PhonemeId>> phonemeIdMap;
-
-    PhonemeId idPad = 0; // padding (optionally interspersed)
-    PhonemeId idBos = 1; // beginning of sentence
-    PhonemeId idEos = 2; // end of sentence
-    bool interspersePad = true;
-  };
-
   struct SynthesisConfig
   {
     std::string modelPath = "";
@@ -42,8 +31,6 @@ namespace piper
     float lengthScale = 1.0f;
     float noiseW = 0.8f;
 
-    std::string outputPath;
-    bool writeFile = false;
     bool useCuda = false;
 
     // Audio settings
@@ -69,38 +56,25 @@ namespace piper
     ModelSession() : onnx(nullptr){};
   };
 
-  struct SynthesisResult
-  {
-    double inferSeconds;
-    double audioSeconds;
-    double realTimeFactor;
-  };
-
   struct Voice
   {
-    json configRoot;
     SynthesisConfig synthesisConfig;
     ModelSession session;
   };
 
-  // Get version of Piper
-  std::string getVersion();
-
   // Must be called before using textTo* functions
-  void LoadIPAData(std::string ipaPath);
+  void LoadIPAData(const char *ipaPath);
 
-  SynthesisConfig *LoadSynthesisConfig(const char *configPath);
+  void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda);
 
   // Load Onnx model and JSON config file
-  Voice *LoadVoice(SynthesisConfig &synthConfig);
+  void LoadVoice(const char *modelPath);
 
   // Phonemize text and synthesize audio
-  void textToAudio(Voice &voice, std::string text,
-                   std::vector<int16_t> &audioBuffer, SynthesisResult &result,
-                   const std::function<void()> &audioCallback);
+  void TextToAudio(Voice &voice, const char *text, std::vector<int16_t> &audioBuffer);
 
   // Phonemize text and synthesize audio to WAV file
-  char *textToVoice(Voice &voice, std::string text, uint32_t &dataSize);
+  char *TextToVoice(const char *text, uint32_t &dataSize);
 
 } // namespace piper
 

@@ -45,56 +45,41 @@
 using namespace std;
 using json = nlohmann::json;
 
-LIB_API piper::SynthesisConfig *LoadSynthesisConfig(const char *configPath)
-{
-
-  // piper::SynthesisConfig *synthesisConfig = (piper::SynthesisConfig *)malloc(sizeof(SynthesisConfig));
-  // return synthesisConfig;
-  return piper::LoadSynthesisConfig(configPath);
-}
-
-LIB_API void SetModelPath(piper::SynthesisConfig &synthConfig, const char *modelPath)
-{
-  synthConfig.modelPath = modelPath;
-}
-
-LIB_API piper::Voice *LoadVoice(piper::SynthesisConfig &synthConfig)
-{
-  return piper::LoadVoice(synthConfig);
-}
-
-LIB_API void ChangeSpeaker(piper::Voice &voice, int speaker)
-{
-  voice.synthesisConfig.speakerId = speaker;
-}
-
-LIB_API void ChangeLengthScale(piper::Voice &voice, float length)
-{
-  voice.synthesisConfig.lengthScale = length;
-}
-
-LIB_API void ChangeNoiseScale(piper::Voice &voice, float scale)
-{
-  voice.synthesisConfig.noiseScale = scale;
-}
-
-LIB_API void ChangeNoiseWidth(piper::Voice &voice, float width)
-{
-  voice.synthesisConfig.noiseScale = width;
-}
+bool writeFile = false;
+std::string outputPath = "./output/";
 
 LIB_API void LoadIPAData(char *path)
 {
   piper::LoadIPAData(path);
 }
 
-LIB_API char *GenerateVoiceData(piper::Voice &voice, piper::SynthesisConfig &synthConfig, int *length, const char *text)
+LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda)
+{
+  piper::ApplySynthesisConfig(lengthScale, noiseScale, noiseW, speakerId, sampleRate, sentenceSilenceSeconds, useCuda);
+}
+
+LIB_API void LoadVoice(const char *modelPath)
+{
+  piper::LoadVoice(modelPath);
+}
+
+LIB_API void SetWriteToFile(bool enabled)
+{
+  writeFile = enabled;
+}
+
+LIB_API void SetOutputDirectory(const char *outputDirectory)
+{
+  outputPath = outputDirectory;
+}
+
+LIB_API char *GenerateVoiceData(int *length, const char *text)
 {
   uint32_t dataSize = 0;
-  auto data = piper::textToVoice(voice, text, dataSize);
+  auto data = piper::TextToVoice(text, dataSize);
   *length = dataSize;
 
-  if (synthConfig.writeFile)
+  if (writeFile)
   {
     // Timestamp is used for path to output WAV file
     const auto now = chrono::system_clock::now();
@@ -103,7 +88,7 @@ LIB_API char *GenerateVoiceData(piper::Voice &voice, piper::SynthesisConfig &syn
             .count();
     // Generate path using timestamp
     stringstream outputName;
-    outputName << synthConfig.outputPath << timestamp << ".wav";
+    outputName << outputPath << timestamp << ".wav";
 
     // Output audio to automatically-named WAV file in a directory
     ofstream audioFile(outputName.str(), ios::binary);
