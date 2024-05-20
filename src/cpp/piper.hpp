@@ -63,18 +63,18 @@ namespace piper
   };
 
   // Must be called before using textTo* functions
-  void LoadIPAData(const char *ipaPath);
+  void LoadIPAData(std::string ipaPath);
 
   void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda);
 
   // Load Onnx model and JSON config file
-  void LoadVoice(const char *modelPath);
+  void LoadVoice(std::string modelPath);
 
   // Phonemize text and synthesize audio
-  void TextToAudio(Voice &voice, const char *text, std::vector<int16_t> &audioBuffer);
+  void TextToAudio(Voice &voice, std::string text, std::vector<int16_t> &audioBuffer);
 
   // Phonemize text and synthesize audio to WAV file
-  char *TextToVoice(const char *text, uint32_t &dataSize);
+  char *TextToVoice(std::string text, uint32_t &dataSize);
 
 } // namespace piper
 

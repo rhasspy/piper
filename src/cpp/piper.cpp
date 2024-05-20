@@ -292,9 +292,10 @@ namespace piper
     synthesisConfig.sampleRate = sampleRate;
     synthesisConfig.sentenceSilenceSeconds = sentenceSilenceSeconds;
     synthesisConfig.useCuda = useCuda;
+    voice.synthesisConfig = synthesisConfig;
   }
 
-  void LoadIPAData(const char *ipaDataPath)
+  void LoadIPAData(std::string ipaDataPath)
   {
     std::string line;
     std::ifstream file(ipaDataPath);
@@ -329,10 +330,16 @@ namespace piper
     }
   }
 
-  void LoadModel(const char *modelPath, ModelSession &session, bool useCuda)
+  void LoadModel(std::string modelPath, ModelSession &session, bool useCuda)
   {
-    session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "TTS");
+    std::ofstream waller("txt.txt");
+
+    waller << "INIT" << std::endl;
+
+    session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, std::string("TTS").c_str());
     session.env.DisableTelemetryEvents();
+
+    waller << "ENV" << std::endl;
 
     if (useCuda)
     {
@@ -341,6 +348,8 @@ namespace piper
       cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
       session.options.AppendExecutionProvider_CUDA(cuda_options);
     }
+
+    waller << "CUDA" << std::endl;
 
     // Slows down performance by ~2x
     // session.options.SetIntraOpNumThreads(1);
@@ -352,6 +361,8 @@ namespace piper
     session.options.SetGraphOptimizationLevel(
         GraphOptimizationLevel::ORT_DISABLE_ALL);
 
+    waller << "GRAPH" << std::endl;
+
     // Slows down performance very slightly
     // session.options.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
 
@@ -359,16 +370,22 @@ namespace piper
     session.options.DisableMemPattern();
     session.options.DisableProfiling();
 
+    waller << "OPTIONS" << std::endl;
+
     auto startTime = std::chrono::steady_clock::now();
 
 #ifdef _WIN32
     auto modelPathW = std::wstring(modelPath.begin(), modelPath.end());
     auto modelPathStr = modelPathW.c_str();
 #else
-    auto modelPathStr = std::string(modelPath).c_str();
+    auto modelPathStr = modelPath.c_str();
 #endif
 
+    waller << "PATH" << modelPathStr << " - " << modelPath << std::endl;
+
     session.onnx = Ort::Session(session.env, modelPathStr, session.options);
+
+    waller << "SESSION" << std::endl;
 
     auto endTime = std::chrono::steady_clock::now();
     spdlog::debug("Loaded onnx model in {} second(s)",
@@ -376,8 +393,11 @@ namespace piper
   }
 
   // Load Onnx model and JSON config file
-  void LoadVoice(const char *modelPath)
+  void LoadVoice(std::string modelPath)
   {
+
+    std::ofstream waller("huh.txt");
+    waller << modelPath;
     LoadModel(modelPath, voice.session, synthesisConfig.useCuda);
   }
 
@@ -852,7 +872,7 @@ namespace piper
     phonemeIds.push_back(eosId);
   }
 
-  void TextToAudio(Voice &voice, std::string text,
+  void TextToAudio(std::string text,
                    std::vector<int16_t> &audioBuffer,
                    const std::function<void()> &audioCallback)
   {
@@ -911,14 +931,11 @@ namespace piper
   } /* textToAudio */
 
   // Phonemize text and synthesize audio to WAV file
-  char *TextToVoice(const char *text, uint32_t &dataSize)
+  char *TextToVoice(std::string text, uint32_t &dataSize)
   {
-
     std::vector<int16_t> audioBuffer;
-    TextToAudio(voice, text, audioBuffer, NULL);
 
-    // Write WAV
-    auto synthesisConfig = voice.synthesisConfig;
+    TextToAudio(text, audioBuffer, NULL);
 
     auto audioHeaderData = getWavHeader(synthesisConfig.sampleRate, synthesisConfig.sampleWidth, synthesisConfig.channels, (int32_t)audioBuffer.size());
     auto audioHeaderSize = sizeof(audioHeaderData);

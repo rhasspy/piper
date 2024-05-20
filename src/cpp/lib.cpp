@@ -48,9 +48,10 @@ using json = nlohmann::json;
 bool writeFile = false;
 std::string outputPath = "./output/";
 
-LIB_API void LoadIPAData(char *path)
+LIB_API void LoadIPAData(const char *path)
 {
-  piper::LoadIPAData(path);
+  std::string str(path);
+  piper::LoadIPAData(str);
 }
 
 LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda)
@@ -60,7 +61,8 @@ LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noi
 
 LIB_API void LoadVoice(const char *modelPath)
 {
-  piper::LoadVoice(modelPath);
+  std::string str(modelPath);
+  piper::LoadVoice(str);
 }
 
 LIB_API void SetWriteToFile(bool enabled)
@@ -70,13 +72,15 @@ LIB_API void SetWriteToFile(bool enabled)
 
 LIB_API void SetOutputDirectory(const char *outputDirectory)
 {
-  outputPath = outputDirectory;
+  std::string str(outputDirectory);
+  outputPath = str;
 }
 
 LIB_API char *GenerateVoiceData(int *length, const char *text)
 {
   uint32_t dataSize = 0;
-  auto data = piper::TextToVoice(text, dataSize);
+  std::string str(text);
+  auto data = piper::TextToVoice(str, dataSize);
   *length = dataSize;
 
   if (writeFile)
