@@ -272,14 +272,8 @@ namespace piper
   }
 
   // Load JSON config for audio synthesis
-  SynthesisConfig *LoadSynthesisConfig(std::string configPath)
+  SynthesisConfig *LoadSynthesisConfig(const char *configPath)
   {
-    std::ifstream f(configPath);
-    if (!f.good())
-    {
-      throw std::invalid_argument("Model config file does not exist!");
-    }
-
     auto configRoot = json::parse(configPath);
 
     SynthesisConfig *synthesisConfig = (SynthesisConfig *)malloc(sizeof(SynthesisConfig));
@@ -300,7 +294,7 @@ namespace piper
       auto inferenceValue = configRoot["inference"];
       if (inferenceValue.contains("noise_scale"))
       {
-        synthesisConfig->noiseScale = inferenceValue.value("noise_scale", 0.667f);
+        synthesisConfig->modelPath = inferenceValue.value("noise_scale", 0.6f);
       }
 
       if (inferenceValue.contains("length_scale"))
@@ -310,64 +304,11 @@ namespace piper
 
       if (inferenceValue.contains("noise_w"))
       {
-        synthesisConfig->noiseW = inferenceValue.value("noise_w", 0.8f);
+        synthesisConfig->noiseW = inferenceValue.value("noise_w", 0.6f);
       }
-
-      if (inferenceValue.contains("phoneme_silence"))
-      {
-        // phoneme -> seconds of silence to add after
-        synthesisConfig->phonemeSilenceSeconds.emplace();
-        auto phonemeSilenceValue = inferenceValue["phoneme_silence"];
-        for (auto &phonemeItem : phonemeSilenceValue.items())
-        {
-          std::string phonemeStr = phonemeItem.key();
-          if (!isSingleCodepoint(phonemeStr))
-          {
-            spdlog::error("\"{}\" is not a single codepoint", phonemeStr);
-            throw std::runtime_error(
-                "Phonemes must be one codepoint (phoneme silence)");
-          }
-        }
-
-      } // if phoneme_silence
-
-    } // if inference
+    }
 
     return synthesisConfig;
-  } /* parseSynthesisConfig */
-
-  /* load the model config from a json file*/
-  ModelConfig *LoadModelConfig(const char *configPath)
-  {
-    ModelConfig *modelConfig = (ModelConfig *)malloc(sizeof(ModelConfig));
-
-    std::ifstream f(configPath);
-    if (!f.good())
-    {
-      throw std::invalid_argument("Model config file does not exist!");
-    }
-
-    auto configRoot = json::parse(configPath);
-
-    modelConfig->numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
-
-    if (configRoot.contains("speaker_id_map"))
-    {
-      if (!modelConfig->speakerIdMap)
-      {
-        modelConfig->speakerIdMap.emplace();
-      }
-
-      auto speakerIdMapValue = configRoot["speaker_id_map"];
-      for (auto &speakerItem : speakerIdMapValue.items())
-      {
-        std::string speakerName = speakerItem.key();
-        (*modelConfig->speakerIdMap)[speakerName] =
-            speakerItem.value().get<SpeakerId>();
-      }
-    }
-
-    return modelConfig;
   }
 
   static std::map<std::string, std::string> IPA_MAP;
@@ -477,16 +418,11 @@ namespace piper
   }
 
   // Load Onnx model and JSON config file
-  Voice *LoadVoice(SynthesisConfig &synthConfig, ModelConfig &modelConfig)
+  Voice *LoadVoice(SynthesisConfig &synthConfig)
   {
     Voice *voice = (Voice *)malloc(sizeof(Voice));
 
     voice->synthesisConfig = synthConfig;
-
-    std::ifstream modelConfigFile(synthConfig.modelConfigPath);
-    voice->configRoot = json::parse(modelConfigFile);
-
-    voice->modelConfig = modelConfig;
 
     LoadModel(synthConfig.modelPath, voice->session, synthConfig.useCuda);
 

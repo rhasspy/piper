@@ -35,8 +35,7 @@ namespace piper
 
   struct SynthesisConfig
   {
-    std::string modelPath;
-    std::string modelConfigPath;
+    std::string modelPath = "";
 
     // VITS inference settings
     float noiseScale = 0.667f;
@@ -60,14 +59,6 @@ namespace piper
     std::map<piper::Phoneme, float> phonemeSilenceSeconds;
   };
 
-  struct ModelConfig
-  {
-    int numSpeakers;
-
-    // speaker name -> id
-    std::optional<std::map<std::string, SpeakerId>> speakerIdMap;
-  };
-
   struct ModelSession
   {
     Ort::Session onnx;
@@ -89,7 +80,6 @@ namespace piper
   {
     json configRoot;
     SynthesisConfig synthesisConfig;
-    ModelConfig modelConfig;
     ModelSession session;
   };
 
@@ -99,9 +89,7 @@ namespace piper
   // Must be called before using textTo* functions
   void LoadIPAData(std::string ipaPath);
 
-  ModelConfig *LoadModelConfig(const char *configPath);
-
-  SynthesisConfig *LoadSynthesisConfig(std::string configPath);
+  SynthesisConfig *LoadSynthesisConfig(const char *configPath);
 
   // Load Onnx model and JSON config file
   Voice *LoadVoice(SynthesisConfig &synthConfig);

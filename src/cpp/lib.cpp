@@ -45,21 +45,17 @@
 using namespace std;
 using json = nlohmann::json;
 
-// ----------------------------------------------------------------------------
-
-LIB_API int tester()
-{
-  return 420;
-}
-
-LIB_API piper::ModelConfig *LoadModelConfig(const char *configPath)
-{
-  return piper::LoadModelConfig(configPath);
-}
-
 LIB_API piper::SynthesisConfig *LoadSynthesisConfig(const char *configPath)
 {
+
+  // piper::SynthesisConfig *synthesisConfig = (piper::SynthesisConfig *)malloc(sizeof(SynthesisConfig));
+  // return synthesisConfig;
   return piper::LoadSynthesisConfig(configPath);
+}
+
+LIB_API void SetModelPath(piper::SynthesisConfig &synthConfig, const char *modelPath)
+{
+  synthConfig.modelPath = modelPath;
 }
 
 LIB_API piper::Voice *LoadVoice(piper::SynthesisConfig &synthConfig)
@@ -92,10 +88,11 @@ LIB_API void LoadIPAData(char *path)
   piper::LoadIPAData(path);
 }
 
-char *GenerateVoiceData(piper::Voice &voice, piper::SynthesisConfig &synthConfig, char *text)
+LIB_API char *GenerateVoiceData(piper::Voice &voice, piper::SynthesisConfig &synthConfig, int *length, const char *text)
 {
   uint32_t dataSize = 0;
   auto data = piper::textToVoice(voice, text, dataSize);
+  *length = dataSize;
 
   if (synthConfig.writeFile)
   {
@@ -117,7 +114,7 @@ char *GenerateVoiceData(piper::Voice &voice, piper::SynthesisConfig &synthConfig
   return data;
 }
 
-void DiscardVoiceData(char *data)
+LIB_API void DiscardVoiceData(char *data)
 {
   free(data);
 }

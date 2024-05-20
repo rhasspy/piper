@@ -142,10 +142,3 @@ target_include_directories(piper_lib PUBLIC
 )
 
 target_compile_definitions(piper_lib PUBLIC _PIPER_VERSION=${piper_version})
-
-
-# ---- Declare install targets ----
-
-install(
-  TARGETS piper
-  DESTINATION ${CMAKE_INSTALL_PREFIX})
