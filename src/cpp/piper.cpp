@@ -679,9 +679,6 @@ namespace piper
           remove_chars_from_string(rep, ",");
         }
 
-        std::cout << "WRD " << word << std::endl;
-        std::cout << " TYP " << (int)is_all_uppercase << (int)is_a_number << (int)is_estimation << std::endl;
-
         if (is_estimation)
         {
           auto numbers = split(rep, '-');
@@ -722,8 +719,6 @@ namespace piper
         }
         else
         {
-          std::cout << "[" << rep << "] = ";
-
           int pos = 0;
           int length = rep.length();
           int remaining = rep.length();
@@ -764,8 +759,6 @@ namespace piper
           continue;
         }
 
-        std::cout << "IPA " << rep << std::endl;
-
         auto convertedString = utf8_to_utf32(rep);
         auto length = convertedString.length();
         auto char32array = convertedString.c_str();
@@ -784,38 +777,16 @@ namespace piper
     }
   }
 
-  // ----------------------------------------------------------------------------
+  Phoneme pad = U'_';
+  Phoneme bos = U'^';
+  Phoneme eos = U'$';
 
-  // Phonemize text and synthesize audio
+  auto bosId = DEFAULT_PHONEME_ID_MAP.at(bos);
+  auto padId = DEFAULT_PHONEME_ID_MAP.at(pad);
+  auto eosId = DEFAULT_PHONEME_ID_MAP.at(eos);
 
-  /*void phonemes_to_ids(std::vector<piper::Phoneme> &sentence, std::vector<PhonemeId> &phonemeIds, std::vector<piper::Phoneme> &missing)
+  void phonemes_to_ids(std::vector<Phoneme> &phonemes, std::vector<PhonemeId> &phonemeIds)
   {
-    for (auto phon : sentence)
-    {
-      if (DEFAULT_PHONEME_ID_MAP.count(phon) == 1)
-      {
-        phonemeIds.push_back(DEFAULT_PHONEME_ID_MAP[phon]);
-        std::cout << "PUSHING" << std::endl;
-      }
-      else
-      {
-        missing.push_back(phon);
-        std::cout << "MISSING" << std::endl;
-      }
-    }
-  }*/
-
-  void phonemes_to_ids(std::vector<Phoneme> &phonemes, std::vector<PhonemeId> &phonemeIds,
-                       std::vector<Phoneme> &missingPhonemes)
-  {
-    Phoneme pad = U'_';
-    Phoneme bos = U'^';
-    Phoneme eos = U'$';
-
-    auto bosId = DEFAULT_PHONEME_ID_MAP.at(bos);
-    auto padId = DEFAULT_PHONEME_ID_MAP.at(pad);
-    auto eosId = DEFAULT_PHONEME_ID_MAP.at(eos);
-
     // Beginning of sentence symbol (^)
     phonemeIds.push_back(bosId);
 
@@ -826,7 +797,6 @@ namespace piper
     {
       if (DEFAULT_PHONEME_ID_MAP.count(phoneme) < 1)
       {
-        missingPhonemes.push_back(phoneme);
         continue;
       }
 
@@ -852,12 +822,11 @@ namespace piper
 
     // Synthesize each sentence independently.
     std::vector<PhonemeId> phonemeIds;
-    std::vector<Phoneme> missingPhonemes;
     for (auto sentence : phonemes)
     {
 
       // phonemes -> ids
-      phonemes_to_ids(sentence, phonemeIds, missingPhonemes);
+      phonemes_to_ids(sentence, phonemeIds);
 
       // ids -> audio
       synthesize(phonemeIds, synthesisConfig, voice.session, audioBuffer);
@@ -880,19 +849,6 @@ namespace piper
 
       phonemeIds.clear();
     }
-
-    std::cout << std::endl;
-
-    if (missingPhonemes.size() > 0)
-    {
-      std::stringstream ss;
-
-      for (auto phon : missingPhonemes)
-      {
-        ss << (char)phon;
-      }
-    }
-
   } /* textToAudio */
 
   // Phonemize text and synthesize audio to WAV file
