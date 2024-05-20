@@ -7,7 +7,6 @@
 #include <codecvt>
 
 #include <onnxruntime_cxx_api.h>
-#include <spdlog/spdlog.h>
 
 #include "json.hpp"
 #include "piper.hpp"
@@ -292,7 +291,6 @@ namespace piper
     synthesisConfig.sampleRate = sampleRate;
     synthesisConfig.sentenceSilenceSeconds = sentenceSilenceSeconds;
     synthesisConfig.useCuda = useCuda;
-    voice.synthesisConfig = synthesisConfig;
   }
 
   void LoadIPAData(std::string ipaDataPath)
@@ -332,14 +330,9 @@ namespace piper
 
   void LoadModel(std::string modelPath, ModelSession &session, bool useCuda)
   {
-    std::ofstream waller("txt.txt");
-
-    waller << "INIT" << std::endl;
 
     session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, std::string("TTS").c_str());
     session.env.DisableTelemetryEvents();
-
-    waller << "ENV" << std::endl;
 
     if (useCuda)
     {
@@ -348,8 +341,6 @@ namespace piper
       cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
       session.options.AppendExecutionProvider_CUDA(cuda_options);
     }
-
-    waller << "CUDA" << std::endl;
 
     // Slows down performance by ~2x
     // session.options.SetIntraOpNumThreads(1);
@@ -361,18 +352,12 @@ namespace piper
     session.options.SetGraphOptimizationLevel(
         GraphOptimizationLevel::ORT_DISABLE_ALL);
 
-    waller << "GRAPH" << std::endl;
-
     // Slows down performance very slightly
     // session.options.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
 
     session.options.DisableCpuMemArena();
     session.options.DisableMemPattern();
     session.options.DisableProfiling();
-
-    waller << "OPTIONS" << std::endl;
-
-    auto startTime = std::chrono::steady_clock::now();
 
 #ifdef _WIN32
     auto modelPathW = std::wstring(modelPath.begin(), modelPath.end());
@@ -381,23 +366,12 @@ namespace piper
     auto modelPathStr = modelPath.c_str();
 #endif
 
-    waller << "PATH" << modelPathStr << " - " << modelPath << std::endl;
-
     session.onnx = Ort::Session(session.env, modelPathStr, session.options);
-
-    waller << "SESSION" << std::endl;
-
-    auto endTime = std::chrono::steady_clock::now();
-    spdlog::debug("Loaded onnx model in {} second(s)",
-                  std::chrono::duration<double>(endTime - startTime).count());
   }
 
   // Load Onnx model and JSON config file
   void LoadVoice(std::string modelPath)
   {
-
-    std::ofstream waller("huh.txt");
-    waller << modelPath;
     LoadModel(modelPath, voice.session, synthesisConfig.useCuda);
   }
 
@@ -406,8 +380,6 @@ namespace piper
                   SynthesisConfig &synthesisConfig, ModelSession &session,
                   std::vector<int16_t> &audioBuffer)
   {
-    spdlog::debug("Synthesizing audio for {} phoneme id(s)", phonemeIds.size());
-
     auto memoryInfo = Ort::MemoryInfo::CreateCpu(
         OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
@@ -438,12 +410,9 @@ namespace piper
     std::vector<int64_t> speakerId{synthesisConfig.speakerId};
     std::vector<int64_t> speakerIdShape{(int64_t)speakerId.size()};
 
-    if (synthesisConfig.speakerId)
-    {
-      inputTensors.push_back(Ort::Value::CreateTensor<int64_t>(
-          memoryInfo, speakerId.data(), speakerId.size(), speakerIdShape.data(),
-          speakerIdShape.size()));
-    }
+    inputTensors.push_back(Ort::Value::CreateTensor<int64_t>(
+        memoryInfo, speakerId.data(), speakerId.size(), speakerIdShape.data(),
+        speakerIdShape.size()));
 
     // From export_onnx.py
     std::array<const char *, 4> inputNames = {"input", "input_lengths", "scales",
@@ -877,7 +846,6 @@ namespace piper
                    const std::function<void()> &audioCallback)
   {
     // Phonemes for each sentence
-    spdlog::debug("Phonemizing text: {}", text);
     std::vector<std::vector<Phoneme>> phonemes;
 
     phonemize_text(text, phonemes);
@@ -892,11 +860,11 @@ namespace piper
       phonemes_to_ids(sentence, phonemeIds, missingPhonemes);
 
       // ids -> audio
-      synthesize(phonemeIds, voice.synthesisConfig, voice.session, audioBuffer);
+      synthesize(phonemeIds, synthesisConfig, voice.session, audioBuffer);
 
       auto sentenceSilenceSamples = (std::size_t)(
-          voice.synthesisConfig.sentenceSilenceSeconds *
-          voice.synthesisConfig.sampleRate * voice.synthesisConfig.channels);
+          synthesisConfig.sentenceSilenceSeconds *
+          synthesisConfig.sampleRate * synthesisConfig.channels);
 
       for (std::size_t i = 0; i < sentenceSilenceSamples; i++)
       {
@@ -923,9 +891,6 @@ namespace piper
       {
         ss << (char)phon;
       }
-
-      spdlog::warn("Missing {} phoneme(s) from phoneme/id map! {}",
-                   missingPhonemes.size(), ss.str());
     }
 
   } /* textToAudio */

@@ -58,7 +58,6 @@ namespace piper
 
   struct Voice
   {
-    SynthesisConfig synthesisConfig;
     ModelSession session;
   };
 
