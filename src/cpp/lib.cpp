@@ -38,7 +38,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "base64.hpp"
 #include "json.hpp"
 #include "piper.hpp"
 
