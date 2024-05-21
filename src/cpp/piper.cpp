@@ -811,9 +811,22 @@ namespace piper
     phonemeIds.push_back(eosId);
   }
 
+  std::vector<int16_t> silence_buffer = {1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0, -1, -1, -2, -2, -3, -3, -4, -4, -3, -3, -2, -2, -1, -1, 0, 0};
+
+  int silence_buffer_length = silence_buffer.size();
+
   void TextToAudio(std::string text,
                    std::vector<int16_t> &audioBuffer)
   {
+    auto sentenceSilenceSamples = (std::size_t)(
+        synthesisConfig.sentenceSilenceSeconds *
+        synthesisConfig.sampleRate * synthesisConfig.channels);
+
+    for (std::size_t i = 0; i < sentenceSilenceSamples / 2; i++)
+    {
+      audioBuffer.push_back(silence_buffer[i % silence_buffer_length]);
+    }
+
     // Phonemes for each sentence
     std::vector<std::vector<Phoneme>> phonemes;
 
@@ -830,13 +843,9 @@ namespace piper
       // ids -> audio
       synthesize(phonemeIds, synthesisConfig, voice.session, audioBuffer);
 
-      auto sentenceSilenceSamples = (std::size_t)(
-          synthesisConfig.sentenceSilenceSeconds *
-          synthesisConfig.sampleRate * synthesisConfig.channels);
-
       for (std::size_t i = 0; i < sentenceSilenceSamples; i++)
       {
-        audioBuffer.push_back(0);
+        audioBuffer.push_back(silence_buffer[i % silence_buffer_length]);
       }
 
       phonemeIds.clear();
