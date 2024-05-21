@@ -47,6 +47,8 @@ using json = nlohmann::json;
 bool writeFile = false;
 std::string outputPath = "./output/";
 
+int currentSpeaker = 0;
+
 LIB_API void LoadIPAData(const char *path)
 {
   std::string str(path);
@@ -55,6 +57,7 @@ LIB_API void LoadIPAData(const char *path)
 
 LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda)
 {
+  currentSpeaker = speakerId;
   piper::ApplySynthesisConfig(lengthScale, noiseScale, noiseW, speakerId, sampleRate, sentenceSilenceSeconds, useCuda);
 }
 
@@ -91,7 +94,7 @@ LIB_API char *GenerateVoiceData(int *length, const char *text)
             .count();
     // Generate path using timestamp
     stringstream outputName;
-    outputName << outputPath << timestamp << ".wav";
+    outputName << outputPath << timestamp << "_" << currentSpeaker << ".wav";
 
     // Output audio to automatically-named WAV file in a directory
     ofstream audioFile(outputName.str(), ios::binary);
