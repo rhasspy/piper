@@ -858,18 +858,14 @@ namespace piper
 
     TextToAudio(text, audioBuffer, NULL);
 
-    auto audioHeaderData = getWavHeader(synthesisConfig.sampleRate, synthesisConfig.sampleWidth, synthesisConfig.channels, (int32_t)audioBuffer.size());
-    auto audioHeaderSize = sizeof(audioHeaderData);
     auto audioBufferData = (const char *)audioBuffer.data();
-    auto audioBufferSize = audioBuffer.size() * 2;
-    dataSize = audioBufferSize + audioHeaderSize;
+    dataSize = audioBuffer.size() * 2;
 
     char *full_data;
-    full_data = (char *)malloc(dataSize);                                                 /* make space for the new string (should check the return value ...) */
-    memcpy(full_data, reinterpret_cast<const char *>(&audioHeaderData), audioHeaderSize); /* copy name into the new var */
-    memcpy(full_data + audioHeaderSize, audioBufferData, audioBufferSize);                /* add the extension */
+    full_data = (char *)malloc(dataSize);         /* copy name into the new var */
+    memcpy(full_data, audioBufferData, dataSize); /* add the extension */
 
     return full_data;
-  } /* textToWavFile */
+  }
 
 } // namespace piper
