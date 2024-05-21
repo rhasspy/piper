@@ -812,8 +812,7 @@ namespace piper
   }
 
   void TextToAudio(std::string text,
-                   std::vector<int16_t> &audioBuffer,
-                   const std::function<void()> &audioCallback)
+                   std::vector<int16_t> &audioBuffer)
   {
     // Phonemes for each sentence
     std::vector<std::vector<Phoneme>> phonemes;
@@ -840,13 +839,6 @@ namespace piper
         audioBuffer.push_back(0);
       }
 
-      if (audioCallback)
-      {
-        // Call back must copy audio since it is cleared afterwards.
-        audioCallback();
-        audioBuffer.clear();
-      }
-
       phonemeIds.clear();
     }
   } /* textToAudio */
@@ -856,14 +848,13 @@ namespace piper
   {
     std::vector<int16_t> audioBuffer;
 
-    TextToAudio(text, audioBuffer, NULL);
+    TextToAudio(text, audioBuffer);
 
-    auto audioBufferData = (const char *)audioBuffer.data();
     dataSize = audioBuffer.size() * 2;
 
     char *full_data;
-    full_data = (char *)malloc(dataSize);         /* copy name into the new var */
-    memcpy(full_data, audioBufferData, dataSize); /* add the extension */
+    full_data = (char *)malloc(dataSize);                          /* copy name into the new var */
+    memcpy(full_data, (const char *)audioBuffer.data(), dataSize); /* add the extension */
 
     return full_data;
   }
