@@ -11,7 +11,6 @@
 #include "json.hpp"
 #include "piper.hpp"
 #include "utf8.h"
-#include "wavfile.hpp"
 
 namespace piper
 {
