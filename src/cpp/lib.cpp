@@ -55,10 +55,10 @@ LIB_API void LoadIPAData(const char *path)
   piper::LoadIPAData(str);
 }
 
-LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda)
+LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, float sentenceSilenceSeconds, bool useCuda)
 {
   currentSpeaker = speakerId;
-  piper::ApplySynthesisConfig(lengthScale, noiseScale, noiseW, speakerId, sampleRate, sentenceSilenceSeconds, useCuda);
+  piper::ApplySynthesisConfig(lengthScale, noiseScale, noiseW, speakerId, sentenceSilenceSeconds, useCuda);
 }
 
 LIB_API void LoadVoice(const char *modelPath)

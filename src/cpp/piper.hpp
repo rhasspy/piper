@@ -64,7 +64,7 @@ namespace piper
   // Must be called before using textTo* functions
   void LoadIPAData(std::string ipaPath);
 
-  void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda);
+  void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, float sentenceSilenceSeconds, bool useCuda);
 
   // Load Onnx model and JSON config file
   void LoadVoice(std::string modelPath);

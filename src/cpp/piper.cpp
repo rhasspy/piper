@@ -281,14 +281,13 @@ namespace piper
     return s;
   }
 
-  void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, int sampleRate, float sentenceSilenceSeconds, bool useCuda)
+  void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, float sentenceSilenceSeconds, bool useCuda)
   {
     synthesisConfig.modelPath = lengthScale;
     synthesisConfig.lengthScale = lengthScale;
     synthesisConfig.noiseScale = noiseScale;
     synthesisConfig.noiseW = noiseW;
     synthesisConfig.speakerId = speakerId;
-    synthesisConfig.sampleRate = sampleRate;
     synthesisConfig.sentenceSilenceSeconds = sentenceSilenceSeconds;
     synthesisConfig.useCuda = useCuda;
   }
