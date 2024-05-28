@@ -52,12 +52,12 @@ class PiperVoice:
             2. Uninstall onnxruntime
             > pip uninstall onnxruntime
             3. Install onnxruntime-rocm
-            > pip3 install https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/onnxruntime_rocm-inference-1.17.0-cp310-cp310-linux_x86_64.whl
+            > pip3 install https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/onnxruntime_rocm-inference-1.17.0-cp310-cp310-linux_x86_64.whl --no-cache-dir
             Remarks: Wheel files that support different ROCm versions are available at: https://repo.radeon.com/rocm/manylinux
 
             To verify:
             > python3
-            $ onnxruntime
+            $ import onnxruntime
             $ onnxruntime.get_available_providers()
             Output:
             ```
