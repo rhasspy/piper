@@ -26,6 +26,8 @@ class PiperVoice:
         model_path: Union[str, Path],
         config_path: Optional[Union[str, Path]] = None,
         use_cuda: bool = False,
+        use_rocm: bool = False,
+        use_migraphx: bool = False,
     ) -> "PiperVoice":
         """Load an ONNX model and config."""
         if config_path is None:
@@ -42,6 +44,38 @@ class PiperVoice:
                     {"cudnn_conv_algo_search": "HEURISTIC"},
                 )
             ]
+        elif use_rocm:
+            """
+            To support ROCm-enabled GPUs via 'ROCMExecutionProvider' or 'MIGraphXExecutionProvider':
+            1. Install piper-tts
+            > pip install piper-tts
+            2. Uninstall onnxruntime
+            > pip uninstall onnxruntime
+            3. Install onnxruntime-rocm
+            > pip3 install https://repo.radeon.com/rocm/manylinux/rocm-rel-6.0.2/onnxruntime_rocm-inference-1.17.0-cp310-cp310-linux_x86_64.whl
+            Remarks: Wheel files that support different ROCm versions are available at: https://repo.radeon.com/rocm/manylinux
+
+            To verify:
+            > python3
+            $ onnxruntime
+            $ onnxruntime.get_available_providers()
+            Output:
+            ```
+            ['MIGraphXExecutionProvider', 'ROCMExecutionProvider', 'CPUExecutionProvider']
+            ```
+
+            To accelerate with AMD GPUs:
+            > piper --migraphx
+
+            To accelerate with ROCm-enabled GPUs:
+            > piper --rocm
+
+            Remarks: Tested on Ubuntu 22.04.4 + Kernel 6.6.32 + ROCm 6.0.2
+            Setup notes are available at: https://github.com/eliranwong/MultiAMDGPU_AIDev_Ubuntu/tree/main
+            """
+            providers = ["ROCMExecutionProvider", "CPUExecutionProvider"]
+        elif use_migraphx:
+            providers = ["MIGraphXExecutionProvider", "CPUExecutionProvider"]
         else:
             providers = ["CPUExecutionProvider"]
 
