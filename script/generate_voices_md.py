@@ -27,6 +27,7 @@ _LANGUAGES = {
     "ar_JO": Language("العربية", "Arabic", "Jordan"),
     "ca_ES": Language("Català", "Catalan", "Spain"),
     "cs_CZ": Language("Čeština", "Czech", "Czech Republic"),
+    "cy_GB": Language("Cymraeg", "Welsh", "Great Britain"),
     "da_DK": Language("Dansk", "Danish", "Denmark"),
     "de_DE": Language("Deutsch", "German", "Germany"),
     "el_GR": Language("Ελληνικά", "Greek", "Greece"),
