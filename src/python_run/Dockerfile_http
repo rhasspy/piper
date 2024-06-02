@@ -1,0 +1,28 @@
+FROM python:3.11.4-slim-bookworm
+
+RUN useradd -ms /bin/bash piper
+
+USER piper
+
+ENV HOME /home/piper
+
+ENV DATA ${HOME}/data
+
+WORKDIR ${HOME}
+
+ENV PATH ${HOME}/.local/bin:${PATH}
+
+COPY ./requirements.txt ${HOME}
+
+RUN pip install --no-cache-dir --upgrade -r ${HOME}/requirements.txt
+
+COPY ./requirements_http.txt ${HOME}
+
+RUN pip install --no-cache-dir --upgrade -r ${HOME}/requirements_http.txt
+
+COPY ./piper ${HOME}/piper
+
+ENTRYPOINT [ "python3", "-m", "piper.http_server" ]
+
+CMD [ "--model", "/home/piper/data/en_US-lessac-medium.onnx", "--data-dir", "/home/piper/data/" ]
+
