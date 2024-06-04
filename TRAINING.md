@@ -133,6 +133,8 @@ python3 -m piper_train.preprocess \
   --input-dir /path/to/dataset_dir/ \
   --output-dir /path/to/training_dir/ \
   --dataset-format ljspeech \
+  --dataset-name <name of your voice>
+  --audio-quality <x_low/low/medium/high>
   --single-speaker \
   --sample-rate 22050
 ```
