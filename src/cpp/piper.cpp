@@ -183,6 +183,17 @@ namespace piper
           {U'\u031d', 157},
           {U'\u030a', 158}};
 
+  void replace(std::string &str, const std::string &from, const std::string &to)
+  {
+    do
+    {
+      size_t start_pos = str.find(from);
+      if (start_pos == std::string::npos)
+        break;
+      str.replace(start_pos, from.length(), to);
+    } while (true);
+  }
+
   static std::vector<std::string> numbers_units = {"zero", "one", "two", "three",
                                                    "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
                                                    "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
@@ -262,13 +273,13 @@ namespace piper
   inline void ltrim(std::string &s)
   {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
-                                    { return !std::isspace(ch); }));
+                                    { return !std::isspace(ch) && !std::iscntrl(ch); }));
   }
 
   inline void rtrim(std::string &s)
   {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
-                         { return !std::isspace(ch); })
+                         { return !std::isspace(ch) && !std::iscntrl(ch); })
                 .base(),
             s.end());
   }
@@ -566,7 +577,7 @@ namespace piper
     return convert.from_bytes(utf8str);
   }
 
-  std::string acceptable_chars = "\'-./+=&%$§*#";
+  std::string acceptable_chars = "\'-.*";
 
   std::string remove_all_unwanted_chars(std::string &str)
   {
@@ -579,6 +590,56 @@ namespace piper
       if (isalnum(c) || acceptable_chars.find(c) != std::string::npos)
       {
         ss << c;
+      }
+      else
+      {
+        switch (c)
+        {
+        case '+':
+          ss << " plus ";
+          break;
+        case '=':
+          ss << " equals ";
+          break;
+        case '$':
+          ss << " dollar ";
+          break;
+          /* case '€':
+             ss << " euro ";
+             break;*/
+        case '@':
+          ss << " at ";
+          break;
+        /*case '¢':
+          ss << " cent ";
+          break;*/
+        /*case '£':
+          ss << " pound ";
+          break;*/
+        /*case '¥':
+          ss << " yen ";
+          break;*/
+        case '&':
+          ss << " and ";
+          break;
+        /*case '§':
+          ss << " paragraph ";
+          break;*/
+        case '#':
+          ss << " number ";
+          break;
+        case '%':
+          ss << " percent ";
+          break;
+        case '/':
+          ss << " slash ";
+          break;
+        case '\\':
+          ss << " backslash ";
+          break;
+        default:
+          break;
+        }
       }
     }
 
@@ -627,6 +688,12 @@ namespace piper
 
   void phonemize_text(std::string &str, std::vector<std::vector<Phoneme>> &phonemes)
   {
+    replace(str, "€", " euro ");
+    replace(str, "¢", " cent ");
+    replace(str, "£", " pound ");
+    replace(str, "¥", " yen ");
+    replace(str, "$", " paragraph ");
+
     auto sentences = split_into_sentences(str);
     for (auto sentence : sentences)
     {
