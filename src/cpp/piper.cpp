@@ -497,7 +497,7 @@ namespace piper
 
   bool is_sentence_ending(char c)
   {
-    return (c == '.' || c == '!' || c == '?' || c == ';' || c == ':' | c == ',');
+    return (c == '.' || c == '!' || c == '?' || c == ';' || c == ':' || c == ',' || c == '\n');
   }
 
   std::vector<std::string> split_into_sentences(const std::string &text, std::vector<bool> &long_pauses)
@@ -691,7 +691,7 @@ namespace piper
     }
     catch (const std::out_of_range &)
     {
-      logger << "Could not convert number, because argument is out of range for a double" << rep << std::endl;
+      logger << "Could not convert number, because argument is out of range for a double: " << rep << std::endl;
     }
   }
 
@@ -824,7 +824,7 @@ namespace piper
               length--;
             }
           }
-
+          logger << "Unknown word: " << rep << " - " << repcopy.str() << std::endl;
           rep = repcopy.str();
         }
 
