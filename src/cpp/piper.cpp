@@ -500,7 +500,7 @@ namespace piper
     return (c == '.' || c == '!' || c == '?' || c == ';' || c == ':' | c == ',');
   }
 
-  std::vector<std::string> split_into_sentences(const std::string &text)
+  std::vector<std::string> split_into_sentences(const std::string &text, std::vector<bool> &long_pauses)
   {
     std::vector<std::string> sentences;
     size_t start = 0;
@@ -518,6 +518,15 @@ namespace piper
           decimal_dot = end;
         }
         end++;
+      }
+
+      if (text[end] == ';' || text[end] == ',')
+      {
+        long_pauses.push_back(false);
+      }
+      else
+      {
+        long_pauses.push_back(true);
       }
 
       // Extract the sentence
@@ -686,7 +695,7 @@ namespace piper
     }
   }
 
-  void phonemize_text(std::string &str, std::vector<std::vector<Phoneme>> &phonemes)
+  void phonemize_text(std::string &str, std::vector<std::vector<Phoneme>> &phonemes, std::vector<bool> &long_pauses)
   {
     replace(str, "€", " euro ");
     replace(str, "¢", " cent ");
@@ -694,7 +703,7 @@ namespace piper
     replace(str, "¥", " yen ");
     replace(str, "$", " paragraph ");
 
-    auto sentences = split_into_sentences(str);
+    auto sentences = split_into_sentences(str, long_pauses);
     for (auto sentence : sentences)
     {
       auto words = split(sentence, ' ');
@@ -887,30 +896,44 @@ namespace piper
         synthesisConfig.sentenceSilenceSeconds *
         synthesisConfig.sampleRate * synthesisConfig.channels);
 
-    for (std::size_t i = 0; i < sentenceSilenceSamples / 2; i++)
+    auto sentenceSilenceSamplesHalf = sentenceSilenceSamples / 2;
+
+    for (std::size_t i = 0; i < sentenceSilenceSamplesHalf; i++)
     {
       audioBuffer.push_back(silence_buffer[i % silence_buffer_length]);
     }
 
     // Phonemes for each sentence
     std::vector<std::vector<Phoneme>> phonemes;
+    std::vector<bool> long_pauses;
 
-    phonemize_text(text, phonemes);
+    phonemize_text(text, phonemes, long_pauses);
 
     // Synthesize each sentence independently.
     std::vector<PhonemeId> phonemeIds;
-    for (auto sentence : phonemes)
+    for (auto sentenceIndex = 0; sentenceIndex < phonemes.size(); sentenceIndex++)
     {
 
+      auto sentence = phonemes[sentenceIndex];
       // phonemes -> ids
       phonemes_to_ids(sentence, phonemeIds);
 
       // ids -> audio
       synthesize(phonemeIds, synthesisConfig, voice.session, audioBuffer);
 
-      for (std::size_t i = 0; i < sentenceSilenceSamples; i++)
+      if (long_pauses[sentenceIndex])
       {
-        audioBuffer.push_back(silence_buffer[i % silence_buffer_length]);
+        for (std::size_t i = 0; i < sentenceSilenceSamples; i++)
+        {
+          audioBuffer.push_back(silence_buffer[i % silence_buffer_length]);
+        }
+      }
+      else
+      {
+        for (std::size_t i = 0; i < sentenceSilenceSamplesHalf; i++)
+        {
+          audioBuffer.push_back(silence_buffer[i % silence_buffer_length]);
+        }
       }
 
       phonemeIds.clear();
