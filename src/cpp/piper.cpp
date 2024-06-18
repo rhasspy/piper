@@ -911,7 +911,8 @@ namespace piper
 
     // Synthesize each sentence independently.
     std::vector<PhonemeId> phonemeIds;
-    for (auto sentenceIndex = 0; sentenceIndex < phonemes.size(); sentenceIndex++)
+    auto phonemes_size = phonemes.size();
+    for (auto sentenceIndex = 0; sentenceIndex < phonemes_size; sentenceIndex++)
     {
 
       auto sentence = phonemes[sentenceIndex];
@@ -921,7 +922,8 @@ namespace piper
       // ids -> audio
       synthesize(phonemeIds, synthesisConfig, voice.session, audioBuffer);
 
-      if (long_pauses[sentenceIndex])
+      // end of generation is also a short pause
+      if (sentenceIndex < phonemes_size - 1 && long_pauses[sentenceIndex])
       {
         for (std::size_t i = 0; i < sentenceSilenceSamples; i++)
         {
