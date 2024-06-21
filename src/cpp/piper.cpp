@@ -337,7 +337,7 @@ namespace piper
     }
   }
 
-  void LoadModel(std::string modelPath, ModelSession &session, bool useCuda)
+  void LoadModel(int modelDataLength, const void *modelData, ModelSession &session, bool useCuda)
   {
 
     session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, std::string("TTS").c_str());
@@ -368,20 +368,13 @@ namespace piper
     session.options.DisableMemPattern();
     session.options.DisableProfiling();
 
-#ifdef _WIN32
-    auto modelPathW = std::wstring(modelPath.begin(), modelPath.end());
-    auto modelPathStr = modelPathW.c_str();
-#else
-    auto modelPathStr = modelPath.c_str();
-#endif
-
-    session.onnx = Ort::Session(session.env, modelPathStr, session.options);
+    session.onnx = Ort::Session(session.env, modelData, modelDataLength, session.options);
   }
 
   // Load Onnx model and JSON config file
-  void LoadVoice(std::string modelPath)
+  void LoadVoice(int modelDataLength, const void *modelData)
   {
-    LoadModel(modelPath, voice.session, synthesisConfig.useCuda);
+    LoadModel(modelDataLength, modelData, voice.session, synthesisConfig.useCuda);
   }
 
   // Phoneme ids to WAV audio

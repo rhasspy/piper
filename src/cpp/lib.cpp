@@ -61,10 +61,9 @@ LIB_API void ApplySynthesisConfig(float lengthScale, float noiseScale, float noi
   piper::ApplySynthesisConfig(lengthScale, noiseScale, noiseW, speakerId, sentenceSilenceSeconds, useCuda);
 }
 
-LIB_API void LoadVoice(const char *modelPath)
+LIB_API void LoadVoice(int modelDataLength, const void *modelData)
 {
-  std::string str(modelPath);
-  piper::LoadVoice(str);
+  piper::LoadVoice(modelDataLength, modelData);
 }
 
 LIB_API void SetWriteToFile(bool enabled)

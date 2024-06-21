@@ -67,7 +67,7 @@ namespace piper
   void ApplySynthesisConfig(float lengthScale, float noiseScale, float noiseW, int speakerId, float sentenceSilenceSeconds, bool useCuda);
 
   // Load Onnx model and JSON config file
-  void LoadVoice(std::string modelPath);
+  void LoadVoice(int modelDataLength, const void *modelData);
 
   // Phonemize text and synthesize audio
   void TextToAudio(Voice &voice, std::string text, std::vector<int16_t> &audioBuffer);
