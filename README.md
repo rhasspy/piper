@@ -10,15 +10,15 @@ echo 'Welcome to the world of speech synthesis!' | \
 
 [Listen to voice samples](https://rhasspy.github.io/piper-samples) and check out a [video tutorial by Thorsten Müller](https://youtu.be/rjq5eZoWWSo)
 
-[![Sponsored by Nabu Casa](etc/nabu_casa_sponsored.png)](https://nabucasa.com)
-
 Voices are trained with [VITS](https://github.com/jaywalnut310/vits/) and exported to the [onnxruntime](https://onnxruntime.ai/).
+
+This is a project of the [Open Home Foundation](https://www.openhomefoundation.org/).
 
 ## Voices
 
 Our goal is to support Home Assistant and the [Year of Voice](https://www.home-assistant.io/blog/2022/12/20/year-of-voice/).
 
-[Download voices](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) for the supported languages:
+[Download voices](VOICES.md) for the supported languages:
 
 * Arabic (ar_JO)
 * Catalan (ca_ES)
@@ -138,6 +138,8 @@ Piper has been used in the following projects/papers:
 * [JetsonGPT](https://github.com/shahizat/jetsonGPT)
 * [LocalAI](https://github.com/go-skynet/LocalAI)
 * [Lernstick EDU / EXAM: reading clipboard content aloud with language detection](https://lernstick.ch/)
+* [Natural Speech - A plugin for Runelite, an OSRS Client](https://github.com/phyce/rl-natural-speech)
+* [mintPiper](https://github.com/evuraan/mintPiper)
 
 ## Training
 
