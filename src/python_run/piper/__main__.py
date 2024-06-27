@@ -80,6 +80,10 @@ def main() -> None:
     parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to console"
     )
+    #
+    parser.add_argument(
+        "--alignment-data", help="output alignment data to file (default: stdout)"
+    )
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
     _LOGGER.debug(args)
@@ -113,6 +117,8 @@ def main() -> None:
         "noise_w": args.noise_w,
         "sentence_silence": args.sentence_silence,
     }
+    if args.alignment_data:
+        synthesize_args['alignment_data'] = []
 
     if args.output_raw:
         # Read line-by-line
@@ -154,6 +160,15 @@ def main() -> None:
             with wave.open(args.output_file, "wb") as wav_file:
                 voice.synthesize(text, wav_file, **synthesize_args)
 
+    if args.alignment_data:
+        if (not args.alignment_data) or (args.alignment_data == "-"):
+            fh = sys.stdout
+        else:
+            fh = open(args.alignment_data, "w")
+        fh.write("start\tend\ttext\n")
+        for word in synthesize_args['alignment_data']:
+            fh.write("%d\t%d\t%s\n" % (word["start"] * 1000, word["end"] * 1000, word["word"]))
+        fh.close()
 
 if __name__ == "__main__":
     main()
