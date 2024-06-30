@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import base64
 import io
+import json
 import logging
+import nltk
 import wave
 from pathlib import Path
 from typing import Any, Dict
@@ -12,6 +15,24 @@ from . import PiperVoice
 from .download import ensure_voice_exists, find_voice, get_voices
 
 _LOGGER = logging.getLogger()
+
+
+def load_voice(args):
+    model_path = Path(args.model)
+    if not model_path.exists():
+        # Load voice info
+        voices_info = get_voices(args.download_dir, update_voices=args.update_voices)
+
+        # Resolve aliases for backwards compatibility with old voice names
+        aliases_info: Dict[str, Any] = {}
+        for voice_info in voices_info.values():
+            for voice_alias in voice_info.get("aliases", []):
+                aliases_info[voice_alias] = {"_is_alias": True, **voice_info}
+
+        voices_info.update(aliases_info)
+        ensure_voice_exists(args.model, args.data_dir, args.download_dir, voices_info)
+        args.model, args.config = find_voice(args.model, args.data_dir)
+    return PiperVoice.load(args.model, config_path=args.config, use_cuda=args.cuda)
 
 
 def main() -> None:
@@ -73,24 +94,12 @@ def main() -> None:
         # Download to first data directory by default
         args.download_dir = args.data_dir[0]
 
-    # Download voice if file doesn't exist
-    model_path = Path(args.model)
-    if not model_path.exists():
-        # Load voice info
-        voices_info = get_voices(args.download_dir, update_voices=args.update_voices)
+    # Load voice and download voice if file doesn't exist
+    voice = load_voice(args)
+    if not voice:
+        _LOGGER.error("could not load voice")
+        return
 
-        # Resolve aliases for backwards compatibility with old voice names
-        aliases_info: Dict[str, Any] = {}
-        for voice_info in voices_info.values():
-            for voice_alias in voice_info.get("aliases", []):
-                aliases_info[voice_alias] = {"_is_alias": True, **voice_info}
-
-        voices_info.update(aliases_info)
-        ensure_voice_exists(args.model, args.data_dir, args.download_dir, voices_info)
-        args.model, args.config = find_voice(args.model, args.data_dir)
-
-    # Load voice
-    voice = PiperVoice.load(args.model, config_path=args.config, use_cuda=args.cuda)
     synthesize_args = {
         "speaker_id": args.speaker,
         "length_scale": args.length_scale,
@@ -104,8 +113,17 @@ def main() -> None:
 
     @app.route("/", methods=["GET", "POST"])
     def app_synthesize() -> bytes:
+        is_json = False
         if request.method == "POST":
             text = request.data.decode("utf-8")
+            if "application/json" == request.headers.get("Content-Type"):
+                is_json = True
+                body = json.loads(text)
+                text = body.get("text")
+                voice_name = body.get("voice")
+                if voice_name:
+                    args.model = voice_name
+                    voice = load_voice(args)
         else:
             text = request.args.get("text", "")
 
@@ -116,9 +134,22 @@ def main() -> None:
         _LOGGER.debug("Synthesizing text: %s", text)
         with io.BytesIO() as wav_io:
             with wave.open(wav_io, "wb") as wav_file:
-                voice.synthesize(text, wav_file, **synthesize_args)
-
-            return wav_io.getvalue()
+                if len(text) < 133:
+                    voice.synthesize(text, wav_file, **synthesize_args)
+                else:
+                    set_paramaters = True
+                    for sentence in nltk.sent_tokenize(text):
+                        _LOGGER.info(f"read: '{sentence}'")
+                        voice.synthesize(sentence, wav_file, set_paramaters=set_paramaters, **synthesize_args)
+                        set_paramaters = False
+            response = wav_io.getvalue()
+            if is_json:
+                response = {
+                    "Content-Type": "audio/wav",
+                    "audio": base64.b64encode(response).decode("utf-8"),
+                    "text": text,
+                }
+            return response
 
     app.run(host=args.host, port=args.port)
 
