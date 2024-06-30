@@ -4,6 +4,7 @@ import base64
 import io
 import json
 import logging
+import nltk
 import wave
 from pathlib import Path
 from typing import Any, Dict
@@ -133,7 +134,14 @@ def main() -> None:
         _LOGGER.debug("Synthesizing text: %s", text)
         with io.BytesIO() as wav_io:
             with wave.open(wav_io, "wb") as wav_file:
-                voice.synthesize(text, wav_file, **synthesize_args)
+                if len(text) < 133:
+                    voice.synthesize(text, wav_file, **synthesize_args)
+                else:
+                    set_paramaters = True
+                    for sentence in nltk.sent_tokenize(text):
+                        _LOGGER.info(f"read: '{sentence}'")
+                        voice.synthesize(sentence, wav_file, set_paramaters=set_paramaters, **synthesize_args)
+                        set_paramaters = False
             response = wav_io.getvalue()
             if is_json:
                 response = {

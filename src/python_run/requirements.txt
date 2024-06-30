@@ -1,2 +1,3 @@
 piper-phonemize~=1.1.0
 onnxruntime>=1.11.0,<2
+nltk>=3.8.1
