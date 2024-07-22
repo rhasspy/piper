@@ -23,6 +23,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Arabic (ar_JO)
 * Catalan (ca_ES)
 * Czech (cs_CZ)
+* Welsh (cy_GB)
 * Danish (da_DK)
 * German (de_DE)
 * Greek (el_GR)
