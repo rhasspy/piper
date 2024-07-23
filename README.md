@@ -140,6 +140,7 @@ Piper has been used in the following projects/papers:
 * [Lernstick EDU / EXAM: reading clipboard content aloud with language detection](https://lernstick.ch/)
 * [Natural Speech - A plugin for Runelite, an OSRS Client](https://github.com/phyce/rl-natural-speech)
 * [mintPiper](https://github.com/evuraan/mintPiper)
+* [Vim-Piper](https://github.com/wolandark/vim-piper)
 
 ## Training
 
