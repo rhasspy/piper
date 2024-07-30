@@ -157,7 +157,9 @@ python3 -m piper_train.preprocess \
   --output-dir /path/to/training_dir/ \
   --dataset-format ljspeech \
   --single-speaker \
-  --sample-rate 22050
+  --sample-rate 22050 \
+  --audio-quality medium \
+  --dataset-name NAME_OF_DATASET
 ```
 
 The `--language` argument refers to an [espeak-ng voice](https://github.com/espeak-ng/espeak-ng/) by default, such as `de` for German.
