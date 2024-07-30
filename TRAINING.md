@@ -27,8 +27,10 @@ Choices must be made at each step, including:
 Start by installing system dependencies:
 
 ``` sh
-sudo apt-get install python3-dev
+sudo apt-get install python3-dev gcc
 ```
+
+Ensure you have [espeak-ng](https://github.com/espeak-ng/espeak-ng/) installed (`sudo apt-get install espeak-ng`).
 
 Then create a Python virtual environment:
 
@@ -36,15 +38,36 @@ Then create a Python virtual environment:
 cd piper/src/python
 python3 -m venv .venv
 source .venv/bin/activate
-pip3 install --upgrade pip
+pip3 install --upgrade pip==24.0
 pip3 install --upgrade wheel setuptools
+```
+
+### RTX4090
+
+Install pytorch this version:
+
+`pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
+
+and then remove `torch>=1.11.0,<2`, update `pytorch-lightning~=1.9.0` and add `onnx` to requirements.txt
+
+```
+cython>=0.29.0,<1
+piper-phonemize~=1.1.0
+librosa>=0.9.2,<1
+numpy>=1.19.0
+onnxruntime>=1.11.0
+pytorch-lightning~=1.9.0
+onnx
+```
+
+Finaly install all necessary library from requirements:
+
+```
+pip3 install torchmetrics==0.11.4
 pip3 install -e .
 ```
 
 Run the `build_monotonic_align.sh` script in the `src/python` directory to build the extension.
-
-Ensure you have [espeak-ng](https://github.com/espeak-ng/espeak-ng/) installed (`sudo apt-get install espeak-ng`).
-
 
 ## Preparing a Dataset
 
@@ -160,7 +183,14 @@ RUN pip3 install \
 ENV NUMBA_CACHE_DIR=.numba_cache
 ```
 
-As an example, we will fine-tune the [medium quality lessac voice](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main/en/en_US/lessac/medium). Download the `.ckpt` file and run the following command in your training environment:
+As an example, we will fine-tune the [medium quality lessac voice](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main/en/en_US/lessac/medium). Download the `.ckpt` file
+
+```
+cd piper/
+wget https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/medium/epoch%3D2164-step%3D1355540.ckpt -O epoch=2164-step=1355540.ckpt
+```
+
+and run the following command in your training environment:
 
 ``` sh
 python3 -m piper_train \
@@ -173,10 +203,16 @@ python3 -m piper_train \
     --max_epochs 10000 \
     --resume_from_checkpoint /path/to/lessac/epoch=2164-step=1355540.ckpt \
     --checkpoint-epochs 1 \
-    --precision 32
+    --precision 32 \
+    --quality medium
 ```
 
 Use `--quality high` to train a [larger voice model](https://github.com/rhasspy/piper/blob/master/src/python/piper_train/vits/config.py#L45) (sounds better, but is much slower).
+
+```
+cd piper/
+wget https://huggingface.co/datasets/rhasspy/piper-checkpoints/resolve/main/en/en_US/lessac/high/epoch%3D2218-step%3D838782.ckpt -O epoch=2218-step=838782.ckpt
+```
 
 You can adjust the validation split (5% = 0.05) and number of test examples for your specific dataset. For fine-tuning, they are often set to 0 because the target dataset is very small.
 
