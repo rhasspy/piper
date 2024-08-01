@@ -51,6 +51,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Ukrainian (uk_UA)
 * Vietnamese (vi_VN)
 * Chinese (zh_CN)
+* Persian (fa_IR)
 
 You will need two files per voice:
 
