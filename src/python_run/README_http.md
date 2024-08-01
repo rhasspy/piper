@@ -14,6 +14,22 @@ Run the web server:
 
 See `--help` for more options.
 
+Alternatively, you can run this process in a docker container.
+
+Build the image with:
+
+```sh
+docker build . -f Dockerfile_http -t piper-http
+```
+
+Run the web server:
+
+```sh
+docker run -p 5000:5000 -v /path/to/data-dir:/home/piper/data piper-http --model ...
+```
+
+where _/path/to/data-dir_ is the local folder where you store data files.
+
 Using a `GET` request:
 
 ```sh
