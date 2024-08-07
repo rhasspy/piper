@@ -17,7 +17,10 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--dataset-dir", required=True, help="Path to pre-processed dataset directory"
+        "--dataset-dir",
+        type=str,
+        required=True,
+        help="Path to pre-processed dataset directory"
     )
     parser.add_argument(
         "--checkpoint-epochs",
@@ -36,7 +39,23 @@ def main():
     )
     Trainer.add_argparse_args(parser)
     VitsModel.add_model_specific_args(parser)
-    parser.add_argument("--seed", type=int, default=1234)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=1234
+    )
+    parser.add_argument(
+        "--num_ckpt",
+        type=int,
+        default=1,
+        help="# of ckpts saved."
+    )
+    parser.add_argument(
+        "--save_last",
+        type=bool,
+        default=None,
+        help="Always save the last checkpoint."
+    )
     args = parser.parse_args()
     _LOGGER.debug(args)
 
@@ -59,9 +78,16 @@ def main():
 
     trainer = Trainer.from_argparse_args(args)
     if args.checkpoint_epochs is not None:
-        trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs)]
+        trainer.callbacks = [ModelCheckpoint(
+            every_n_epochs=args.checkpoint_epochs,
+            save_top_k=args.num_ckpt,
+            save_last=args.save_last
+        )]
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
+        )
+        _LOGGER.debug(
+            "%s Checkpoints will be saved", args.num_ckpt
         )
 
     dict_args = vars(args)
