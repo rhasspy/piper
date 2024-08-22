@@ -23,6 +23,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Arabic (ar_JO)
 * Catalan (ca_ES)
 * Czech (cs_CZ)
+* Welsh (cy_GB)
 * Danish (da_DK)
 * German (de_DE)
 * Greek (el_GR)
@@ -140,6 +141,7 @@ Piper has been used in the following projects/papers:
 * [Lernstick EDU / EXAM: reading clipboard content aloud with language detection](https://lernstick.ch/)
 * [Natural Speech - A plugin for Runelite, an OSRS Client](https://github.com/phyce/rl-natural-speech)
 * [mintPiper](https://github.com/evuraan/mintPiper)
+* [Vim-Piper](https://github.com/wolandark/vim-piper)
 
 ## Training
 
