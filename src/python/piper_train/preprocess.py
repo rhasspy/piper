@@ -4,7 +4,7 @@ import csv
 import dataclasses
 import itertools
 import json
-import logging
+import logging, sys
 import os
 import unicodedata
 from collections import Counter
@@ -30,6 +30,11 @@ from .norm_audio import cache_norm_audio, make_silence_detector
 _DIR = Path(__file__).parent
 _VERSION = (_DIR / "VERSION").read_text(encoding="utf-8").strip()
 _LOGGER = logging.getLogger("preprocess")
+# new
+# link handler to logger
+
+c_handler = logging.StreamHandler()
+_LOGGER.addHandler(c_handler)
 
 
 class PhonemeType(str, Enum):
