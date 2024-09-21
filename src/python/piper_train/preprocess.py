@@ -226,6 +226,9 @@ def main() -> None:
     _LOGGER.info(
         "Processing %s utterance(s) with %s worker(s)", num_utterances, args.max_workers
     )
+    if batch_size <=1:
+        _LOGGER.warning("too small batch size: %s worker(s)", batch_size)
+
     with open(args.output_dir / "dataset.jsonl", "w", encoding="utf-8") as dataset_file:
         for utt_batch in batched(
             make_dataset(args),
