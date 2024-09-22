@@ -419,7 +419,7 @@ def ljspeech_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
     # filename|speaker|text
     # speaker is optional
     metadata_path = dataset_dir / "metadata.csv"
-    assert metadata_path.exists(), f"Missing {metadata_path}"
+    assert metadata_path.exists(), f"Missing metadata.csv {metadata_path}"
 
     wav_dir = dataset_dir / "wav"
     if not wav_dir.is_dir():
@@ -453,7 +453,7 @@ def ljspeech_dataset(args: argparse.Namespace) -> Iterable[Utterance]:
 
             if not skip_audio:
                 if not wav_path.exists():
-                    _LOGGER.warning("Missing %s", filename)
+                    _LOGGER.warning("Missing wp:%s f:%s",wav_path, filename)
                     continue
 
                 if wav_path.stat().st_size == 0:
