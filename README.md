@@ -59,6 +59,8 @@ You will need two files per voice:
 
 The `MODEL_CARD` file for each voice contains important licensing information. Piper is intended for text to speech research, and does not impose any additional restrictions on voice models. Some voices may have restrictive licenses, however, so please review them carefully!
 
+> Make sure the model and the config file share the same name, e.g.
+> `en_US-lessac-medium.onnx` and `en_US-lessac-medium.onnx.json`.
 
 ## Installation
 
