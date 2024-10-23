@@ -14,7 +14,7 @@ class SileroVoiceActivityDetector:
     def __init__(self, onnx_path: typing.Union[str, Path]):
         onnx_path = str(onnx_path)
 
-        self.session = onnxruntime.InferenceSession(onnx_path)
+        self.session = onnxruntime.InferenceSession(onnx_path, providers=['CPUExecutionProvider'])
         self.session.intra_op_num_threads = 1
         self.session.inter_op_num_threads = 1
 
@@ -35,20 +35,13 @@ class SileroVoiceActivityDetector:
                 f"Too many dimensions for input audio chunk {audio_array.shape}"
             )
 
-        if audio_array.shape[0] > 1:
-            raise ValueError("Onnx model does not support batching")
-
-        if sample_rate != 16000:
-            raise ValueError("Only 16Khz audio is supported")
-
         ort_inputs = {
             "input": audio_array.astype(np.float32),
-            "h0": self._h,
-            "c0": self._c,
+            "h": self._h,
+            "c": self._c,
+            "sr": np.array(sample_rate, dtype=np.int64),
         }
         ort_outs = self.session.run(None, ort_inputs)
         out, self._h, self._c = ort_outs
 
-        out = out.squeeze(2)[:, 1]  # make output type match JIT analog
-
-        return out
+        return out.squeeze()
