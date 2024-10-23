@@ -101,7 +101,12 @@ int main(int argc, char *argv[]) {
   spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
 
   RunConfig runConfig;
-  parseArgs(argc, argv, runConfig);
+  try {
+    parseArgs(argc, argv, runConfig);
+  } catch (const std::runtime_error& e) {
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
 
 #ifdef _WIN32
   // Required on Windows to show IPA symbols
@@ -538,6 +543,10 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       printUsage(argv);
       exit(0);
     }
+  }
+
+  if (runConfig.modelPath.empty()) {
+	  throw runtime_error("Model file is not provided");
   }
 
   // Verify model file exists
