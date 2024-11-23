@@ -142,6 +142,7 @@ Piper has been used in the following projects/papers:
 * [Natural Speech - A plugin for Runelite, an OSRS Client](https://github.com/phyce/rl-natural-speech)
 * [mintPiper](https://github.com/evuraan/mintPiper)
 * [Vim-Piper](https://github.com/wolandark/vim-piper)
+* [Narration Studio](https://github.com/phyce/Narration-Studio) - A GUI tool for using multiple Local + API TTS engines
 
 ## Training
 
