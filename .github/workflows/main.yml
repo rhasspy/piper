@@ -95,7 +95,7 @@ jobs:
           asset_content_type: application/zip
   build_macos:
     name: "macos build: ${{ matrix.arch }}"
-    runs-on: macos-latest
+    runs-on: ${{ matrix.arch == 'x64' && 'macos-13' || 'macos-latest' }}
     needs: create_release # we need to know the upload URL
     strategy:
       fail-fast: true
