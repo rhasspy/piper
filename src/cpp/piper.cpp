@@ -463,157 +463,118 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     text = tashkeel::tashkeel_run(text, *config.tashkeelState);
   }
 
-  // Phonemes for each sentence
-  spdlog::debug("Phonemizing text: {}", text);
-  std::vector<std::vector<Phoneme>> phonemes;
+  // Split text by <break/> tags and prepare durations
+  std::vector<std::pair<std::string, std::size_t>> segments;
+  std::regex breakTagRegex("<break\\s*(time\\s*=\\s*\"([^\"]+)\")?\\s*/>");
+  std::sregex_iterator iter(text.begin(), text.end(), breakTagRegex);
+  std::sregex_iterator end;
 
-  if (voice.phonemizeConfig.phonemeType == eSpeakPhonemes) {
-    // Use espeak-ng for phonemization
-    eSpeakPhonemeConfig eSpeakConfig;
-    eSpeakConfig.voice = voice.phonemizeConfig.eSpeak.voice;
-    phonemize_eSpeak(text, eSpeakConfig, phonemes);
-  } else {
-    // Use UTF-8 codepoints as "phonemes"
-    CodepointsPhonemeConfig codepointsConfig;
-    phonemize_codepoints(text, codepointsConfig, phonemes);
+  std::size_t previousPos = 0;
+  while (iter != end) {
+    // Extract segment before the <break/> tag
+    std::size_t breakPos = iter->position();
+    std::size_t breakLength = iter->length();
+    std::string segmentText = text.substr(previousPos, breakPos - previousPos);
+    segments.emplace_back(segmentText, 0);
+
+    // Extract the duration if specified
+    std::string durationStr = (*iter)[2].str();
+    std::size_t silenceSamples = 0;
+    if (!durationStr.empty()) {
+      try {
+        float durationSeconds = std::stof(durationStr);
+        silenceSamples = (std::size_t)(durationSeconds *
+                                       voice.synthesisConfig.sampleRate *
+                                       voice.synthesisConfig.channels);
+      } catch (...) {
+        spdlog::warn("Invalid duration \"{}\" in <break/> tag, skipping.", durationStr);
+      }
+    }
+
+    segments.emplace_back("", silenceSamples);
+
+    // Move to next segment
+    previousPos = breakPos + breakLength;
+    ++iter;
   }
 
-  // Synthesize each sentence independently.
+  // Add the final segment
+  if (previousPos < text.size()) {
+    segments.emplace_back(text.substr(previousPos), 0);
+  }
+
+  // Process each segment
   std::vector<PhonemeId> phonemeIds;
   std::map<Phoneme, std::size_t> missingPhonemes;
-  for (auto phonemesIter = phonemes.begin(); phonemesIter != phonemes.end();
-       ++phonemesIter) {
-    std::vector<Phoneme> &sentencePhonemes = *phonemesIter;
 
-    if (spdlog::should_log(spdlog::level::debug)) {
-      // DEBUG log for phonemes
-      std::string phonemesStr;
-      for (auto phoneme : sentencePhonemes) {
-        utf8::append(phoneme, std::back_inserter(phonemesStr));
+  for (const auto &[segmentText, silenceSamples] : segments) {
+    if (!segmentText.empty()) {
+      // Phonemize the text segment
+      spdlog::debug("Phonemizing text: {}", segmentText);
+      std::vector<std::vector<Phoneme>> phonemes;
+
+      if (voice.phonemizeConfig.phonemeType == eSpeakPhonemes) {
+        eSpeakPhonemeConfig eSpeakConfig;
+        eSpeakConfig.voice = voice.phonemizeConfig.eSpeak.voice;
+        phonemize_eSpeak(segmentText, eSpeakConfig, phonemes);
+      } else {
+        CodepointsPhonemeConfig codepointsConfig;
+        phonemize_codepoints(segmentText, codepointsConfig, phonemes);
       }
 
-      spdlog::debug("Converting {} phoneme(s) to ids: {}",
-                    sentencePhonemes.size(), phonemesStr);
-    }
+      // Synthesize each sentence independently
+      for (auto &sentencePhonemes : phonemes) {
+        PhonemeIdConfig idConfig;
+        idConfig.phonemeIdMap = std::make_shared<PhonemeIdMap>(voice.phonemizeConfig.phonemeIdMap);
 
-    std::vector<std::shared_ptr<std::vector<Phoneme>>> phrasePhonemes;
-    std::vector<SynthesisResult> phraseResults;
-    std::vector<size_t> phraseSilenceSamples;
+        phonemes_to_ids(sentencePhonemes, idConfig, phonemeIds, missingPhonemes);
 
-    // Use phoneme/id map from config
-    PhonemeIdConfig idConfig;
-    idConfig.phonemeIdMap =
-        std::make_shared<PhonemeIdMap>(voice.phonemizeConfig.phonemeIdMap);
 
-    if (voice.synthesisConfig.phonemeSilenceSeconds) {
-      // Split into phrases
-      std::map<Phoneme, float> &phonemeSilenceSeconds =
-          *voice.synthesisConfig.phonemeSilenceSeconds;
+        // Synthesize audio
+        SynthesisResult synthesisResult;
+        synthesize(phonemeIds, voice.synthesisConfig, voice.session, audioBuffer, synthesisResult);
 
-      auto currentPhrasePhonemes = std::make_shared<std::vector<Phoneme>>();
-      phrasePhonemes.push_back(currentPhrasePhonemes);
+        // Update result stats
+        result.audioSeconds += synthesisResult.audioSeconds;
+        result.inferSeconds += synthesisResult.inferSeconds;
 
-      for (auto sentencePhonemesIter = sentencePhonemes.begin();
-           sentencePhonemesIter != sentencePhonemes.end();
-           sentencePhonemesIter++) {
-        Phoneme &currentPhoneme = *sentencePhonemesIter;
-        currentPhrasePhonemes->push_back(currentPhoneme);
-
-        if (phonemeSilenceSeconds.count(currentPhoneme) > 0) {
-          // Split at phrase boundary
-          phraseSilenceSamples.push_back(
-              (std::size_t)(phonemeSilenceSeconds[currentPhoneme] *
-                            voice.synthesisConfig.sampleRate *
-                            voice.synthesisConfig.channels));
-
-          currentPhrasePhonemes = std::make_shared<std::vector<Phoneme>>();
-          phrasePhonemes.push_back(currentPhrasePhonemes);
-        }
-      }
-    } else {
-      // Use all phonemes
-      phrasePhonemes.push_back(
-          std::make_shared<std::vector<Phoneme>>(sentencePhonemes));
-    }
-
-    // Ensure results/samples are the same size
-    while (phraseResults.size() < phrasePhonemes.size()) {
-      phraseResults.emplace_back();
-    }
-
-    while (phraseSilenceSamples.size() < phrasePhonemes.size()) {
-      phraseSilenceSamples.push_back(0);
-    }
-
-    // phonemes -> ids -> audio
-    for (size_t phraseIdx = 0; phraseIdx < phrasePhonemes.size(); phraseIdx++) {
-      if (phrasePhonemes[phraseIdx]->size() <= 0) {
-        continue;
-      }
-
-      // phonemes -> ids
-      phonemes_to_ids(*(phrasePhonemes[phraseIdx]), idConfig, phonemeIds,
-                      missingPhonemes);
-      if (spdlog::should_log(spdlog::level::debug)) {
-        // DEBUG log for phoneme ids
-        std::stringstream phonemeIdsStr;
-        for (auto phonemeId : phonemeIds) {
-          phonemeIdsStr << phonemeId << ", ";
-        }
-
-        spdlog::debug("Converted {} phoneme(s) to {} phoneme id(s): {}",
-                      phrasePhonemes[phraseIdx]->size(), phonemeIds.size(),
-                      phonemeIdsStr.str());
-      }
-
-      // ids -> audio
-      synthesize(phonemeIds, voice.synthesisConfig, voice.session, audioBuffer,
-                 phraseResults[phraseIdx]);
-
-      // Add end of phrase silence
-      for (std::size_t i = 0; i < phraseSilenceSamples[phraseIdx]; i++) {
-        audioBuffer.push_back(0);
-      }
-
-      result.audioSeconds += phraseResults[phraseIdx].audioSeconds;
-      result.inferSeconds += phraseResults[phraseIdx].inferSeconds;
-
-      phonemeIds.clear();
-    }
-
-    // Add end of sentence silence
-    if (sentenceSilenceSamples > 0) {
-      for (std::size_t i = 0; i < sentenceSilenceSamples; i++) {
-        audioBuffer.push_back(0);
+        phonemeIds.clear();
       }
     }
 
-    if (audioCallback) {
-      // Call back must copy audio since it is cleared afterwards.
-      audioCallback();
-      audioBuffer.clear();
-    }
-
-    phonemeIds.clear();
-  }
-
-  if (missingPhonemes.size() > 0) {
-    spdlog::warn("Missing {} phoneme(s) from phoneme/id map!",
-                 missingPhonemes.size());
-
-    for (auto phonemeCount : missingPhonemes) {
-      std::string phonemeStr;
-      utf8::append(phonemeCount.first, std::back_inserter(phonemeStr));
-      spdlog::warn("Missing \"{}\" (\\u{:04X}): {} time(s)", phonemeStr,
-                   (uint32_t)phonemeCount.first, phonemeCount.second);
+    // Add silence for <break/> tag if specified
+    if (silenceSamples > 0) {
+      spdlog::debug("Adding {} samples of silence for <break/> tag.", silenceSamples);
+      audioBuffer.insert(audioBuffer.end(), silenceSamples, 0);
     }
   }
 
+  // Add end of sentence silence
+  if (sentenceSilenceSamples > 0) {
+    spdlog::debug("Adding {} samples of end-of-sentence silence.", sentenceSilenceSamples);
+    audioBuffer.insert(audioBuffer.end(), sentenceSilenceSamples, 0);
+  }
+
+  // Finalize result
   if (result.audioSeconds > 0) {
     result.realTimeFactor = result.inferSeconds / result.audioSeconds;
   }
 
-} /* textToAudio */
+  // Handle audio callback
+  if (audioCallback) {
+    audioCallback();
+    audioBuffer.clear();
+  }
+
+  if (!missingPhonemes.empty()) {
+    spdlog::warn("Missing {} phoneme(s) from phoneme/id map!", missingPhonemes.size());
+    for (auto &[phoneme, count] : missingPhonemes) {
+      std::string phonemeStr;
+      utf8::append(phoneme, std::back_inserter(phonemeStr));
+      spdlog::warn("Missing \"{}\" (\\u{:04X}): {} time(s)", phonemeStr, (uint32_t)phoneme, count);
+    }
+  }
+} /* TextToAudio */
 
 // Phonemize text and synthesize audio to WAV file
 void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
