@@ -1,6 +1,6 @@
 ![Piper logo](etc/logo.png)
 
-A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
+A fast, local neural text to speech system that sounds acceptable and is optimized for the Raspberry Pi 4.
 Piper is used in a [variety of projects](#people-using-piper).
 
 ``` sh
