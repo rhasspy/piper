@@ -113,6 +113,8 @@ void initialize(PiperConfig &config);
 // Clean up
 void terminate(PiperConfig &config);
 
+void unloadVoice(Voice &voice);
+
 // Load Onnx model and JSON config file
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,

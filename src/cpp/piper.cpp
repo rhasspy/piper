@@ -4,6 +4,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <optional>
 
 #include <espeak-ng/speak_lib.h>
 #include <onnxruntime_cxx_api.h>
@@ -303,6 +304,17 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
   auto endTime = std::chrono::steady_clock::now();
   spdlog::debug("Loaded onnx model in {} second(s)",
                 std::chrono::duration<double>(endTime - startTime).count());
+}
+
+void unloadVoice(Voice &voice) {
+    // Clear the ONNX session
+    voice.session.onnx = Ort::Session(nullptr);
+
+    // Clear other voice-specific data
+    voice.configRoot.clear();
+    voice.phonemizeConfig = PhonemizeConfig();
+    voice.synthesisConfig = SynthesisConfig();
+    voice.modelConfig = ModelConfig();
 }
 
 // Load Onnx model and JSON config file
