@@ -91,7 +91,7 @@ def main() -> None:
 
     # Load voice
     voice = PiperVoice.load(args.model, config_path=args.config, use_cuda=args.cuda)
-    synthesize_args = {
+    default_synthesize_args = {
         "speaker_id": args.speaker,
         "length_scale": args.length_scale,
         "noise_scale": args.noise_scale,
@@ -102,8 +102,36 @@ def main() -> None:
     # Create web server
     app = Flask(__name__)
 
+    def parse_request_args() -> Dict[str, Any]:
+        """Parse synthesis parameters from request arguments."""
+        # Start with default arguments
+        synth_args = default_synthesize_args.copy()
+        
+        # Get arguments from either GET query parameters or POST form data
+        request_args = request.args if request.method == "GET" else request.form
+        
+        # Update parameters if provided in request
+        if "speaker_id" in request_args:
+            synth_args["speaker_id"] = int(request_args["speaker_id"])
+        if "length_scale" in request_args:
+            synth_args["length_scale"] = float(request_args["length_scale"])
+        if "noise_scale" in request_args:
+            synth_args["noise_scale"] = float(request_args["noise_scale"])
+        if "noise_w" in request_args:
+            synth_args["noise_w"] = float(request_args["noise_w"])
+        if "sentence_silence" in request_args:
+            synth_args["sentence_silence"] = float(request_args["sentence_silence"])
+            
+        # Remove None values to use model defaults
+        return {k: v for k, v in synth_args.items() if v is not None}
+
     @app.route("/", methods=["GET", "POST"])
     def app_synthesize() -> bytes:
+        # Get synthesis parameters from request
+        synthesize_args = parse_request_args()
+        _LOGGER.debug("Using synthesis arguments: %s", synthesize_args)
+
+        # Get text from request
         if request.method == "POST":
             text = request.data.decode("utf-8")
         else:
