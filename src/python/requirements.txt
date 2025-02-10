@@ -1,10 +1,13 @@
---extra-index-url https://download.pytorch.org/whl/cu117
+--extra-index-url https://download.pytorch.org/whl/cu121
 
 cython>=0.29.0,<1
 piper-phonemize~=1.1.0
 librosa>=0.9.2,<1
 numpy==1.24
 onnxruntime>=1.11.0
-pytorch-lightning~=1.7.7
-torch==1.13.1+cu117
-torchmetrics==1.1.1
+pytorch-lightning~=2.4.0
+torch==2.4.0+cu121
+torchmetrics==1.4.2
+onnx==1.16.2
+onnxruntime-gpu==1.19.2
+matplotlib==3.9.2

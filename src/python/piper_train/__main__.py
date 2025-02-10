@@ -5,7 +5,7 @@ from pathlib import Path
 
 import torch
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 
 from .vits.lightning import VitsModel
 
@@ -14,6 +14,9 @@ _LOGGER = logging.getLogger(__package__)
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("fsspec").setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
+    logging.getLogger("PIL").setLevel(logging.WARNING)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -37,12 +40,40 @@ def main():
         "--resume_from_single_speaker_checkpoint",
         help="For multi-speaker models only. Converts a single-speaker checkpoint to multi-speaker and resumes training",
     )
-    Trainer.add_argparse_args(parser)
     VitsModel.add_model_specific_args(parser)
+    parser.add_argument(
+        "--accelerator",
+        type=str,
+    )
+    parser.add_argument(
+        "--devices",
+        type=int,
+    )
+    parser.add_argument(
+        "--log_every_n_steps",
+        type=int,
+    )
+    parser.add_argument(
+        "--max_epochs",
+        type=int,
+    )
     parser.add_argument(
         "--seed",
         type=int,
         default=1234
+    )
+    parser.add_argument(
+        "--random_seed",
+        type=bool,
+        default=False
+    )
+    parser.add_argument(
+        "--resume_from_checkpoint",
+        type=str,
+    )
+    parser.add_argument(
+        "--precision",
+        type=str,
     )
     parser.add_argument(
         "--num_ckpt",
@@ -51,10 +82,33 @@ def main():
         help="# of ckpts saved."
     )
     parser.add_argument(
+        "--default_root_dir",
+        type=str,
+        help="Default root dir for checkpoints and logs."
+    )
+    parser.add_argument(
         "--save_last",
         type=bool,
         default=None,
         help="Always save the last checkpoint."
+    )
+    parser.add_argument(
+        "--monitor",
+        type=str,
+        default="val_loss",
+        help="Metric to monitor."
+    )
+    parser.add_argument(
+        "--monitor_mode",
+        type=str,
+        default="min",
+        help="Mode to monitor."
+    )
+    parser.add_argument(
+        "--early_stop_patience",
+        type=int,
+        default=0,
+        help="Early stopping patience."
     )
     args = parser.parse_args()
     _LOGGER.debug(args)
@@ -64,7 +118,24 @@ def main():
         args.default_root_dir = args.dataset_dir
 
     torch.backends.cudnn.benchmark = True
-    torch.manual_seed(args.seed)
+
+    if args.random_seed:
+        seed = torch.seed()
+        _LOGGER.debug("Using random seed: %s", seed)
+    else:
+        torch.manual_seed(args.seed)
+        _LOGGER.debug("Using manual seed: %s", args.seed)
+    
+    # Function to check if the GPU supports Tensor Cores
+    def supports_tensor_cores():
+        # Assuming that Tensor Cores are supported if the compute capability is 7.0 or higher
+        # This is a simplification; you might need a more detailed check based on your specific requirements
+        return torch.cuda.get_device_capability(0)[0] >= 7
+
+    # Set the float32 matrix multiplication precision based on GPU support for Tensor Cores
+    if supports_tensor_cores():
+        # Set to 'high' or 'medium' based on your preference
+        torch.set_float32_matmul_precision('high')
 
     config_path = args.dataset_dir / "config.json"
     dataset_path = args.dataset_dir / "dataset.jsonl"
@@ -76,19 +147,53 @@ def main():
         num_speakers = int(config["num_speakers"])
         sample_rate = int(config["audio"]["sample_rate"])
 
-    trainer = Trainer.from_argparse_args(args)
+    # List of argument names to include
+    allowed_args = [
+        "accelerator",
+        "devices",
+        "log_every_n_steps",
+        "max_epochs",
+        "precision",
+        "default_root_dir",
+    ]
+
+    # Filter the arguments
+    filtered_args = {key: value for key, value in vars(args).items() if key in allowed_args}
+
+    # Initialize callbacks
+    callbacks = []
+
     if args.checkpoint_epochs is not None:
-        trainer.callbacks = [ModelCheckpoint(
+        checkpoint_callback = ModelCheckpoint(
             every_n_epochs=args.checkpoint_epochs,
             save_top_k=args.num_ckpt,
+            monitor=args.monitor,
+            mode=args.monitor_mode,
             save_last=args.save_last
-        )]
+        )
+        callbacks.append(checkpoint_callback)
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
         )
         _LOGGER.debug(
             "%s Checkpoints will be saved", args.num_ckpt
         )
+
+    if args.early_stop_patience > 0:
+        # Early stopping callback
+        early_stopping_callback = EarlyStopping(
+            monitor='val_loss',
+            patience=args.early_stop_patience,
+            verbose=True,
+            mode='min'
+        )
+        callbacks.append(early_stopping_callback)
+
+    # Learning rate monitor callback
+    lr_monitor_callback = LearningRateMonitor(logging_interval='epoch')
+    callbacks.append(lr_monitor_callback)
+
+    trainer = Trainer(**filtered_args, callbacks=callbacks)
 
     dict_args = vars(args)
     if args.quality == "x-low":
@@ -147,7 +252,7 @@ def main():
             "Successfully converted single-speaker checkpoint to multi-speaker"
         )
 
-    trainer.fit(model)
+    trainer.fit(model, ckpt_path=args.resume_from_checkpoint)
 
 
 def load_state_dict(model, saved_state_dict):

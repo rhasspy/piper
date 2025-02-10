@@ -77,7 +77,7 @@ def cache_norm_audio(
     if ignore_cache or (not audio_spec_path.exists()):
         if audio_norm_tensor is None:
             # Load pre-cached normalized audio
-            audio_norm_tensor = torch.load(audio_norm_path)
+            audio_norm_tensor = torch.load(audio_norm_path, weights_only=True)
 
         audio_spec_tensor = spectrogram_torch(
             y=audio_norm_tensor,
