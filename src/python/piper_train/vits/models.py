@@ -5,9 +5,8 @@ import torch
 from torch import nn
 from torch.nn import Conv1d, Conv2d, ConvTranspose1d
 from torch.nn import functional as F
-from torch.nn.utils import spectral_norm
-from torch.nn.utils.parametrizations import weight_norm
-from torch.nn.utils.parametrize import remove_parametrizations
+from torch.nn.utils import remove_weight_norm, spectral_norm, weight_norm
+
 from . import attentions, commons, modules, monotonic_align
 from .commons import get_padding, init_weights
 
@@ -371,9 +370,9 @@ class Generator(torch.nn.Module):
     def remove_weight_norm(self):
         print("Removing weight norm...")
         for l in self.ups:
-            remove_parametrizations(l)
+            remove_weight_norm(l)
         for l in self.resblocks:
-            l.remove_parametrizations()
+            l.remove_weight_norm()
 
 
 class DiscriminatorP(torch.nn.Module):
