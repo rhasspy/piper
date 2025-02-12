@@ -1,4 +1,4 @@
-FROM debian:bullseye as build
+FROM debian:Bookworm as build
 ARG TARGETARCH
 ARG TARGETVARIANT
 
@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends \
-        build-essential cmake ca-certificates curl pkg-config git
+        build-essential cmake ca-certificates curl git
 
 WORKDIR /build
 
