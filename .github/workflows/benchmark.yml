@@ -1,0 +1,77 @@
+name: main
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build_linux:
+    name: "Build on Linux (multi-arch)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build multi-arch
+        run: |
+          docker buildx build . \
+            --platform linux/amd64,linux/arm64,linux/arm/v7 \
+            --output "type=local,dest=dist"
+
+      - name: Run benchmarks on Linux artifacts
+        run: |
+          for artifact in dist/*/piper_*.tar.gz; do
+            echo "Benchmarking $artifact"
+            mkdir -p tmp_bench
+            tar -xzf "$artifact" -C tmp_bench
+            # Adjust the path to the piper binary if it's not directly in tmp_bench.
+            python3 .github/benchmark/benchmark.py "tmp_bench/piper"
+            rm -rf tmp_bench
+          done
+
+  build_windows:
+    name: "Build on Windows"
+    runs-on: windows-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [amd64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Run benchmark on Windows binary
+        run: python .github/benchmark/benchmark.py _install/piper
+
+  build_macos:
+    name: "Build on macOS"
+    runs-on: macos-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        arch: [x86_x64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Run benchmark on macOS binary
+        run: python3 .github/benchmark/benchmark.py _install/piper
