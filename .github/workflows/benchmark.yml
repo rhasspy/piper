@@ -12,8 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'  # Specify your desired Python version
 
       - name: Build multi-arch
         run: |
@@ -21,13 +27,15 @@ jobs:
             --platform linux/amd64,linux/arm64,linux/arm/v7 \
             --output "type=local,dest=dist"
 
+      - name: Install Python dependencies
+        run: python3 -m pip install onnxruntime
+
       - name: Run benchmarks on Linux artifacts
         run: |
           for artifact in dist/*/piper_*.tar.gz; do
             echo "Benchmarking $artifact"
             mkdir -p tmp_bench
             tar -xzf "$artifact" -C tmp_bench
-            # Adjust the path to the piper binary if it's not directly in tmp_bench.
             python3 .github/benchmark/benchmark.py "tmp_bench/piper"
             rm -rf tmp_bench
           done
@@ -42,6 +50,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'  # Specify your desired Python version
+
       - name: Configure
         run: cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
 
@@ -50,6 +63,9 @@ jobs:
 
       - name: Install
         run: cmake --install build
+
+      - name: Install Python dependencies
+        run: python -m pip install onnxruntime
 
       - name: Run benchmark on Windows binary
         run: python .github/benchmark/benchmark.py _install/piper
@@ -64,6 +80,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'  # Specify your desired Python version
+
       - name: Configure
         run: cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
 
@@ -72,6 +93,9 @@ jobs:
 
       - name: Install
         run: cmake --install build
+
+      - name: Install Python dependencies
+        run: python3 -m pip install onnxruntime
 
       - name: Run benchmark on macOS binary
         run: python3 .github/benchmark/benchmark.py _install/piper
