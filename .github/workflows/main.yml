@@ -1,4 +1,4 @@
-name: main
+name: Release
 
 on:
   workflow_dispatch:
