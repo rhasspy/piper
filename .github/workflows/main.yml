@@ -21,10 +21,10 @@ jobs:
             --platform linux/amd64,linux/arm64,linux/arm/v7 \
             --output "type=local,dest=dist"
 
-      - name: Upload Linux x86_64 artifact
+      - name: Upload Linux amd64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-x86_64
+          name: linux-amd64
           path: dist/linux_amd64/piper_amd64.tar.gz
 
       - name: Upload Linux aarch64 artifact
@@ -63,10 +63,10 @@ jobs:
           cd _install
           Compress-Archive -LiteralPath piper -DestinationPath piper_windows_amd64.zip
 
-      - name: Upload Windows x86_64 artifact
+      - name: Upload Windows amd64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-x86_64
+          name: windows-amd64
           path: _install/piper_windows_amd64.zip
 
   build_macos:
@@ -130,14 +130,14 @@ jobs:
             --notes "Automated piper release for $TAG" \
             || echo "Release for $TAG already exists. Proceeding to upload assets."
 
-      - name: Upload Linux x86_64
+      - name: Upload Linux amd64
         if: always()
         shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           gh release upload "$TAG" \
-            "./release_assets/linux-x86_64/piper_amd64.tar.gz" \
-            --label "piper_linux_x86_64.tar.gz" \
+            "./release_assets/linux-amd64/piper_amd64.tar.gz" \
+            --label "piper_linux_amd64.tar.gz" \
             --clobber
 
       - name: Upload Linux aarch64
@@ -160,17 +160,17 @@ jobs:
             --label "piper_linux_armv7l.tar.gz" \
             --clobber
 
-      - name: Upload Windows x86_64
+      - name: Upload Windows amd64
         if: always()
         shell: bash
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           gh release upload "$TAG" \
-            "./release_assets/windows-x86_64/piper_windows_amd64.zip" \
+            "./release_assets/windows-amd64/piper_windows_amd64.zip" \
             --label "piper_windows_amd64.zip" \
             --clobber
 
-      - name: Upload macOS x86_64
+      - name: Upload macOS amd64
         if: always()
         shell: bash
         run: |
