@@ -1,4 +1,4 @@
-FROM debian:Bookworm as build
+FROM debian:bookworm as build
 ARG TARGETARCH
 ARG TARGETVARIANT
 
