@@ -59,7 +59,6 @@ You will need two files per voice:
 
 The `MODEL_CARD` file for each voice contains important licensing information. Piper is intended for text to speech research, and does not impose any additional restrictions on voice models. Some voices may have restrictive licenses, however, so please review them carefully!
 
-
 ## Installation
 
 You can [run Piper with Python](#running-in-python) or download a binary release:
@@ -71,7 +70,6 @@ You can [run Piper with Python](#running-in-python) or download a binary release
 If you want to build from source, see the [Makefile](Makefile) and [C++ source](src/cpp).
 You must download and extract [piper-phonemize](https://github.com/rhasspy/piper-phonemize) to `lib/Linux-$(uname -m)/piper_phonemize` before building.
 For example, `lib/Linux-x86_64/piper_phonemize/lib/libpiper_phonemize.so` should exist for AMD/Intel machines (as well as everything else from `libpiper_phonemize-amd64.tar.gz`).
-
 
 ## Usage
 
@@ -113,19 +111,18 @@ The `piper` executable can accept JSON input when using the `--json-input` flag.
 Optional fields include:
 
 * `speaker` - string
-    * Name of the speaker to use from `speaker_id_map` in config (multi-speaker voices only)
+  * Name of the speaker to use from `speaker_id_map` in config (multi-speaker voices only)
 * `speaker_id` - number
-    * Id of speaker to use from 0 to number of speakers - 1 (multi-speaker voices only, overrides "speaker")
+  * Id of speaker to use from 0 to number of speakers - 1 (multi-speaker voices only, overrides "speaker")
 * `output_file` - string
-    * Path to output WAV file
-    
+  * Path to output WAV file
+
 The following example writes two sentences with different speakers to different files:
 
 ``` json
 { "text": "First speaker.", "speaker_id": 0, "output_file": "/tmp/speaker_0.wav" }
 { "text": "Second speaker.", "speaker_id": 1, "output_file": "/tmp/speaker_1.wav" }
 ```
-
 
 ## People using Piper
 
@@ -149,33 +146,109 @@ See the [training guide](TRAINING.md) and the [source code](src/python).
 
 Pretrained checkpoints are available on [Hugging Face](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main)
 
-
 ## Running in Python
 
 See [src/python_run](src/python_run)
 
-Install with `pip`:
+### **1. Installation**
 
-``` sh
+First, install Piper using `pip`:
+
+```sh
 pip install piper-tts
 ```
 
-and then run:
+### **2. Running Piper**
 
-``` sh
+To generate speech from text, use the following command:
+
+```sh
 echo 'Welcome to the world of speech synthesis!' | piper \
   --model en_US-lessac-medium \
   --output_file welcome.wav
 ```
 
-This will automatically download [voice files](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) the first time they're used. Use `--data-dir` and `--download-dir` to adjust where voices are found/downloaded.
+The first time you use a model, Piper will automatically download the required [voice files](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0).  
 
-If you'd like to use a GPU, install the `onnxruntime-gpu` package:
+To **control where voice models are stored**, specify `--data-dir` and `--download-dir`:
 
-
-``` sh
-.venv/bin/pip3 install onnxruntime-gpu
+```sh
+piper --model en_US-lessac-medium --output_file welcome.wav \
+  --data-dir /path/to/data --download-dir /path/to/downloads
 ```
 
-and then run `piper` with the `--cuda` argument. You will need to have a functioning CUDA environment, such as what's available in [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
+### **3. Using a GPU (Optional)**
 
+If you want to **enable GPU acceleration**, install the `onnxruntime-gpu` package:
+
+```sh
+pip install onnxruntime-gpu
+```
+
+Then, run Piper with GPU support:
+
+```sh
+piper --model en_US-lessac-medium --output_file welcome.wav --cuda
+```
+
+**Note:**  
+* A properly configured CUDA environment is required.  
+* If you're using **NVIDIA GPUs**, you can set up CUDA using [NVIDIA's PyTorch containers](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch).
+
+---
+
+### **4. Running Piper in a Python Script**
+
+If you prefer to use Piper directly in Python, follow these steps:
+
+#### **Step 1: Install Dependencies**
+
+Ensure you have Python 3.7+ installed.  
+(Optional but recommended) Create a virtual environment:
+
+```sh
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install Piper
+pip install piper-tts
+```
+
+#### **Step 2: Download a Voice Model**
+
+Download a voice model before running Piper:
+
+```sh
+mkdir -p models/en_US
+wget -O models/en_US/en_US-medium.onnx https://huggingface.co/rhasspy/piper/resolve/main/en/en_US-medium.onnx
+```
+
+#### **Step 3: Generate Speech in Python**
+
+Now, you can use Piper in Python:
+
+```python
+from piper import PiperTTS
+
+# Load the model
+tts = PiperTTS(model_path="models/en_US/en_US-medium.onnx")
+
+# Generate speech from text
+audio = tts.synthesize("Hello, I am Piper, your text-to-speech assistant.")
+
+# Save the audio output
+with open("output.wav", "wb") as f:
+    f.write(audio)
+
+print("Speech synthesis complete! Check output.wav")
+```
+
+#### **Step 4: Play the Audio**
+
+Once the file `output.wav` is generated, play it with:
+
+```sh
+ffplay output.wav  # Linux/Mac
+start output.wav   # Windows
+```
