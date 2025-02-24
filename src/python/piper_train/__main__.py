@@ -108,7 +108,7 @@ def main():
         "--early_stop_patience",
         type=int,
         default=0,
-        help="Early stopping patience."
+        help="Number of validation cycles to allow to pass without improvement before stopping training"
     )
     args = parser.parse_args()
     _LOGGER.debug(args)
