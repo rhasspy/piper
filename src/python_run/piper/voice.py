@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime
-from piper_phonemize import phonemize_codepoints, phonemize_espeak, tashkeel_run
 
 from .config import PhonemeType, PiperConfig
 from .const import BOS, EOS, PAD
@@ -57,15 +56,22 @@ class PiperVoice:
     def phonemize(self, text: str) -> List[List[str]]:
         """Text to phonemes grouped by sentence."""
         if self.config.phoneme_type == PhonemeType.ESPEAK:
-            if self.config.espeak_voice == "ar":
+            from piper_phonemize import phonemize_espeak, tashkeel_run
+
+            if self.config.voice == "ar":
                 # Arabic diacritization
                 # https://github.com/mush42/libtashkeel/
                 text = tashkeel_run(text)
 
-            return phonemize_espeak(text, self.config.espeak_voice)
+            return phonemize_espeak(text, self.config.voice)
 
         if self.config.phoneme_type == PhonemeType.TEXT:
+            from piper_phonemize import phonemize_codepoints
+
             return phonemize_codepoints(text)
+
+        if self.config.phoneme_type == PhonemeType.PHONEMES:
+            return [word.split() for word in text.split("_")]
 
         raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
 
@@ -165,7 +171,7 @@ class PiperVoice:
         args = {
             "input": phoneme_ids_array,
             "input_lengths": phoneme_ids_lengths,
-            "scales": scales
+            "scales": scales,
         }
 
         if self.config.num_speakers <= 1:
@@ -180,6 +186,6 @@ class PiperVoice:
             args["sid"] = sid
 
         # Synthesize through Onnx
-        audio = self.session.run(None, args, )[0].squeeze((0, 1))
+        audio = self.session.run(None, args)[0].squeeze((0, 1))
         audio = audio_float_to_int16(audio.squeeze())
         return audio.tobytes()
