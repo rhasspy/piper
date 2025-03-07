@@ -132,7 +132,7 @@ class PiperVoice:
         sentence_silence: float = 0.0,
     ) -> Iterable[bytes]:
         """Synthesize raw audio per sentence from text."""
-        sentence_phonemes = self.phonemize(text)
+        sentence_phonemes = self.phonemize(text, phoneme_input)
 
         # 16-bit mono
         num_silence_samples = int(sentence_silence * self.config.sample_rate)

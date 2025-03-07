@@ -36,12 +36,37 @@ def main() -> None:
         action="store_true",
         help="Stream raw audio to stdout",
     )
-    parser.add_argument("-p", "--phoneme-input", action="store_true", help="Flag to use pure phonemes as input")
+    parser.add_argument(
+        "-p",
+        "--phoneme-input",
+        action="store_true",
+        help="Flag to use pure phonemes as input",
+    )
     #
-    parser.add_argument("-s", "--speaker", type=int, help="Id of speaker (default: 0)")
-    parser.add_argument("--length-scale", "--length_scale", type=float, help="Phoneme length")
-    parser.add_argument("--noise-scale", "--noise_scale", type=float, help="Generator noise")
-    parser.add_argument("--noise-w", "--noise_w", type=float, help="Phoneme width noise")
+    parser.add_argument(
+        "-s",
+        "--speaker",
+        type=int,
+        help="Id of speaker (default: 0)",
+    )
+    parser.add_argument(
+        "--length-scale",
+        "--length_scale",
+        type=float,
+        help="Phoneme length",
+    )
+    parser.add_argument(
+        "--noise-scale",
+        "--noise_scale",
+        type=float,
+        help="Generator noise",
+    )
+    parser.add_argument(
+        "--noise-w",
+        "--noise_w",
+        type=float,
+        help="Phoneme width noise",
+    )
     #
     parser.add_argument("--cuda", action="store_true", help="Use GPU")
     #
@@ -131,7 +156,7 @@ def main() -> None:
 
             wav_path = output_dir / f"{time.monotonic_ns()}.wav"
             with wave.open(str(wav_path), "wb") as wav_file:
-                voice.synthesize(line, wav_file, **synthesize_args)
+                voice.synthesize(line, wav_file, args.phoneme_input, **synthesize_args)
 
             _LOGGER.info("Wrote %s", wav_path)
     else:
@@ -141,11 +166,11 @@ def main() -> None:
         if (not args.output_file) or (args.output_file == "-"):
             # Write to stdout
             with wave.open(sys.stdout.buffer, "wb") as wav_file:
-                voice.synthesize(text, wav_file, **synthesize_args)
+                voice.synthesize(text, wav_file, args.phoneme_input, **synthesize_args)
         else:
             # Write to file
             with wave.open(args.output_file, "wb") as wav_file:
-                voice.synthesize(text, wav_file, **synthesize_args)
+                voice.synthesize(text, wav_file, args.phoneme_input, **synthesize_args)
 
 
 if __name__ == "__main__":
