@@ -36,17 +36,12 @@ def main() -> None:
         action="store_true",
         help="Stream raw audio to stdout",
     )
+    parser.add_argument("-p", "--phoneme-input", action="store_true", help="Flag to use pure phonemes as input")
     #
     parser.add_argument("-s", "--speaker", type=int, help="Id of speaker (default: 0)")
-    parser.add_argument(
-        "--length-scale", "--length_scale", type=float, help="Phoneme length"
-    )
-    parser.add_argument(
-        "--noise-scale", "--noise_scale", type=float, help="Generator noise"
-    )
-    parser.add_argument(
-        "--noise-w", "--noise_w", type=float, help="Phoneme width noise"
-    )
+    parser.add_argument("--length-scale", "--length_scale", type=float, help="Phoneme length")
+    parser.add_argument("--noise-scale", "--noise_scale", type=float, help="Generator noise")
+    parser.add_argument("--noise-w", "--noise_w", type=float, help="Phoneme width noise")
     #
     parser.add_argument("--cuda", action="store_true", help="Use GPU")
     #
@@ -77,9 +72,7 @@ def main() -> None:
         help="Download latest voices.json during startup",
     )
     #
-    parser.add_argument(
-        "--debug", action="store_true", help="Print DEBUG messages to console"
-    )
+    parser.add_argument("--debug", action="store_true", help="Print DEBUG messages to console")
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
     _LOGGER.debug(args)

@@ -53,8 +53,13 @@ class PiperVoice:
             ),
         )
 
-    def phonemize(self, text: str) -> List[List[str]]:
+    def phonemize(self, text: str, phoneme_input: bool = False) -> List[List[str]]:
         """Text to phonemes grouped by sentence."""
+        if phoneme_input or self.config.phoneme_type == PhonemeType.PHONEMES:
+            if "-" in text:
+                return [word.split("-") for word in text.split()]
+            return [list(word) for word in text.split()]
+
         if self.config.phoneme_type == PhonemeType.ESPEAK:
             from piper_phonemize import phonemize_espeak, tashkeel_run
 
@@ -69,9 +74,6 @@ class PiperVoice:
             from piper_phonemize import phonemize_codepoints
 
             return phonemize_codepoints(text)
-
-        if self.config.phoneme_type == PhonemeType.PHONEMES:
-            return [word.split() for word in text.split("_")]
 
         raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
 
@@ -96,6 +98,7 @@ class PiperVoice:
         self,
         text: str,
         wav_file: wave.Wave_write,
+        phoneme_input: bool,
         speaker_id: Optional[int] = None,
         length_scale: Optional[float] = None,
         noise_scale: Optional[float] = None,
@@ -109,6 +112,7 @@ class PiperVoice:
 
         for audio_bytes in self.synthesize_stream_raw(
             text,
+            phoneme_input=phoneme_input,
             speaker_id=speaker_id,
             length_scale=length_scale,
             noise_scale=noise_scale,
@@ -120,6 +124,7 @@ class PiperVoice:
     def synthesize_stream_raw(
         self,
         text: str,
+        phoneme_input: bool,
         speaker_id: Optional[int] = None,
         length_scale: Optional[float] = None,
         noise_scale: Optional[float] = None,
