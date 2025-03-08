@@ -12,7 +12,7 @@
 using namespace std;
 using json = nlohmann::json;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
   optional<piper::SpeakerId> speakerId;
   loadVoice(piperConfig, modelPath, modelPath + ".json", voice, speakerId,
-            false);
+    false);
   piper::initialize(piperConfig);
 
   // Output audio to WAV file
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
   piper::SynthesisResult result;
   piper::textToWavFile(piperConfig, voice, "This is a test.", audioFile,
-                       result);
+    result);
   piper::terminate(piperConfig);
 
   // Verify that file has some data
