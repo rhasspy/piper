@@ -267,3 +267,6 @@
     * huayan
         * x_low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/zh/zh_CN/huayan/x_low/zh_CN-huayan-x_low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/zh/zh_CN/huayan/x_low/zh_CN-huayan-x_low.onnx.json?download=true.json)]
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/zh/zh_CN/huayan/medium/zh_CN-huayan-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/zh/zh_CN/huayan/medium/zh_CN-huayan-medium.onnx.json?download=true.json)]
+* Persian (`fa_IR`, فارسی)
+    * persian-tts-dataset-male
+        * medium - [[model](https://huggingface.co/gyroing/Persian-Piper-Model-gyro/resolve/main/fa_IR-gyro-medium.onnx?download=true)] [[config](https://huggingface.co/gyroing/Persian-Piper-Model-gyro/raw/main/fa_IR-gyro-medium.onnx.json?download=true.json)]
