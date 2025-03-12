@@ -581,8 +581,8 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       phonemeIds.clear();
     }
 
-    // Add end of sentence silence
-    if (sentenceSilenceSamples > 0) {
+    // Add end of sentence silence if this isn't the last one
+    if (sentenceSilenceSamples > 0 && phonemesIter + 1 != phonemes.end()) {
       for (std::size_t i = 0; i < sentenceSilenceSamples; i++) {
         audioBuffer.push_back(0);
       }
