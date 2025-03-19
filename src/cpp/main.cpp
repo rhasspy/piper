@@ -49,6 +49,9 @@ struct RunConfig {
   // Default is to write a WAV file in the current directory.
   OutputType outputType = OUTPUT_DIRECTORY;
 
+  // Path for input (if not stdin)
+  optional<filesystem::path> inputPath;
+
   // Path for output
   optional<filesystem::path> outputPath = filesystem::path(".");
 
@@ -226,9 +229,21 @@ int main(int argc, char *argv[]) {
     spdlog::info("Output directory: {}", runConfig.outputPath.value().string());
   }
 
+  istream* inputReader = &cin; // Default to cin
+  ifstream inputStream;
+  string inputFilename = runConfig.inputPath->string();
+  if (!inputFilename.empty() && inputFilename != "-") {
+    inputStream.open(inputFilename);
+    if (inputStream.is_open()) {
+      inputReader = &inputStream;
+    } else {
+      throw runtime_error("Error: Unable to open file");
+    }
+  }  
+
   string line;
   piper::SynthesisResult result;
-  while (getline(cin, line)) {
+  while (getline(*inputReader, line)) {
     auto outputType = runConfig.outputType;
     auto speakerId = voice.synthesisConfig.speakerId;
     std::optional<filesystem::path> maybeOutputPath = runConfig.outputPath;
@@ -293,7 +308,7 @@ int main(int argc, char *argv[]) {
         // Otherwise, we would overwrite the output file for each line.
         stringstream text;
         text << line;
-        while (getline(cin, line)) {
+        while (getline(*inputReader, line)) {
           text << " " << line;
         }
 
@@ -363,6 +378,11 @@ int main(int argc, char *argv[]) {
 
   piper::terminate(piperConfig);
 
+  // Close the input file if it was opened
+  if (inputStream.is_open()) {
+    inputStream.close();
+  }
+
   return EXIT_SUCCESS;
 }
 
@@ -410,6 +430,9 @@ void printUsage(char *argv[]) {
   cerr << "   -m  FILE  --model       FILE  path to onnx model file" << endl;
   cerr << "   -c  FILE  --config      FILE  path to model config file "
           "(default: model path + .json)"
+       << endl;
+  cerr << "   -i  FILE  --input_file FILE   path to read text from ('-' for "
+          "stdin)"
        << endl;
   cerr << "   -f  FILE  --output_file FILE  path to output WAV file ('-' for "
           "stdout)"
@@ -466,6 +489,15 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "-c" || arg == "--config") {
       ensureArg(argc, argv, i);
       modelConfigPath = filesystem::path(argv[++i]);
+    } else if (arg == "-i" || arg == "--input_file" ||
+               arg == "--input-file") {
+      ensureArg(argc, argv, i);
+      std::string filePath = argv[++i];
+      if (filePath == "-") {
+        runConfig.inputPath = nullopt;
+      } else {
+        runConfig.inputPath = filesystem::path(filePath);
+      }
     } else if (arg == "-f" || arg == "--output_file" ||
                arg == "--output-file") {
       ensureArg(argc, argv, i);
