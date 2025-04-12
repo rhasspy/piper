@@ -97,9 +97,26 @@ class PiperVoice:
         sentence_silence: float = 0.0,
     ):
         """Synthesize WAV audio from text."""
-        wav_file.setframerate(self.config.sample_rate)
-        wav_file.setsampwidth(2)  # 16-bit
-        wav_file.setnchannels(1)  # mono
+
+        # only set parameters if they are not set yet.
+        # This allows to call this function for the same wave files multiple times
+        try:
+            wav_file.setframerate(self.config.sample_rate)
+        except wave.Error:
+            if wav_file.getframerate() != self.config.sample_rate:
+                raise RuntimeError("wav_file has invalid framerate set")
+
+        try:
+            wav_file.setsampwidth(2)  # 16-bit
+        except wave.Error:
+            if wav_file.getsampwidth() != 2:
+                raise RuntimeError("wav_file has invalid sampwidth set")
+
+        try:
+            wav_file.setnchannels(1)  # mono
+        except wave.Error:
+            if wav_file.getnchannels() != 1:
+                raise RuntimeError("wav_file has invalid nchannels set")
 
         for audio_bytes in self.synthesize_stream_raw(
             text,
