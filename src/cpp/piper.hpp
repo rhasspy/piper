@@ -34,7 +34,7 @@ struct PiperConfig {
   std::unique_ptr<tashkeel::State> tashkeelState;
 };
 
-enum PhonemeType { eSpeakPhonemes, TextPhonemes };
+enum PhonemeType { eSpeakPhonemes, TextPhonemes, RawPhonemes };
 
 struct PhonemizeConfig {
   PhonemeType phonemeType = eSpeakPhonemes;
