@@ -19,6 +19,12 @@ def main() -> None:
     parser.add_argument("-m", "--model", required=True, help="Path to Onnx model file")
     parser.add_argument("-c", "--config", help="Path to model config file")
     parser.add_argument(
+        "-i",
+        "--input-file",
+        "--input_file",
+        help="Path to input text file (default: stdin)",
+    )
+    parser.add_argument(
         "-f",
         "--output-file",
         "--output_file",
@@ -114,9 +120,17 @@ def main() -> None:
         "sentence_silence": args.sentence_silence,
     }
 
+    if args.input_file and (args.input_file != "-"):
+        with open(args.input_file, "r") as input_reader:
+            process(args, voice, synthesize_args, input_reader)
+    else:
+        process(args, voice, synthesize_args, sys.stdin)
+
+
+def process(args, voice, synthesize_args, input_reader) -> None:
     if args.output_raw:
         # Read line-by-line
-        for line in sys.stdin:
+        for line in input_reader:
             line = line.strip()
             if not line:
                 continue
@@ -131,7 +145,7 @@ def main() -> None:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Read line-by-line
-        for line in sys.stdin:
+        for line in input_reader:
             line = line.strip()
             if not line:
                 continue
@@ -143,7 +157,7 @@ def main() -> None:
             _LOGGER.info("Wrote %s", wav_path)
     else:
         # Read entire input
-        text = sys.stdin.read()
+        text = input_reader.read()
 
         if (not args.output_file) or (args.output_file == "-"):
             # Write to stdout
