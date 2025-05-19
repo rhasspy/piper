@@ -51,7 +51,9 @@ def main() -> None:
     with torch.no_grad():
         model_g.dec.remove_weight_norm()
 
-    # old_forward = model_g.infer
+    # Define the device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_g.to(device)
 
     def infer_forward(text, text_lengths, scales, sid=None):
         noise_scale = scales[0]
@@ -73,15 +75,15 @@ def main() -> None:
     dummy_input_length = 50
     sequences = torch.randint(
         low=0, high=num_symbols, size=(1, dummy_input_length), dtype=torch.long
-    )
-    sequence_lengths = torch.LongTensor([sequences.size(1)])
+    ).to(device)
+    sequence_lengths = torch.LongTensor([sequences.size(1)]).to(device)
 
     sid: Optional[torch.LongTensor] = None
     if num_speakers > 1:
-        sid = torch.LongTensor([0])
+        sid = torch.LongTensor([0]).to(device)
 
     # noise, noise_w, length
-    scales = torch.FloatTensor([0.667, 1.0, 0.8])
+    scales = torch.FloatTensor([0.667, 1.0, 0.8]).to(device)
     dummy_input = (sequences, sequence_lengths, scales, sid)
 
     # Export

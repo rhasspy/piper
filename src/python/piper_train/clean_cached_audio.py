@@ -32,7 +32,7 @@ def main() -> None:
 
         try:
             _LOGGER.debug("Checking %s", pt_path)
-            torch.load(str(pt_path))
+            torch.load(str(pt_path), weights_only=True)
         except Exception:
             _LOGGER.error(pt_path)
             if args.delete:

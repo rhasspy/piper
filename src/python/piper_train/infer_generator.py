@@ -26,7 +26,7 @@ def main():
     args.output_dir = Path(args.output_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = torch.load(args.model)
+    model = torch.load(args.model, weights_only=True)
 
     # Inference only
     model.eval()
