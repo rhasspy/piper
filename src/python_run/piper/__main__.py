@@ -48,7 +48,11 @@ def main() -> None:
         "--noise-w", "--noise_w", type=float, help="Phoneme width noise"
     )
     #
-    parser.add_argument("--cuda", action="store_true", help="Use GPU")
+    parser.add_argument("--cuda", action="store_true", help="Use Nvidia GPU")
+    #
+    parser.add_argument("--migraphx", action="store_true", help="Use AMD GPU")
+    #
+    parser.add_argument("--rocm", action="store_true", help="Use ROCm-enabled GPU")
     #
     parser.add_argument(
         "--sentence-silence",
@@ -105,7 +109,7 @@ def main() -> None:
         args.model, args.config = find_voice(args.model, args.data_dir)
 
     # Load voice
-    voice = PiperVoice.load(args.model, config_path=args.config, use_cuda=args.cuda)
+    voice = PiperVoice.load(args.model, config_path=args.config, use_cuda=args.cuda, use_rocm=args.rocm, use_migraphx=args.migraphx)
     synthesize_args = {
         "speaker_id": args.speaker,
         "length_scale": args.length_scale,
