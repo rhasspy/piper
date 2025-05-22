@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "JUqK4RuwK50=",
+  "success": true,
+  "projectFilePath": "/app/PiperSharp.Infer/PiperSharp.Infer.csproj",
+  "expectedPackageFiles": [
+    "/home/swebot/.nuget/packages/microsoft.ml.onnxruntime/1.22.0/microsoft.ml.onnxruntime.1.22.0.nupkg.sha512",
+    "/home/swebot/.nuget/packages/microsoft.ml.onnxruntime.managed/1.22.0/microsoft.ml.onnxruntime.managed.1.22.0.nupkg.sha512",
+    "/home/swebot/.nuget/packages/system.io.pipelines/9.0.5/system.io.pipelines.9.0.5.nupkg.sha512",
+    "/home/swebot/.nuget/packages/system.memory/4.5.5/system.memory.4.5.5.nupkg.sha512",
+    "/home/swebot/.nuget/packages/system.numerics.tensors/9.0.0/system.numerics.tensors.9.0.0.nupkg.sha512",
+    "/home/swebot/.nuget/packages/system.text.encodings.web/9.0.5/system.text.encodings.web.9.0.5.nupkg.sha512",
+    "/home/swebot/.nuget/packages/system.text.json/9.0.5/system.text.json.9.0.5.nupkg.sha512"
+  ],
+  "logs": []
+}

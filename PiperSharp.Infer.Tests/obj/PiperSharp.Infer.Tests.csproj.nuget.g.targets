@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)mstest.testframework/3.1.1/build/net6.0/MSTest.TestFramework.targets" Condition="Exists('$(NuGetPackageRoot)mstest.testframework/3.1.1/build/net6.0/MSTest.TestFramework.targets')" />
+    <Import Project="$(NuGetPackageRoot)mstest.testadapter/3.1.1/build/net6.0/MSTest.TestAdapter.targets" Condition="Exists('$(NuGetPackageRoot)mstest.testadapter/3.1.1/build/net6.0/MSTest.TestAdapter.targets')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.codecoverage/17.8.0/build/netstandard2.0/Microsoft.CodeCoverage.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.codecoverage/17.8.0/build/netstandard2.0/Microsoft.CodeCoverage.targets')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.net.test.sdk/17.8.0/build/netcoreapp3.1/Microsoft.NET.Test.Sdk.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.net.test.sdk/17.8.0/build/netcoreapp3.1/Microsoft.NET.Test.Sdk.targets')" />
+    <Import Project="$(NuGetPackageRoot)coverlet.collector/6.0.0/build/netstandard1.0/coverlet.collector.targets" Condition="Exists('$(NuGetPackageRoot)coverlet.collector/6.0.0/build/netstandard1.0/coverlet.collector.targets')" />
+  </ImportGroup>
+</Project>
