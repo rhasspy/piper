@@ -36,7 +36,7 @@ Then create a Python virtual environment:
 cd piper/src/python
 python3 -m venv .venv
 source .venv/bin/activate
-pip3 install --upgrade pip
+python3 -m pip install pip==24.0
 pip3 install --upgrade wheel setuptools
 pip3 install -e .
 ```
