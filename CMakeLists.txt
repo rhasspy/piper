@@ -28,7 +28,7 @@ add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
 if(NOT DEFINED FMT_DIR)
   set(FMT_VERSION "10.0.0")
   set(FMT_DIR "${CMAKE_CURRENT_BINARY_DIR}/fi")
-
+  
   include(ExternalProject)
   ExternalProject_Add(
     fmt_external
@@ -72,6 +72,13 @@ endif()
 
 # ---- Declare executable ----
 
+set(fmt_lib 
+    debug fmtd.lib
+    optimized fmt.lib)
+set(spdlog_lib 
+    debug spdlogd.lib
+    optimized spdlog.lib)
+    
 if((NOT MSVC) AND (NOT APPLE))
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
@@ -82,8 +89,8 @@ if((NOT MSVC) AND (NOT APPLE))
 endif()
 
 target_link_libraries(piper
-  fmt
-  spdlog
+  ${fmt_lib}
+  ${spdlog_lin}
   espeak-ng
   piper_phonemize
   onnxruntime
@@ -129,8 +136,8 @@ target_link_directories(
 )
 
 target_link_libraries(test_piper PUBLIC
-  fmt
-  spdlog
+  ${fmt_lib}
+  ${spdlog_lin}
   espeak-ng
   piper_phonemize
   onnxruntime
