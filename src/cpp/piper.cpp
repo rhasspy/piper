@@ -259,22 +259,20 @@ void terminate(PiperConfig &config) {
   spdlog::info("Terminated piper");
 }
 
-void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
+void loadModel(std::string modelPath, ModelSession &session) {
   spdlog::debug("Loading onnx model from {}", modelPath);
   session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
                          instanceName.c_str());
   session.env.DisableTelemetryEvents();
 
-  if (useCuda) {
-    // Use CUDA provider
-    OrtCUDAProviderOptions cuda_options{};
-    cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
-    try {
-      session.options.AppendExecutionProvider_CUDA(cuda_options);
-    }
-    catch (std::exception) {
-      spdlog::info("CUDA is not available. Continue with using CPU.");
-    }
+  // Try to Use CUDA provider
+  OrtCUDAProviderOptions cuda_options{};
+  cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
+  try {
+    session.options.AppendExecutionProvider_CUDA(cuda_options);
+  }
+  catch (std::exception) {
+    spdlog::info("CUDA is not available. Continue with using CPU.");
   }
 
   // Slows down performance by ~2x
@@ -313,7 +311,7 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
 // Load Onnx model and JSON config file
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,
-               std::optional<SpeakerId> &speakerId, bool useCuda) {
+               std::optional<SpeakerId> &speakerId) {
   spdlog::debug("Parsing voice config at {}", modelConfigPath);
   std::ifstream modelConfigFile(modelConfigPath);
   voice.configRoot = json::parse(modelConfigFile);
@@ -334,7 +332,7 @@ void loadVoice(PiperConfig &config, std::string modelPath,
 
   spdlog::debug("Voice contains {} speaker(s)", voice.modelConfig.numSpeakers);
 
-  loadModel(modelPath, voice.session, useCuda);
+  loadModel(modelPath, voice.session);
 
 } /* loadVoice */
 

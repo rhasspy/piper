@@ -85,9 +85,6 @@ struct RunConfig {
 
   // Seconds of extra silence to insert after a single phoneme
   optional<std::map<piper::Phoneme, float>> phonemeSilenceSeconds;
-
-  // true to use CUDA execution provider
-  bool useCuda = false;
 };
 
 void parseArgs(int argc, char *argv[], RunConfig &runConfig);
@@ -117,8 +114,7 @@ int main(int argc, char *argv[]) {
 
   auto startTime = chrono::steady_clock::now();
   loadVoice(piperConfig, runConfig.modelPath.string(),
-            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
-            runConfig.useCuda);
+            runConfig.modelConfigPath.string(), voice, runConfig.speakerId);
   auto endTime = chrono::steady_clock::now();
   spdlog::info("Loaded voice in {} second(s)",
                chrono::duration<double>(endTime - startTime).count());
@@ -438,8 +434,6 @@ void printUsage(char *argv[]) {
   cerr << "   --json-input                  stdin input is lines of JSON "
           "instead of plain text"
        << endl;
-  cerr << "   --use-cuda                    use CUDA execution provider"
-       << endl;
   cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
   cerr << "   -q       --quiet              disable logging" << endl;
@@ -523,8 +517,6 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.tashkeelModelPath = filesystem::path(argv[++i]);
     } else if (arg == "--json_input" || arg == "--json-input") {
       runConfig.jsonInput = true;
-    } else if (arg == "--use_cuda" || arg == "--use-cuda") {
-      runConfig.useCuda = true;
     } else if (arg == "--version") {
       std::cout << piper::getVersion() << std::endl;
       exit(0);
