@@ -18,10 +18,10 @@ elseif(NOT APPLE)
 endif()
 
 add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
-add_library(piperlib SHARED src/cpp/piperlib.cpp src/cpp/piper.cpp) 
+add_library(libpiper SHARED src/cpp/libpiper.cpp src/cpp/piper.cpp) 
 # Tests
 add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
-add_executable(test_piperlib src/cpp/testlib.cpp)
+add_executable(test_libpiper src/cpp/testlib.cpp)
 
 # NOTE: external project prefix are shortened because of path length restrictions on Windows
 # NOTE: onnxruntime is pulled from piper-phonemize
@@ -41,10 +41,10 @@ if(NOT DEFINED FMT_DIR)
     CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
   )
   add_dependencies(piper fmt_external)
-  add_dependencies(piperlib fmt_external)
+  add_dependencies(libpiper fmt_external)
   # Tests
   add_dependencies(test_piper fmt_external)
-  add_dependencies(test_piperlib fmt_external)
+  add_dependencies(test_libpiper fmt_external)
 endif()
 
 # ---- spdlog ---
@@ -59,10 +59,10 @@ if(NOT DEFINED SPDLOG_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${SPDLOG_DIR}
   )
   add_dependencies(piper spdlog_external)
-  add_dependencies(piperlib spdlog_external)
+  add_dependencies(libpiper spdlog_external)
   # Tests
   add_dependencies(test_piper spdlog_external)
-  add_dependencies(test_piperlib spdlog_external)
+  add_dependencies(test_libpiper spdlog_external)
 endif()
 
 # ---- piper-phonemize ---
@@ -76,10 +76,10 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
   )
   add_dependencies(piper piper_phonemize_external)
-  add_dependencies(piperlib piper_phonemize_external)
+  add_dependencies(libpiper piper_phonemize_external)
   # Tests
   add_dependencies(test_piper piper_phonemize_external)
-  add_dependencies(test_piperlib piper_phonemize_external)
+  add_dependencies(test_libpiper piper_phonemize_external)
 endif()
 
 # ---- Declare executable ----
@@ -129,12 +129,12 @@ if((NOT MSVC) AND (NOT APPLE))
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
-  target_link_libraries(piperlib -static-libgcc -static-libstdc++)
+  target_link_libraries(libpiper -static-libgcc -static-libstdc++)
 
   set(PIPER_EXTRA_LIBRARIES "pthread")
 endif()
 
-target_link_libraries(piperlib
+target_link_libraries(libpiper
   ${fmt_lib}
   ${spdlog_lin}
   espeak-ng
@@ -143,13 +143,13 @@ target_link_libraries(piperlib
   ${PIPER_EXTRA_LIBRARIES}
 )
 
-target_link_directories(piperlib PUBLIC
+target_link_directories(libpiper PUBLIC
   ${FMT_DIR}/lib
   ${SPDLOG_DIR}/lib
   ${PIPER_PHONEMIZE_DIR}/lib
 )
 
-target_include_directories(piperlib PUBLIC
+target_include_directories(libpiper PUBLIC
   ${FMT_DIR}/include
   ${SPDLOG_DIR}/include
   ${PIPER_PHONEMIZE_DIR}/include
@@ -164,12 +164,12 @@ add_test(
   COMMAND test_piper "${CMAKE_SOURCE_DIR}/etc/test_voice.onnx" "${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data" "${CMAKE_CURRENT_BINARY_DIR}/test.wav"
 )
 add_test(
-  NAME test_piperlib
-  COMMAND test_piperlib "${CMAKE_SOURCE_DIR}/etc/test_voice.onnx" "${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data" "${CMAKE_CURRENT_BINARY_DIR}/test.wav"
+  NAME test_libpiper
+  COMMAND test_libpiper "${CMAKE_SOURCE_DIR}/etc/test_voice.onnx" "${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data" "${CMAKE_CURRENT_BINARY_DIR}/test.wav"
 )
 
 target_compile_features(test_piper PUBLIC cxx_std_17)
-target_compile_features(test_piperlib PUBLIC cxx_std_17)
+target_compile_features(test_libpiper PUBLIC cxx_std_17)
 
 target_include_directories(
   test_piper PUBLIC
@@ -178,7 +178,7 @@ target_include_directories(
   ${PIPER_PHONEMIZE_DIR}/include
 )
 target_include_directories(
-  test_piperlib PUBLIC
+  test_libpiper PUBLIC
   ${FMT_DIR}/include
   ${SPDLOG_DIR}/include
   ${PIPER_PHONEMIZE_DIR}/include
@@ -191,7 +191,7 @@ target_link_directories(
   ${PIPER_PHONEMIZE_DIR}/lib
 )
 target_link_directories(
-  test_piperlib PUBLIC
+  test_libpiper PUBLIC
   .
   ${FMT_DIR}/lib
   ${SPDLOG_DIR}/lib
@@ -205,13 +205,13 @@ target_link_libraries(test_piper PUBLIC
   piper_phonemize
   onnxruntime
 )
-target_link_libraries(test_piperlib PUBLIC
+target_link_libraries(test_libpiper PUBLIC
   ${fmt_lib}
   ${spdlog_lin}
   espeak-ng
   piper_phonemize
   onnxruntime
-  piperlib
+  libpiper
 )
 
 # ---- Declare install targets ----

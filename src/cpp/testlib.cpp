@@ -8,7 +8,7 @@
 
 #include "json.hpp"
 #include "piper.hpp"
-#include "piperlib.hpp"
+#include "libpiper.hpp"
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
