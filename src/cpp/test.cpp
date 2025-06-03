@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
   piper::SynthesisResult result;
   piper::textToWavFile(piperConfig, voice, "This is a test.", audioFile,
-                       result);
+                       result, NULL);
   piper::terminate(piperConfig);
 
   // Verify that file has some data

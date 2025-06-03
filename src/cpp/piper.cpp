@@ -448,7 +448,8 @@ void synthesize(std::vector<PhonemeId> &phonemeIds,
 // Phonemize text and synthesize audio
 void textToAudio(PiperConfig &config, Voice &voice, std::string text,
                  std::vector<int16_t> &audioBuffer, SynthesisResult &result,
-                 const std::function<void()> &audioCallback) {
+                 const std::function<void()> &audioCallback,
+                 const std::function<void(uint16_t, size_t)>& progressCallback) {
 
   std::size_t sentenceSilenceSamples = 0;
   if (voice.synthesisConfig.sentenceSilenceSeconds > 0) {
@@ -482,6 +483,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
   }
 
   // Synthesize each sentence independently.
+  uint16_t progress = 0;
   std::vector<PhonemeId> phonemeIds;
   std::map<Phoneme, std::size_t> missingPhonemes;
   for (auto phonemesIter = phonemes.begin(); phonemesIter != phonemes.end();
@@ -597,6 +599,12 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       audioBuffer.clear();
     }
 
+    if (progressCallback) {
+      // Call back for show phonemizing progress
+      progress++;
+      progressCallback(progress, phonemes.size());
+    }
+
     phonemeIds.clear();
   }
 
@@ -620,10 +628,11 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
 // Phonemize text and synthesize audio to WAV file
 void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
-                   std::ostream &audioFile, SynthesisResult &result) {
+                   std::ostream &audioFile, SynthesisResult &result,
+                   const std::function<void(uint16_t, size_t)>& progressCallback) {
 
   std::vector<int16_t> audioBuffer;
-  textToAudio(config, voice, text, audioBuffer, result, NULL);
+  textToAudio(config, voice, text, audioBuffer, result, NULL, progressCallback);
 
   // Write WAV
   auto synthesisConfig = voice.synthesisConfig;
