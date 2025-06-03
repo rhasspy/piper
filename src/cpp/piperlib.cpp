@@ -1,16 +1,71 @@
 #include "piper.hpp"
 #include "piperlib.hpp"
+
 #include <cstring>
+
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 extern "C"
 {
-    void loadVoice(PiperConfig* config, const char* modelPath, const char* modelConfigPath, Voice* voice, SpeakerId* speakerId) {
+  void initializePiper(PiperConfig* config) {
+    piper::initialize(*config);
+  }
+
+  void terminatePiper(PiperConfig* config) {
+    piper::terminate(*config);
+  }
+  
+  void loadVoice(PiperConfig* config, const char* modelPath, const char* modelConfigPath, Voice* voice, SpeakerId* speakerId) {
         std::optional<piper::SpeakerId> optSpeakerId;
         if (speakerId) {
             optSpeakerId = *speakerId;
         }
         piper::loadVoice(*config, modelPath, modelConfigPath, *voice, optSpeakerId);
-    }
+  
+        // Get the path to the piper executable so we can locate espeak-ng-data, etc.
+        // next to it.
+#ifdef _MSC_VER
+        auto exePath = []() {
+          wchar_t moduleFileName[MAX_PATH] = { 0 };
+          GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
+          return std::filesystem::path(moduleFileName);
+          }();
+#else
+#ifdef __APPLE__
+        auto exePath = []() {
+          char moduleFileName[PATH_MAX] = { 0 };
+          uint32_t moduleFileNameSize = std::size(moduleFileName);
+          _NSGetExecutablePath(moduleFileName, &moduleFileNameSize);
+          return filesystem::path(moduleFileName);
+          }();
+#else
+        auto exePath = filesystem::canonical("/proc/self/exe");
+#endif
+#endif
+
+        // Enable libtashkeel for Arabic
+        if (voice->phonemizeConfig.eSpeak.voice == "ar") {
+          config->useTashkeel = true;
+          // Assume next to piper executable
+          config->tashkeelModelPath =
+            std::filesystem::absolute(
+              exePath.parent_path().append("libtashkeel_model.ort"))
+            .string();
+        }
+  }
 
     void textToAudio(PiperConfig* config, Voice* voice, const char* text, SynthesisResult* result, AudioCallback audioCallback, ProgressCallback progressCallback) {
         std::vector<int16_t> audioBuf;
