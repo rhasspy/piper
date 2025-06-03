@@ -19,6 +19,7 @@ endif()
 
 add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
 add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
+add_library(piperlib SHARED src/cpp/piperlib.cpp src/cpp/piper.cpp) 
 
 # NOTE: external project prefix are shortened because of path length restrictions on Windows
 # NOTE: onnxruntime is pulled from piper-phonemize
@@ -39,6 +40,7 @@ if(NOT DEFINED FMT_DIR)
   )
   add_dependencies(piper fmt_external)
   add_dependencies(test_piper fmt_external)
+  add_dependencies(piperlib fmt_external)
 endif()
 
 # ---- spdlog ---
@@ -54,6 +56,7 @@ if(NOT DEFINED SPDLOG_DIR)
   )
   add_dependencies(piper spdlog_external)
   add_dependencies(test_piper spdlog_external)
+  add_dependencies(piperlib spdlog_external)
 endif()
 
 # ---- piper-phonemize ---
@@ -68,6 +71,7 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
   )
   add_dependencies(piper piper_phonemize_external)
   add_dependencies(test_piper piper_phonemize_external)
+  add_dependencies(piperlib piper_phonemize_external)
 endif()
 
 # ---- Declare executable ----
@@ -111,7 +115,40 @@ target_include_directories(piper PUBLIC
 
 target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 
+# ---- Declare library ----
+
+if((NOT MSVC) AND (NOT APPLE))
+  # Linux flags
+  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
+  string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
+  target_link_libraries(piperlib -static-libgcc -static-libstdc++)
+
+  set(PIPER_EXTRA_LIBRARIES "pthread")
+endif()
+
+target_link_libraries(piperlib
+  ${fmt_lib}
+  ${spdlog_lin}
+  espeak-ng
+  piper_phonemize
+  onnxruntime
+  ${PIPER_EXTRA_LIBRARIES}
+)
+
+target_link_directories(piperlib PUBLIC
+  ${FMT_DIR}/lib
+  ${SPDLOG_DIR}/lib
+  ${PIPER_PHONEMIZE_DIR}/lib
+)
+
+target_include_directories(piperlib PUBLIC
+  ${FMT_DIR}/include
+  ${SPDLOG_DIR}/include
+  ${PIPER_PHONEMIZE_DIR}/include
+)
+
 # ---- Declare test ----
+
 include(CTest)
 enable_testing()
 add_test(
