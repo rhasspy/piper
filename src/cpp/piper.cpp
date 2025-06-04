@@ -272,7 +272,7 @@ void loadModel(std::string modelPath, ModelSession &session) {
     session.options.AppendExecutionProvider_CUDA(cuda_options);
   }
   catch (std::exception) {
-    spdlog::info("CUDA is not available. Continue with using CPU.");
+    spdlog::warn("CUDA not available - defaulting to CPU.");
   }
 
   // Slows down performance by ~2x
@@ -314,7 +314,12 @@ void loadVoice(PiperConfig &config, std::string modelPath,
                std::optional<SpeakerId> &speakerId) {
   spdlog::debug("Parsing voice config at {}", modelConfigPath);
   std::ifstream modelConfigFile(modelConfigPath);
-  voice.configRoot = json::parse(modelConfigFile);
+  try {
+    voice.configRoot = json::parse(modelConfigFile);
+  } catch (json::parse_error e) {
+    spdlog::critical("Error parsing model config at {}: {}", modelConfigPath, e.what());
+    return;
+  }
 
   parsePhonemizeConfig(voice.configRoot, voice.phonemizeConfig);
   parseSynthesisConfig(voice.configRoot, voice.synthesisConfig);

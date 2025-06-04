@@ -14,6 +14,16 @@ extern "C" {
 	typedef void (*AudioCallback)(int16_t* audioBuffer, int length);
 	typedef void (*ProgressCallback)(uint16_t progress, size_t total);
 
+#define LIBPIPER_LEVEL_TRACE 0
+#define LIBPIPER_LEVEL_DEBUG 1
+#define LIBPIPER_LEVEL_INFO 2
+#define LIBPIPER_LEVEL_WARN 3
+#define LIBPIPER_LEVEL_ERROR 4
+#define LIBPIPER_LEVEL_CRITICAL 5
+#define LIBPIPER_LEVEL_OFF 6
+
+	PIPER_API void setLogLevel(int logLevel);
+
 	PIPER_API void initializePiper(PiperConfig* config);
 	PIPER_API void terminatePiper(PiperConfig* config);
 

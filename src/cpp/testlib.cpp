@@ -16,7 +16,7 @@
 using namespace std;
 using json = nlohmann::json;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
@@ -35,9 +35,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // Print DEBUG messages
-  spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
-  spdlog::set_level(spdlog::level::debug);
+  // Set logging to INFO messages
+  ::setLogLevel(LIBPIPER_LEVEL_INFO);
+
+  // Progress callback
+  auto progressCallback = [](uint16_t progress, size_t total) {
+    std::cout << "Audio conversion progress: " << (int)((double)progress / total * 100) << "%..." << std::endl;
+  };
 
   auto modelPath = std::string(argv[1]);
   auto modelPathConfig = modelPath + ".json";
@@ -49,7 +53,7 @@ int main(int argc, char *argv[]) {
   ::initializePiper(&piperConfig);
 
   piper::SynthesisResult result;
-  ::textToWavFile(&piperConfig, &voice, "This is a test.", outputPath.c_str(), &result, NULL);
+  ::textToWavFile(&piperConfig, &voice, "This is a test.", outputPath.c_str(), &result, progressCallback);
   ::terminatePiper(&piperConfig);
 
   // Output audio to WAV file
