@@ -7,6 +7,7 @@ from typing import Any, Dict, Mapping, Sequence
 class PhonemeType(str, Enum):
     ESPEAK = "espeak"
     TEXT = "text"
+    OPENJTALK = "openjtalk"
 
 
 @dataclass

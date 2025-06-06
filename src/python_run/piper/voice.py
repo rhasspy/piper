@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime
+import pyopenjtalk
 from piper_phonemize import phonemize_codepoints, phonemize_espeak, tashkeel_run
 
 from .config import PhonemeType, PiperConfig
@@ -67,6 +68,32 @@ class PiperVoice:
         if self.config.phoneme_type == PhonemeType.TEXT:
             return phonemize_codepoints(text)
 
+        if self.config.phoneme_type == PhonemeType.OPENJTALK:
+            # Piper の学習時と同じアルゴリズム（accent/prosody 付き）で音素化
+            try:
+                # `piper_train` がインストールされていれば専用実装を利用
+                from piper_train.phonemize.japanese import phonemize_japanese  # type: ignore
+
+                tokens = phonemize_japanese(text)
+                return [tokens]
+            except Exception:  # pragma: no cover – フォールバック
+                # 学習環境に piper_train が無い場合の簡易フォールバック
+                phonemes = pyopenjtalk.g2p(text, kana=False).split()
+
+                converted = []
+                for ph in phonemes:
+                    if ph == "pau":
+                        converted.append("_")
+                        continue
+
+                    # Devoiced vowels come back as upper-case (A,I,U,E,O)
+                    if ph in {"A", "I", "U", "E", "O"}:
+                        ph = ph.lower()
+
+                    converted.append(ph)
+
+                return [converted]
+
         raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
 
     def phonemes_to_ids(self, phonemes: List[str]) -> List[int]:
@@ -80,7 +107,11 @@ class PiperVoice:
                 continue
 
             ids.extend(id_map[phoneme])
-            ids.extend(id_map[PAD])
+
+            # 学習データが PAD("_") を各音素ごとに含んでいるのは eSpeak 方式のみ。
+            # openjtalk で学習したモデルでは PAD は明示的に含まれていないので追加しない。
+            if self.config.phoneme_type != PhonemeType.OPENJTALK:
+                ids.extend(id_map[PAD])
 
         ids.extend(id_map[EOS])
 

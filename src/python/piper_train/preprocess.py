@@ -14,6 +14,8 @@ from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
+import pyopenjtalk
+
 from piper_phonemize import (
     phonemize_espeak,
     phonemize_codepoints,
@@ -27,6 +29,21 @@ from piper_phonemize import (
 
 from .norm_audio import cache_norm_audio, make_silence_detector
 
+# Custom Japanese phonemizer with accent/prosody marks
+try:
+    from .phonemize.japanese import phonemize_japanese  # type: ignore
+except ImportError:
+    # When running as script, relative import may fail; try absolute import fallback
+    from piper_train.phonemize.japanese import phonemize_japanese  # type: ignore
+
+# -----------------------------------------------------------------------------
+# Japanese phoneme id map support
+# -----------------------------------------------------------------------------
+try:
+    from .phonemize.jp_id_map import get_japanese_id_map  # type: ignore
+except ImportError:
+    from piper_train.phonemize.jp_id_map import get_japanese_id_map  # type: ignore
+
 _DIR = Path(__file__).parent
 _VERSION = (_DIR / "VERSION").read_text(encoding="utf-8").strip()
 _LOGGER = logging.getLogger("preprocess")
@@ -38,6 +55,9 @@ class PhonemeType(str, Enum):
 
     TEXT = "text"
     """Phonemes come from text itself"""
+
+    OPENJTALK = "openjtalk"
+    """Phonemes come from pyopenjtalk for Japanese"""
 
 
 def main() -> None:
@@ -119,6 +139,14 @@ def main() -> None:
     # Ensure enum
     args.phoneme_type = PhonemeType(args.phoneme_type)
 
+    # 日本語の場合は自動的に OPENJTALK を使用し、ID マップを設定
+    japanese_id_map = None
+    if args.language == "ja":
+        args.phoneme_type = PhonemeType.OPENJTALK
+        japanese_id_map = get_japanese_id_map()
+        args.phoneme_id_map = japanese_id_map  # 子プロセスへ渡すため
+        _LOGGER.info("Using pyopenjtalk for Japanese phonemization (%s symbols)", len(japanese_id_map))
+
     # Convert to paths and create output directories
     args.input_dir = Path(args.input_dir)
     args.output_dir = Path(args.output_dir)
@@ -182,10 +210,16 @@ def main() -> None:
                 "inference": {"noise_scale": 0.667, "length_scale": 1, "noise_w": 0.8},
                 "phoneme_type": args.phoneme_type.value,
                 "phoneme_map": {},
-                "phoneme_id_map": get_codepoints_map()[args.language]
-                if args.phoneme_type == PhonemeType.TEXT
-                else get_espeak_map(),
-                "num_symbols": get_max_phonemes(),
+                "phoneme_id_map": (
+                    get_codepoints_map()[args.language]
+                    if args.phoneme_type == PhonemeType.TEXT
+                    else (
+                        japanese_id_map if japanese_id_map is not None else get_espeak_map()
+                    )
+                ),
+                "num_symbols": (
+                    len(japanese_id_map) if japanese_id_map is not None else get_max_phonemes()
+                ),
                 "num_speakers": len(speaker_counts),
                 "speaker_id_map": speaker_ids,
                 "piper_version": _VERSION,
@@ -208,6 +242,8 @@ def main() -> None:
     # Start workers
     if args.phoneme_type == PhonemeType.TEXT:
         target = phonemize_batch_text
+    elif args.phoneme_type == PhonemeType.OPENJTALK:
+        target = phonemize_batch_openjtalk
     else:
         target = phonemize_batch_espeak
 
@@ -377,6 +413,51 @@ def phonemize_batch_text(
             queue_in.task_done()
     except Exception:
         _LOGGER.exception("phonemize_batch_text")
+
+
+def phonemize_batch_openjtalk(
+    args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
+):
+    try:
+        casing = get_text_casing(args.text_casing)
+        silence_detector = make_silence_detector()
+
+        while True:
+            utt_batch = queue_in.get()
+            if utt_batch is None:
+                break
+
+            for utt in utt_batch:
+                try:
+                    _LOGGER.debug(utt)
+                    # 高低アクセントを含む日本語 phonemizer
+                    utt.phonemes = phonemize_japanese(casing(utt.text))
+                    # phoneme_ids は phoneme_id_map から取得
+                    utt.phoneme_ids = []
+                    for phoneme in utt.phonemes:
+                        if phoneme in args.phoneme_id_map:
+                            utt.phoneme_ids.extend(args.phoneme_id_map[phoneme])
+                        else:
+                            utt.missing_phonemes[phoneme] += 1
+                            _LOGGER.warning(f"Missing phoneme: {phoneme}")
+
+                    if not args.skip_audio:
+                        utt.audio_norm_path, utt.audio_spec_path = cache_norm_audio(
+                            utt.audio_path,
+                            args.cache_dir,
+                            silence_detector,
+                            args.sample_rate,
+                        )
+                    queue_out.put(utt)
+                except TimeoutError:
+                    _LOGGER.error("Skipping utterance due to timeout: %s", utt)
+                except Exception:
+                    _LOGGER.exception("Failed to process utterance: %s", utt)
+                    queue_out.put(None)
+
+            queue_in.task_done()
+    except Exception:
+        _LOGGER.exception("phonemize_batch_openjtalk")
 
 
 # -----------------------------------------------------------------------------

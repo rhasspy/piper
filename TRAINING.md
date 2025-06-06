@@ -6,6 +6,10 @@ For Windows, see [ssamjh's guide using WSL](https://ssamjh.nz/create-custom-pipe
 
 ---
 
+# env
+* python 3.11
+* only single GPU
+
 Training a voice for Piper involves 3 main steps:
 
 1. Preparing the dataset
