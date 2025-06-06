@@ -138,6 +138,11 @@ def main():
 
             _LOGGER.info("Weights loaded successfully with strict=False. Starting training without resuming optimizer state.")
             
+            # argsからresume_from_checkpointを削除
+            args_dict = vars(args)
+            if 'resume_from_checkpoint' in args_dict:
+                del args_dict['resume_from_checkpoint']
+            
             # 新しいTrainerインスタンスを作成（ckpt_pathをクリアするため）
             trainer = Trainer.from_argparse_args(args)
             if args.checkpoint_epochs is not None:
