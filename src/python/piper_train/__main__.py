@@ -121,7 +121,27 @@ def main():
             "Successfully converted single-speaker checkpoint to multi-speaker"
         )
 
-    trainer.fit(model)
+    # チェックポイントからの再開処理を修正
+    if args.resume_from_checkpoint:
+        _LOGGER.debug("Loading weights from checkpoint: %s", args.resume_from_checkpoint)
+        try:
+            # まずは通常のResumeを試みる
+            trainer.fit(model, ckpt_path=args.resume_from_checkpoint)
+        except (RuntimeError, KeyError) as e:
+            # RuntimeError (size mismatchなど) や KeyError (optimizer stateなし) が発生した場合
+            _LOGGER.warning("Graceful resume failed with error: %s", e)
+            _LOGGER.info("Attempting to load weights only (strict=False)...")
+
+            # モデルの重みだけをロードする (不一致は許容)
+            checkpoint = torch.load(args.resume_from_checkpoint, map_location="cpu")
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
+
+            _LOGGER.info("Weights loaded successfully with strict=False. Starting training without resuming optimizer state.")
+            # オプティマイザの状態は復元せず、モデルの重みだけを引き継いで学習を開始
+            trainer.fit(model)
+    else:
+        # チェックポイントが指定されていない場合は、通常通り学習を開始
+        trainer.fit(model)
 
 
 def load_state_dict(model, saved_state_dict):
