@@ -137,7 +137,16 @@ def main():
             model.load_state_dict(checkpoint['state_dict'], strict=False)
 
             _LOGGER.info("Weights loaded successfully with strict=False. Starting training without resuming optimizer state.")
-            # オプティマイザの状態は復元せず、モデルの重みだけを引き継いで学習を開始
+            
+            # 新しいTrainerインスタンスを作成（ckpt_pathをクリアするため）
+            trainer = Trainer.from_argparse_args(args)
+            if args.checkpoint_epochs is not None:
+                trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs)]
+                _LOGGER.debug(
+                    "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
+                )
+            
+            # 新しいTrainerで学習を開始
             trainer.fit(model)
     else:
         # チェックポイントが指定されていない場合は、通常通り学習を開始
