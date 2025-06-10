@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 import pyopenjtalk
+from tqdm import tqdm
 
 from piper_phonemize import (
     phonemize_espeak,
@@ -265,9 +266,12 @@ def main() -> None:
             queue_in.put(utt_batch)
 
         _LOGGER.debug("Waiting for jobs to finish")
+        # プログレスバーを表示
+        pbar = tqdm(total=num_utterances, desc="Preprocessing", unit="utt")
         missing_phonemes: "Counter[str]" = Counter()
         for _ in range(num_utterances):
             utt = queue_out.get()
+            pbar.update(1)
             if utt is not None:
                 if utt.speaker is not None:
                     utt.speaker_id = speaker_ids[utt.speaker]
@@ -286,6 +290,7 @@ def main() -> None:
 
                 missing_phonemes.update(utt.missing_phonemes)
 
+        pbar.close()
         if missing_phonemes:
             for phoneme, count in missing_phonemes.most_common():
                 _LOGGER.warning("Missing %s (%s)", phoneme, count)
