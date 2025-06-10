@@ -6,6 +6,7 @@ import itertools
 import json
 import logging
 import os
+import sys
 import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
@@ -137,6 +138,10 @@ def main() -> None:
     # Prevent log spam
     logging.getLogger("numba").setLevel(logging.WARNING)
 
+    # pyopenjtalkの警告メッセージを抑制（プログレスバーの表示を妨げないため）
+    import warnings
+    warnings.filterwarnings("ignore", category=UserWarning)
+    
     # Ensure enum
     args.phoneme_type = PhonemeType(args.phoneme_type)
 
@@ -267,11 +272,23 @@ def main() -> None:
 
         _LOGGER.debug("Waiting for jobs to finish")
         # プログレスバーを表示
-        pbar = tqdm(total=num_utterances, desc="Preprocessing", unit="utt")
+        print(f"Starting to process {num_utterances} utterances...", file=sys.stderr, flush=True)
+        pbar = tqdm(
+            total=num_utterances, 
+            desc="Preprocessing", 
+            unit="utt",
+            file=sys.stderr,
+            leave=True,
+            dynamic_ncols=True,
+            disable=False,
+            mininterval=0.1,
+            maxinterval=1.0,
+            ncols=80
+        )
+        pbar.set_description("Processing utterances")
         missing_phonemes: "Counter[str]" = Counter()
         for _ in range(num_utterances):
             utt = queue_out.get()
-            pbar.update(1)
             if utt is not None:
                 if utt.speaker is not None:
                     utt.speaker_id = speaker_ids[utt.speaker]
@@ -289,6 +306,9 @@ def main() -> None:
                 print("", file=dataset_file)
 
                 missing_phonemes.update(utt.missing_phonemes)
+
+            # プログレスバーを最後に更新（処理済みかどうかに関わらず）
+            pbar.update(1)
 
         pbar.close()
         if missing_phonemes:
