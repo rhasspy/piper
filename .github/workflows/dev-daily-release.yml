@@ -25,6 +25,10 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_name: ${{ steps.get_release_name.outputs.RELEASE_NAME }}
     steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: Generate release name
         id: get_release_name
         run: |
