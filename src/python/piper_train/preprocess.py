@@ -307,6 +307,8 @@ def main() -> None:
 
             # プログレスバーを最後に更新（処理済みかどうかに関わらず）
             pbar.update(1)
+            if (pbar.n % 500) == 0:
+                pbar.refresh()
 
         pbar.close()
         if missing_phonemes:
@@ -344,6 +346,12 @@ def phonemize_batch_espeak(
     args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
 ):
     try:
+        # Suppress C-level warnings from pyopenjtalk/OpenJTalk to keep output clean
+        if not getattr(args, "debug", False):
+            import os
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 2)
+
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
@@ -393,6 +401,11 @@ def phonemize_batch_text(
     args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
 ):
     try:
+        if not getattr(args, "debug", False):
+            import os
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 2)
+
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
@@ -442,6 +455,11 @@ def phonemize_batch_openjtalk(
     args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
 ):
     try:
+        if not getattr(args, "debug", False):
+            import os
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 2)
+
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
