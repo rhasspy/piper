@@ -350,7 +350,6 @@ def phonemize_batch_espeak(
         if not getattr(args, "debug", False):
             devnull_fd = os.open(os.devnull, os.O_RDWR)
             os.dup2(devnull_fd, 2)
-            os.dup2(devnull_fd, 1)
 
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
@@ -404,7 +403,6 @@ def phonemize_batch_text(
         if not getattr(args, "debug", False):
             devnull_fd = os.open(os.devnull, os.O_RDWR)
             os.dup2(devnull_fd, 2)
-            os.dup2(devnull_fd, 1)
 
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
@@ -458,7 +456,6 @@ def phonemize_batch_openjtalk(
         if not getattr(args, "debug", False):
             devnull_fd = os.open(os.devnull, os.O_RDWR)
             os.dup2(devnull_fd, 2)
-            os.dup2(devnull_fd, 1)
 
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
