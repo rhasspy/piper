@@ -348,9 +348,9 @@ def phonemize_batch_espeak(
     try:
         # Suppress C-level warnings from pyopenjtalk/OpenJTalk to keep output clean
         if not getattr(args, "debug", False):
-            import os
             devnull_fd = os.open(os.devnull, os.O_RDWR)
             os.dup2(devnull_fd, 2)
+            os.dup2(devnull_fd, 1)
 
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
@@ -402,9 +402,9 @@ def phonemize_batch_text(
 ):
     try:
         if not getattr(args, "debug", False):
-            import os
             devnull_fd = os.open(os.devnull, os.O_RDWR)
             os.dup2(devnull_fd, 2)
+            os.dup2(devnull_fd, 1)
 
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
@@ -456,9 +456,9 @@ def phonemize_batch_openjtalk(
 ):
     try:
         if not getattr(args, "debug", False):
-            import os
             devnull_fd = os.open(os.devnull, os.O_RDWR)
             os.dup2(devnull_fd, 2)
+            os.dup2(devnull_fd, 1)
 
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
