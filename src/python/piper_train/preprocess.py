@@ -263,6 +263,19 @@ def main() -> None:
     _LOGGER.info(
         "Processing %s utterance(s) with %s worker(s)", num_utterances, args.max_workers
     )
+    # プログレスバーを表示（stdoutに表示し、早めに初期化）
+    print(f"Starting to process {num_utterances} utterances...", file=sys.stdout, flush=True)
+    pbar = tqdm(
+        total=num_utterances,
+        desc="Preprocessing",
+        unit="utt",
+        file=sys.stdout,
+        leave=True,
+        dynamic_ncols=True,
+        ascii=True,
+        disable=False,
+    )
+
     with open(args.output_dir / "dataset.jsonl", "w", encoding="utf-8") as dataset_file:
         for utt_batch in batched(
             make_dataset(args),
@@ -271,21 +284,6 @@ def main() -> None:
             queue_in.put(utt_batch)
 
         _LOGGER.debug("Waiting for jobs to finish")
-        # プログレスバーを表示
-        print(f"Starting to process {num_utterances} utterances...", file=sys.stderr, flush=True)
-        pbar = tqdm(
-            total=num_utterances, 
-            desc="Preprocessing", 
-            unit="utt",
-            file=sys.stderr,
-            leave=True,
-            dynamic_ncols=True,
-            disable=False,
-            mininterval=0.1,
-            maxinterval=1.0,
-            ncols=80
-        )
-        pbar.set_description("Processing utterances")
         missing_phonemes: "Counter[str]" = Counter()
         for _ in range(num_utterances):
             utt = queue_out.get()
