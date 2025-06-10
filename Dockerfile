@@ -1,52 +1,112 @@
-FROM debian:bullseye as build
+FROM debian:bullseye AS build
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
+# パッケージリストの更新とインストールを分離
 RUN apt-get update && \
     apt-get install --yes --no-install-recommends \
-        build-essential cmake ca-certificates curl pkg-config git
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release && \
+    # リポジトリの追加
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    # パッケージのインストール
+    apt-get update && \
+    apt-get install --yes --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        pkg-config \
+        libicu-dev \
+        libespeak-ng-dev \
+        make \
+        ninja-build \
+        python3 && \
+    # アーキテクチャに応じたクロスコンパイルツールのインストール
+    if [ "$TARGETARCH" = "arm64" ]; then \
+        apt-get install --yes --no-install-recommends \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu; \
+    elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
+        apt-get install --yes --no-install-recommends \
+            gcc-arm-linux-gnueabihf \
+            g++-arm-linux-gnueabihf \
+            binutils-arm-linux-gnueabihf; \
+    fi && \
+    # クリーンアップ
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
+# ツールチェインファイルを作成
+RUN mkdir -p cmake && \
+    if [ "$TARGETARCH" = "arm64" ]; then \
+        echo 'set(CMAKE_SYSTEM_NAME Linux)' > cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_SYSTEM_PROCESSOR aarch64)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH /usr/aarch64-linux-gnu)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)' >> cmake/linux-aarch64.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)' >> cmake/linux-aarch64.cmake; \
+    elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
+        echo 'set(CMAKE_SYSTEM_NAME Linux)' > cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_SYSTEM_PROCESSOR armv7)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_C_COMPILER arm-linux-gnueabihf-gcc)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_CXX_COMPILER arm-linux-gnueabihf-g++)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mfpu=neon -mfloat-abi=hard")' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mfpu=neon -mfloat-abi=hard")' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH /usr/arm-linux-gnueabihf)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)' >> cmake/linux-armv7.cmake && \
+        echo 'set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)' >> cmake/linux-armv7.cmake; \
+    fi
+
+# ソースコードをコピー
 COPY ./ ./
-RUN cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install
-RUN cmake --build build --config Release
-RUN cmake --install build
 
-# Do a test run
-RUN ./build/piper --help
+# アーキテクチャに応じたビルド設定
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install && \
+        cmake --build build --config Release && \
+        cmake --install build; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/linux-aarch64.cmake && \
+        cmake --build build --config Release && \
+        cmake --install build; \
+    elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/linux-armv7.cmake && \
+        cmake --build build --config Release && \
+        cmake --install build; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH$TARGETVARIANT" && exit 1; \
+    fi
 
-# Build .tar.gz to keep symlinks
+# テスト実行（amd64のみ）
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        ./build/piper --help; \
+    fi
+
+# アーカイブの作成
 WORKDIR /dist
 RUN mkdir -p piper && \
     cp -dR /build/install/* ./piper/ && \
-    tar -czf "piper_${TARGETARCH}${TARGETVARIANT}.tar.gz" piper/
-
-# -----------------------------------------------------------------------------
-
-# FROM debian:bullseye as test
-# ARG TARGETARCH
-# ARG TARGETVARIANT
-
-# WORKDIR /test
-
-# COPY local/en-us/lessac/low/en-us-lessac-low.onnx \
-#      local/en-us/lessac/low/en-us-lessac-low.onnx.json ./
-
-# # Run Piper on a test sentence and verify that the WAV file isn't empty
-# COPY --from=build /dist/piper_*.tar.gz ./
-# RUN tar -xzf piper*.tar.gz
-# RUN echo 'This is a test.' | ./piper/piper -m en-us-lessac-low.onnx -f test.wav
-# RUN if [ ! -f test.wav ]; then exit 1; fi
-# RUN size="$(wc -c < test.wav)"; \
-#     if [ "${size}" -lt "1000" ]; then echo "File size is ${size} bytes"; exit 1; fi
-
-# -----------------------------------------------------------------------------
+    if [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
+        tar -czf "piper_armv7.tar.gz" piper/; \
+    else \
+        tar -czf "piper_${TARGETARCH}.tar.gz" piper/; \
+    fi
 
 FROM scratch
-
-# COPY --from=test /test/piper_*.tar.gz /test/test.wav ./
 COPY --from=build /dist/piper_*.tar.gz ./
