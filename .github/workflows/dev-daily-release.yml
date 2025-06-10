@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - dev
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'リリース名（未指定の場合は日付ベースで自動生成）'
+        required: false
+        type: string
+      release_description:
+        description: 'リリース説明（未指定の場合は自動生成）'
+        required: false
+        type: string
 
 # 環境変数とデフォルト設定
 env:
@@ -25,29 +35,38 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_name: ${{ steps.get_release_name.outputs.RELEASE_NAME }}
     steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: Generate release name
         id: get_release_name
         run: |
-          # 日付ベースのリリース名を生成（dev-YYYYMMDD形式）
-          DATE=$(date +'%Y%m%d')
-          echo "RELEASE_NAME=dev-${DATE}" >> $GITHUB_OUTPUT
+          if [ -n "${{ github.event.inputs.release_name }}" ]; then
+            echo "RELEASE_NAME=${{ github.event.inputs.release_name }}" >> $GITHUB_OUTPUT
+          else
+            DATE=$(date +'%Y%m%d')
+            echo "RELEASE_NAME=dev-${DATE}" >> $GITHUB_OUTPUT
+          fi
           
-          # コミット情報を取得
-          COMMIT_SHA=$(git rev-parse --short HEAD)
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          
-          # リリース説明を生成
-          cat << EOF >> $GITHUB_OUTPUT
-          RELEASE_DESCRIPTION=Development build for $(date +'%Y-%m-%d')
-          
-          ## 変更内容
-          - コミット: \${COMMIT_SHA}
-          - メッセージ: \${COMMIT_MSG}
-          
-          ## ビルド情報
-          - ビルド日時: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-          - プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)
-          EOF
+          if [ -n "${{ github.event.inputs.release_description }}" ]; then
+            echo "RELEASE_DESCRIPTION=${{ github.event.inputs.release_description }}" >> $GITHUB_OUTPUT
+          else
+            COMMIT_SHA=$(git rev-parse --short HEAD)
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            
+            cat << EOF >> $GITHUB_OUTPUT
+            RELEASE_DESCRIPTION=Development build for $(date +'%Y-%m-%d')
+            
+            ## 変更内容
+            - コミット: \${COMMIT_SHA}
+            - メッセージ: \${COMMIT_MSG}
+            
+            ## ビルド情報
+            - ビルド日時: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+            - プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)
+            EOF
+          fi
 
       - name: Create release
         id: create_release
