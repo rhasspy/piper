@@ -37,46 +37,46 @@ jobs:
     runs-on: ubuntu-latest
     needs: create_dev_release
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v4.2.2
+      - uses: docker/setup-qemu-action@v3.1.0
+      - uses: docker/setup-buildx-action@v3.1.0
       - name: Build packages
         run: |
           docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 --output 'type=local,dest=dist'
       - name: Upload x86_64 package
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
           asset_path: dist/linux_amd64/piper_amd64.tar.gz
-          asset_name: piper_linux_x86_64.tar.gz
-          asset_content_type: application/octet-stream
+          asset_name: piper_amd64.tar.gz
+          asset_content_type: application/gzip
       - name: Upload ARM64 package
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
           asset_path: dist/linux_arm64/piper_arm64.tar.gz
-          asset_name: piper_linux_aarch64.tar.gz
-          asset_content_type: application/octet-stream
+          asset_name: piper_arm64.tar.gz
+          asset_content_type: application/gzip
       - name: Upload ARMv7 package
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
           asset_path: dist/linux_arm_v7/piper_armv7.tar.gz
-          asset_name: piper_linux_armv7l.tar.gz
-          asset_content_type: application/octet-stream
+          asset_name: piper_armv7.tar.gz
+          asset_content_type: application/gzip
 
   build_windows:
     name: "Build Windows package"
     runs-on: windows-latest
     needs: create_dev_release
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.2.2
       - name: Configure build
         run: |
           cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
@@ -91,7 +91,7 @@ jobs:
           cd _install
           Compress-Archive -LiteralPath piper -DestinationPath piper_windows_amd64.zip
       - name: Upload package
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
@@ -109,7 +109,7 @@ jobs:
       matrix:
         arch: [x64, aarch64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.2.2
       - name: Configure build
         run: |
           cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
@@ -124,11 +124,11 @@ jobs:
           cd _install && \
           tar -czf piper_macos_${{ matrix.arch }}.tar.gz piper/
       - name: Upload package
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
           asset_path: _install/piper_macos_${{ matrix.arch }}.tar.gz
           asset_name: piper_macos_${{ matrix.arch }}.tar.gz
-          asset_content_type: application/octet-stream
+          asset_content_type: application/gzip
