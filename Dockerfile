@@ -12,9 +12,9 @@ RUN apt-get update && \
         curl \
         gnupg \
         lsb-release && \
-    # リポジトリの追加
+    # リポジトリの追加（アーキテクチャに依存しない）
     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
     # パッケージのインストール
     apt-get update && \
     apt-get install --yes --no-install-recommends \
@@ -32,12 +32,14 @@ RUN apt-get update && \
         apt-get install --yes --no-install-recommends \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            binutils-aarch64-linux-gnu; \
+            binutils-aarch64-linux-gnu \
+            crossbuild-essential-arm64; \
     elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
         apt-get install --yes --no-install-recommends \
             gcc-arm-linux-gnueabihf \
             g++-arm-linux-gnueabihf \
-            binutils-arm-linux-gnueabihf; \
+            binutils-arm-linux-gnueabihf \
+            crossbuild-essential-armhf; \
     fi && \
     # クリーンアップ
     apt-get clean && \

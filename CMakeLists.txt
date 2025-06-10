@@ -11,6 +11,65 @@ if(MSVC)
   # Force compiler to use UTF-8 for IPA constants
   add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
   add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+  
+  # Windows固有の定義
+  add_definitions(-DWIN32_LEAN_AND_MEAN)
+  add_definitions(-DNOMINMAX)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-D_WIN32_WINNT=0x0601)  # Windows 7 or later
+  
+  # ONNX Runtimeのヘッダーファイルの問題を解決
+  add_definitions(-D_Frees_ptr_opt_=__declspec(dllexport))
+  add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-DWIN32)
+  add_definitions(-D_WINDOWS)
+  add_definitions(-D_UNICODE)
+  add_definitions(-DUNICODE)
+  add_definitions(-D_USE_MATH_DEFINES)
+  add_definitions(-D_WIN32_WINNT=0x0601)
+  add_definitions(-DWINVER=0x0601)
+  add_definitions(-D_WIN32_IE=0x0601)
+  add_definitions(-D_WIN32_WINDOWS=0x0601)
+  
+  # MSVC固有のコンパイラオプション
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MP /bigobj")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /GL")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od /Zi /RTC1")
+  
+  # コンパイルオプションの修正
+  add_compile_options(/W4 /WX /wd4100 /wd4505 /wd4996)
+  add_compile_options(/permissive)  # /permissive-を/permissiveに変更
+  add_compile_options(/Zc:__cplusplus)
+  add_compile_options(/Zc:inline)
+  add_compile_options(/Zc:strictStrings)
+  add_compile_options(/Zc:throwingNew)
+  add_compile_options(/Zc:referenceBinding)
+  add_compile_options(/Zc:rvalueCast)
+  add_compile_options(/bigobj)  # 大きなオブジェクトファイルをサポート
+  add_compile_options(/MP)  # マルチプロセッサコンパイルを有効化
+  add_compile_options(/wd4244)  # 型変換の警告を無視
+  add_compile_options(/wd4267)  # size_tからintへの変換の警告を無視
+  add_compile_options(/wd4996)  # 非推奨関数の警告を無視
+  
+  # ONNX Runtimeとの互換性のための追加定義
+  add_definitions(-DONNXRUNTIME_DLL)
+  add_definitions(-DONNXRUNTIME_STATIC_LIB)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+  
+  # Windows SDKのヘッダーを追加
+  include_directories("$ENV{WindowsSdkDir}Include\\$ENV{WindowsSDKVersion}um")
+  include_directories("$ENV{WindowsSdkDir}Include\\$ENV{WindowsSDKVersion}shared")
+  include_directories("$ENV{WindowsSdkDir}Include\\$ENV{WindowsSDKVersion}ucrt")
+  
+  # リンクライブラリを追加
+  link_libraries(winmm ws2_32 version)
+  
+  # Windows固有のソースファイルの設定
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/cpp/windows_console.cpp")
+    target_sources(piper PRIVATE src/cpp/windows_console.cpp)
+  endif()
 elseif(NOT APPLE)
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
@@ -89,6 +148,15 @@ target_link_libraries(piper
   onnxruntime
   ${PIPER_EXTRA_LIBRARIES}
 )
+
+# Windows固有のリンク設定
+if(MSVC)
+  target_link_libraries(piper PRIVATE
+    winmm
+    ws2_32
+    version
+  )
+endif()
 
 target_link_directories(piper PUBLIC
   ${FMT_DIR}/lib
@@ -170,3 +238,34 @@ install(
   FILES ${PIPER_PHONEMIZE_DIR}/share/libtashkeel_model.ort
   DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
+
+# Windows固有のターゲット設定
+if(MSVC)
+  target_compile_definitions(piper PRIVATE
+    _CRT_SECURE_NO_WARNINGS
+    _WINSOCK_DEPRECATED_NO_WARNINGS
+    WIN32_LEAN_AND_MEAN
+    NOMINMAX
+    _UNICODE
+    UNICODE
+    _USE_MATH_DEFINES
+    _WIN32_WINNT=0x0601
+    WINVER=0x0601
+    _WIN32_IE=0x0601
+    _WIN32_WINDOWS=0x0601
+    ONNXRUNTIME_DLL
+    ONNXRUNTIME_STATIC_LIB
+  )
+  
+  # Windows SDKのバージョン設定
+  if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
+    set(CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION "10.0.19041.0")
+  endif()
+  
+  # ONNX Runtimeの設定
+  target_compile_definitions(piper_phonemize PRIVATE
+    ONNXRUNTIME_DLL
+    ONNXRUNTIME_STATIC_LIB
+    _Frees_ptr_opt_=__declspec(dllexport)
+  )
+endif()

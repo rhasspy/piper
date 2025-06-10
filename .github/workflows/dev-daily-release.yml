@@ -161,19 +161,56 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # vcpkgのセットアップ
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          .\bootstrap-vcpkg.bat
-          .\vcpkg integrate install
+          # 必要なツールのインストール
+          choco install -y cmake ninja visualstudio2022-workload-vctools
           
-          # espeak-ngのインストール
-          .\vcpkg install espeak-ng:x64-windows
-          cd ..
+          # espeak-ngのビルドとインストール
+          git clone --depth 1 https://github.com/espeak-ng/espeak-ng.git
+          cd espeak-ng
+          
+          # autogenスクリプトの作成
+          @"
+          @echo off
+          setlocal
+          
+          if not exist "configure" (
+            echo Running aclocal...
+            aclocal
+            if errorlevel 1 goto :error
+          
+            echo Running autoconf...
+            autoconf
+            if errorlevel 1 goto :error
+          
+            echo Running automake...
+            automake --add-missing
+            if errorlevel 1 goto :error
+          )
+          
+          echo Running configure...
+          call configure --prefix=C:/espeak-ng
+          if errorlevel 1 goto :error
+          
+          goto :end
+          
+          :error
+          echo Error occurred
+          exit /b 1
+          
+          :end
+          "@ > autogen.bat
+          
+          # ビルドとインストール
+          mkdir build
+          cd build
+          cmake .. -G "Ninja" -DCMAKE_INSTALL_PREFIX=C:/espeak-ng -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+          cmake --install .
+          cd ../..
           
           # 環境変数の設定
-          $env:PATH = "$env:PATH;$pwd\vcpkg\installed\x64-windows\bin"
-          $env:ESPEAK_DATA_PATH = "$pwd\vcpkg\installed\x64-windows\share\espeak-ng-data"
+          $env:PATH = "C:\espeak-ng\bin;$env:PATH"
+          $env:ESPEAK_DATA_PATH = "C:\espeak-ng\share\espeak-ng-data"
           [Environment]::SetEnvironmentVariable("PATH", $env:PATH, "Process")
           [Environment]::SetEnvironmentVariable("ESPEAK_DATA_PATH", $env:ESPEAK_DATA_PATH, "Process")
 
@@ -181,9 +218,10 @@ jobs:
         run: |
           # CMakeの設定
           cmake -Bbuild `
+            -G "Ninja" `
             -DCMAKE_INSTALL_PREFIX=_install/piper `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
-            -DCMAKE_TOOLCHAIN_FILE="$pwd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            -DESPEAK_NG_ROOT=C:/espeak-ng
           
           if ($LASTEXITCODE -ne 0) {
             Write-Error "CMake configuration failed"
@@ -321,28 +359,49 @@ jobs:
       - name: Install Rosetta 2 (x64 only)
         if: matrix.arch == 'x64'
         run: |
-          softwareupdate --install-rosetta --agree-to-license
+          # Rosetta 2のインストールを待機
+          /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
+          # インストールの完了を確認
+          /usr/bin/arch -x86_64 /usr/bin/true || {
+            echo "Rosetta 2 installation failed or not ready"
+            exit 1
+          }
+
+      - name: Setup Homebrew
+        run: |
+          # Homebrewの環境設定
+          echo "::group::Setup Homebrew"
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            # x64用のHomebrew設定
+            eval "$(/usr/local/bin/brew shellenv)"
+          else
+            # arm64用のHomebrew設定
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          fi
+          echo "::endgroup::"
 
       - name: Install dependencies
         run: |
-          # アーキテクチャに応じた依存関係のインストール
+          echo "::group::Install dependencies"
           if [ "${{ matrix.arch }}" = "x64" ]; then
             # x64用の依存関係（Rosetta 2を使用）
-            /usr/sbin/softwareupdate --install-rosetta --agree-to-license
-            /usr/bin/arch -x86_64 /opt/homebrew/bin/brew install cmake espeak-ng
+            arch -x86_64 brew install cmake espeak-ng ninja
           else
             # arm64用の依存関係
-            /opt/homebrew/bin/brew install cmake espeak-ng
+            brew install cmake espeak-ng ninja
           fi
+          echo "::endgroup::"
 
       - name: Configure build
         run: |
+          echo "::group::Configure build"
           # アーキテクチャに応じたCMAKE_OSX_ARCHITECTURESを設定
           if [ "${{ matrix.arch }}" = "x64" ]; then
             export CMAKE_OSX_ARCHITECTURES="x86_64"
             export CMAKE_OSX_DEPLOYMENT_TARGET="10.15"
             # x64用のビルド環境（Rosetta 2を使用）
-            /usr/bin/arch -x86_64 /opt/homebrew/bin/cmake -Bbuild \
+            arch -x86_64 cmake -Bbuild \
+              -G "Ninja" \
               -DCMAKE_INSTALL_PREFIX=_install/piper \
               -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
               -DCMAKE_OSX_ARCHITECTURES=$CMAKE_OSX_ARCHITECTURES \
@@ -351,7 +410,8 @@ jobs:
             export CMAKE_OSX_ARCHITECTURES="arm64"
             export CMAKE_OSX_DEPLOYMENT_TARGET="11.0"
             # arm64用のビルド環境
-            /opt/homebrew/bin/cmake -Bbuild \
+            cmake -Bbuild \
+              -G "Ninja" \
               -DCMAKE_INSTALL_PREFIX=_install/piper \
               -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
               -DCMAKE_OSX_ARCHITECTURES=$CMAKE_OSX_ARCHITECTURES \
@@ -362,14 +422,16 @@ jobs:
             echo "::error::CMake configuration failed"
             exit 1
           fi
+          echo "::endgroup::"
 
       - name: Build package
         run: |
+          echo "::group::Build package"
           # アーキテクチャに応じたビルド
           if [ "${{ matrix.arch }}" = "x64" ]; then
-            /usr/bin/arch -x86_64 /opt/homebrew/bin/cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+            arch -x86_64 cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
           else
-            /opt/homebrew/bin/cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+            cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
           fi
           
           if [ $? -ne 0 ]; then
@@ -382,6 +444,7 @@ jobs:
             echo "::error::piper binary not found in build directory"
             exit 1
           fi
+          echo "::endgroup::"
 
       - name: Install package
         run: |
