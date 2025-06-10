@@ -5,12 +5,25 @@ on:
     branches:
       - dev
 
+# 環境変数とデフォルト設定
+env:
+  DOCKER_BUILDKIT: 1
+  CMAKE_BUILD_TYPE: Release
+  MAX_RETRIES: 3
+  RETRY_DELAY: 10
+
+# ワークフロー全体の権限設定
+permissions:
+  contents: write  # リリースの作成とアップロードに必要
+  packages: read   # Dockerイメージのプルに必要
+
 jobs:
   create_dev_release:
     name: Create dev release
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_name: ${{ steps.get_release_name.outputs.RELEASE_NAME }}
     steps:
       - name: Generate release name
         id: get_release_name
@@ -18,7 +31,23 @@ jobs:
           # 日付ベースのリリース名を生成（dev-YYYYMMDD形式）
           DATE=$(date +'%Y%m%d')
           echo "RELEASE_NAME=dev-${DATE}" >> $GITHUB_OUTPUT
-          echo "RELEASE_DESCRIPTION=Development build for $(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          
+          # コミット情報を取得
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          # リリース説明を生成
+          cat << EOF >> $GITHUB_OUTPUT
+          RELEASE_DESCRIPTION=Development build for $(date +'%Y-%m-%d')
+          
+          ## 変更内容
+          - コミット: \${COMMIT_SHA}
+          - メッセージ: \${COMMIT_MSG}
+          
+          ## ビルド情報
+          - ビルド日時: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          - プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)
+          EOF
 
       - name: Create release
         id: create_release
@@ -38,38 +67,106 @@ jobs:
     needs: create_dev_release
     steps:
       - uses: actions/checkout@v4.2.2
-      - uses: docker/setup-qemu-action@v3.1.0
-      - uses: docker/setup-buildx-action@v3.1.0
+        with:
+          fetch-depth: 0  # 完全な履歴を取得（リリースノート用）
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.1.0
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3.1.0
+        with:
+          platforms: arm64,arm/v7
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
       - name: Build packages
+        uses: docker/build-push-action@v5.1.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          outputs: type=local,dest=dist
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            CMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+
+      - name: Verify Linux packages
         run: |
-          docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 --output 'type=local,dest=dist'
-      - name: Upload x86_64 package
+          for arch in amd64 arm64 armv7; do
+            if [ ! -f "dist/linux_${arch}/piper_${arch}.tar.gz" ]; then
+              echo "::error::Linux ${arch} package not found"
+              exit 1
+            fi
+            # アーカイブの整合性チェック
+            tar -tzf "dist/linux_${arch}/piper_${arch}.tar.gz" > /dev/null || {
+              echo "::error::Linux ${arch} package is corrupted"
+              exit 1
+            }
+          done
+
+      - name: Upload Linux packages
+        id: upload
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
-          asset_path: dist/linux_amd64/piper_amd64.tar.gz
-          asset_name: piper_amd64.tar.gz
+          asset_path: dist/linux_${{ matrix.arch }}/piper_${{ matrix.arch }}.tar.gz
+          asset_name: piper_linux_${{ matrix.arch }}.tar.gz
           asset_content_type: application/gzip
-      - name: Upload ARM64 package
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        continue-on-error: true
+
+      - name: Retry upload if failed
+        if: failure() && steps.upload.outcome == 'failure'
+        uses: actions/github-script@v7.0.1
         with:
-          upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
-          asset_path: dist/linux_arm64/piper_arm64.tar.gz
-          asset_name: piper_arm64.tar.gz
-          asset_content_type: application/gzip
-      - name: Upload ARMv7 package
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
-          asset_path: dist/linux_arm_v7/piper_armv7.tar.gz
-          asset_name: piper_armv7.tar.gz
-          asset_content_type: application/gzip
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            async function uploadWithRetry() {
+              const maxRetries = ${{ env.MAX_RETRIES }};
+              const retryDelay = ${{ env.RETRY_DELAY }} * 1000;
+              const assetPath = 'dist/linux_${{ matrix.arch }}/piper_${{ matrix.arch }}.tar.gz';
+              const assetName = 'piper_linux_${{ matrix.arch }}.tar.gz';
+              const uploadUrl = '${{ needs.create_dev_release.outputs.upload_url }}';
+              
+              for (let i = 0; i < maxRetries; i++) {
+                try {
+                  console.log(`Retry attempt ${i + 1} of ${maxRetries}`);
+                  const response = await github.rest.repos.uploadReleaseAsset({
+                    url: uploadUrl,
+                    name: assetName,
+                    data: fs.readFileSync(assetPath),
+                    headers: {
+                      'content-type': 'application/gzip',
+                      'content-length': fs.statSync(assetPath).size
+                    }
+                  });
+                  console.log('Upload succeeded on retry ' + (i + 1));
+                  return true;
+                } catch (error) {
+                  console.error(`Attempt ${i + 1} failed:`, error.message);
+                  if (i < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  }
+                }
+              }
+              throw new Error('All retry attempts failed');
+            }
+            
+            await uploadWithRetry();
 
   build_windows:
     name: "Build Windows package"
@@ -77,20 +174,39 @@ jobs:
     needs: create_dev_release
     steps:
       - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: Configure build
         run: |
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
+          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
       - name: Build package
         run: |
-          cmake --build build --config Release
+          cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
       - name: Install package
         run: |
           cmake --install build
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Verify Windows package
+        run: |
+          if (-not (Test-Path "_install/piper/bin/piper.exe")) {
+            Write-Error "Windows package is missing piper.exe"
+            exit 1
+          }
+
       - name: Create archive
         run: |
           cd _install
-          Compress-Archive -LiteralPath piper -DestinationPath piper_windows_amd64.zip
-      - name: Upload package
+          Compress-Archive -LiteralPath piper -DestinationPath piper_windows_amd64.zip -Force
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Upload Windows package
+        id: upload
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -99,6 +215,49 @@ jobs:
           asset_path: _install/piper_windows_amd64.zip
           asset_name: piper_windows_amd64.zip
           asset_content_type: application/zip
+        continue-on-error: true
+
+      - name: Retry upload if failed
+        if: failure() && steps.upload.outcome == 'failure'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            async function uploadWithRetry() {
+              const maxRetries = ${{ env.MAX_RETRIES }};
+              const retryDelay = ${{ env.RETRY_DELAY }} * 1000;
+              const assetPath = '_install/piper_windows_amd64.zip';
+              const assetName = 'piper_windows_amd64.zip';
+              const uploadUrl = '${{ needs.create_dev_release.outputs.upload_url }}';
+              
+              for (let i = 0; i < maxRetries; i++) {
+                try {
+                  console.log(`Retry attempt ${i + 1} of ${maxRetries}`);
+                  const response = await github.rest.repos.uploadReleaseAsset({
+                    url: uploadUrl,
+                    name: assetName,
+                    data: fs.readFileSync(assetPath),
+                    headers: {
+                      'content-type': 'application/zip',
+                      'content-length': fs.statSync(assetPath).size
+                    }
+                  });
+                  console.log('Upload succeeded on retry ' + (i + 1));
+                  return true;
+                } catch (error) {
+                  console.error(`Attempt ${i + 1} failed:`, error.message);
+                  if (i < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  }
+                }
+              }
+              throw new Error('All retry attempts failed');
+            }
+            
+            await uploadWithRetry();
 
   build_macos:
     name: "Build macOS packages"
@@ -110,20 +269,44 @@ jobs:
         arch: [x64, aarch64]
     steps:
       - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: Configure build
         run: |
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
+          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+          if [ $? -ne 0 ]; then exit 1; fi
+
       - name: Build package
         run: |
-          cmake --build build --config Release
+          cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+          if [ $? -ne 0 ]; then exit 1; fi
+
       - name: Install package
         run: |
           cmake --install build
+          if [ $? -ne 0 ]; then exit 1; fi
+
+      - name: Verify macOS package
+        run: |
+          if [ ! -f "_install/piper/bin/piper" ]; then
+            echo "::error::macOS package is missing piper binary"
+            exit 1
+          fi
+          # バイナリの実行権限を確認
+          if [ ! -x "_install/piper/bin/piper" ]; then
+            echo "::error::macOS package binary is not executable"
+            exit 1
+          fi
+
       - name: Create archive
         run: |
           cd _install && \
           tar -czf piper_macos_${{ matrix.arch }}.tar.gz piper/
-      - name: Upload package
+          if [ $? -ne 0 ]; then exit 1; fi
+
+      - name: Upload macOS package
+        id: upload
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -132,3 +315,46 @@ jobs:
           asset_path: _install/piper_macos_${{ matrix.arch }}.tar.gz
           asset_name: piper_macos_${{ matrix.arch }}.tar.gz
           asset_content_type: application/gzip
+        continue-on-error: true
+
+      - name: Retry upload if failed
+        if: failure() && steps.upload.outcome == 'failure'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            async function uploadWithRetry() {
+              const maxRetries = ${{ env.MAX_RETRIES }};
+              const retryDelay = ${{ env.RETRY_DELAY }} * 1000;
+              const assetPath = '_install/piper_macos_${{ matrix.arch }}.tar.gz';
+              const assetName = 'piper_macos_${{ matrix.arch }}.tar.gz';
+              const uploadUrl = '${{ needs.create_dev_release.outputs.upload_url }}';
+              
+              for (let i = 0; i < maxRetries; i++) {
+                try {
+                  console.log(`Retry attempt ${i + 1} of ${maxRetries}`);
+                  const response = await github.rest.repos.uploadReleaseAsset({
+                    url: uploadUrl,
+                    name: assetName,
+                    data: fs.readFileSync(assetPath),
+                    headers: {
+                      'content-type': 'application/gzip',
+                      'content-length': fs.statSync(assetPath).size
+                    }
+                  });
+                  console.log('Upload succeeded on retry ' + (i + 1));
+                  return true;
+                } catch (error) {
+                  console.error(`Attempt ${i + 1} failed:`, error.message);
+                  if (i < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  }
+                }
+              }
+              throw new Error('All retry attempts failed');
+            }
+            
+            await uploadWithRetry();
