@@ -21,6 +21,7 @@
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
+#include <windows.h>  // SetConsoleOutputCPとCP_UTF8のために追加
 #endif
 
 #ifdef __APPLE__

@@ -3,6 +3,10 @@
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
 Piper is used in a [variety of projects](#people-using-piper).
 
+以下の機能を追加
+* 日本語の事前学習及び追加学習/推論対応
+* GitHub ActionsによるLinux/Windows/macOSのビルドおよびバイナリー配布の自動化
+
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
   ./piper --model en_US-lessac-medium.onnx --output_file welcome.wav

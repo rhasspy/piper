@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_name: ${{ steps.get_release_name.outputs.RELEASE_NAME }}
+      release_name: ${{ steps.get_release_name.outputs.name }}
     steps:
       - uses: actions/checkout@v4.2.2
         with:
@@ -43,29 +43,42 @@ jobs:
         id: get_release_name
         run: |
           if [ -n "${{ github.event.inputs.release_name }}" ]; then
-            echo "RELEASE_NAME=${{ github.event.inputs.release_name }}" >> $GITHUB_OUTPUT
+            # 手動実行時は入力された名前を使用
+            echo "name=${{ github.event.inputs.release_name }}" >> $GITHUB_OUTPUT
+            # タグ名にはタイムスタンプを追加して一意にする
+            TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+            echo "tag_name=${{ github.event.inputs.release_name }}-${TIMESTAMP}" >> $GITHUB_OUTPUT
           else
+            # 自動実行時は日付ベースの名前を使用
             DATE=$(date +'%Y%m%d')
-            echo "RELEASE_NAME=dev-${DATE}" >> $GITHUB_OUTPUT
+            TIMESTAMP=$(date +'%H%M%S')
+            echo "name=dev-${DATE}" >> $GITHUB_OUTPUT
+            echo "tag_name=dev-${DATE}-${TIMESTAMP}" >> $GITHUB_OUTPUT
           fi
           
           if [ -n "${{ github.event.inputs.release_description }}" ]; then
-            echo "RELEASE_DESCRIPTION=${{ github.event.inputs.release_description }}" >> $GITHUB_OUTPUT
+            echo "description=${{ github.event.inputs.release_description }}" >> $GITHUB_OUTPUT
           else
             COMMIT_SHA=$(git rev-parse --short HEAD)
             COMMIT_MSG=$(git log -1 --pretty=%B)
+            BUILD_DATE=$(date +'%Y-%m-%d')
+            BUILD_TIME=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
             
-            cat << EOF >> $GITHUB_OUTPUT
-            RELEASE_DESCRIPTION=Development build for $(date +'%Y-%m-%d')
+            # 説明文を一時ファイルに書き込み
+            {
+              echo "Development build for ${BUILD_DATE}"
+              echo ""
+              echo "## 変更内容"
+              echo "- コミット: ${COMMIT_SHA}"
+              echo "- メッセージ: ${COMMIT_MSG}"
+              echo ""
+              echo "## ビルド情報"
+              echo "- ビルド日時: ${BUILD_TIME}"
+              echo "- プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)"
+            } > description.txt
             
-            ## 変更内容
-            - コミット: \${COMMIT_SHA}
-            - メッセージ: \${COMMIT_MSG}
-            
-            ## ビルド情報
-            - ビルド日時: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
-            - プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)
-            EOF
+            # 説明文を1行に変換して出力
+            echo "description=$(cat description.txt | tr '\n' ' ' | sed 's/  */ /g')" >> $GITHUB_OUTPUT
           fi
 
       - name: Create release
@@ -74,118 +87,68 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          tag_name: ${{ steps.get_release_name.outputs.RELEASE_NAME }}
-          release_name: ${{ steps.get_release_name.outputs.RELEASE_NAME }}
-          body: ${{ steps.get_release_name.outputs.RELEASE_DESCRIPTION }}
-          draft: false
+          tag_name: ${{ steps.get_release_name.outputs.tag_name }}
+          release_name: ${{ steps.get_release_name.outputs.name }}
+          body: ${{ steps.get_release_name.outputs.description }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
           prerelease: false
 
   build_linux:
-    name: "Build Linux packages"
+    name: Build Linux
     runs-on: ubuntu-latest
-    needs: create_dev_release
+    needs: [create_dev_release]
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            target: linux/amd64
+          - arch: arm64
+            target: linux/arm64
+          - arch: arm
+            variant: v7
+            target: linux/arm/v7
     steps:
-      - uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0  # 完全な履歴を取得（リリースノート用）
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.1.0
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
-            network=host
+        uses: docker/setup-buildx-action@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3.1.0
-        with:
-          platforms: arm64,arm/v7
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Build packages
-        uses: docker/build-push-action@v5.1.0
+      - name: Build package
+        uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
-          outputs: type=local,dest=dist
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: ${{ matrix.target }}
+          load: true
+          tags: piper:build
           build-args: |
-            CMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+            TARGETARCH=${{ matrix.arch }}
+            TARGETVARIANT=${{ matrix.variant }}
+          outputs: type=local,dest=dist
 
-      - name: Verify Linux packages
+      - name: Verify package
         run: |
-          for arch in amd64 arm64 armv7; do
-            if [ ! -f "dist/linux_${arch}/piper_${arch}.tar.gz" ]; then
-              echo "::error::Linux ${arch} package not found"
+          if [ "${{ matrix.arch }}" = "arm" ] && [ "${{ matrix.variant }}" = "v7" ]; then
+            if [ ! -f "dist/piper_armv7.tar.gz" ]; then
+              echo "Error: Linux armv7 package not found"
               exit 1
             fi
-            # アーカイブの整合性チェック
-            tar -tzf "dist/linux_${arch}/piper_${arch}.tar.gz" > /dev/null || {
-              echo "::error::Linux ${arch} package is corrupted"
+          else
+            if [ ! -f "dist/piper_${{ matrix.arch }}.tar.gz" ]; then
+              echo "Error: Linux ${{ matrix.arch }} package not found"
               exit 1
-            }
-          done
+            fi
+          fi
 
-      - name: Upload Linux packages
-        id: upload
+      - name: Upload Linux package
         uses: actions/upload-release-asset@v1.0.2
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_dev_release.outputs.upload_url }}
-          asset_path: dist/linux_${{ matrix.arch }}/piper_${{ matrix.arch }}.tar.gz
-          asset_name: piper_linux_${{ matrix.arch }}.tar.gz
+          asset_path: dist/piper_${{ matrix.arch == 'arm' && matrix.variant == 'v7' && 'armv7' || matrix.arch }}.tar.gz
+          asset_name: piper_linux_${{ matrix.arch == 'arm' && matrix.variant == 'v7' && 'armv7' || matrix.arch }}.tar.gz
           asset_content_type: application/gzip
-        continue-on-error: true
-
-      - name: Retry upload if failed
-        if: failure() && steps.upload.outcome == 'failure'
-        uses: actions/github-script@v7.0.1
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            async function uploadWithRetry() {
-              const maxRetries = ${{ env.MAX_RETRIES }};
-              const retryDelay = ${{ env.RETRY_DELAY }} * 1000;
-              const assetPath = 'dist/linux_${{ matrix.arch }}/piper_${{ matrix.arch }}.tar.gz';
-              const assetName = 'piper_linux_${{ matrix.arch }}.tar.gz';
-              const uploadUrl = '${{ needs.create_dev_release.outputs.upload_url }}';
-              
-              for (let i = 0; i < maxRetries; i++) {
-                try {
-                  console.log(`Retry attempt ${i + 1} of ${maxRetries}`);
-                  const response = await github.rest.repos.uploadReleaseAsset({
-                    url: uploadUrl,
-                    name: assetName,
-                    data: fs.readFileSync(assetPath),
-                    headers: {
-                      'content-type': 'application/gzip',
-                      'content-length': fs.statSync(assetPath).size
-                    }
-                  });
-                  console.log('Upload succeeded on retry ' + (i + 1));
-                  return true;
-                } catch (error) {
-                  console.error(`Attempt ${i + 1} failed:`, error.message);
-                  if (i < maxRetries - 1) {
-                    await new Promise(resolve => setTimeout(resolve, retryDelay));
-                  }
-                }
-              }
-              throw new Error('All retry attempts failed');
-            }
-            
-            await uploadWithRetry();
 
   build_windows:
     name: "Build Windows package"
@@ -196,33 +159,135 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install dependencies
+        run: |
+          # 必要なツールのインストール
+          choco install -y cmake ninja visualstudio2022-workload-vctools
+          
+          # espeak-ngのビルドとインストール
+          git clone --depth 1 https://github.com/espeak-ng/espeak-ng.git
+          cd espeak-ng
+          
+          # autogenスクリプトの作成
+          @"
+          @echo off
+          setlocal
+          
+          if not exist "configure" (
+            echo Running aclocal...
+            aclocal
+            if errorlevel 1 goto :error
+          
+            echo Running autoconf...
+            autoconf
+            if errorlevel 1 goto :error
+          
+            echo Running automake...
+            automake --add-missing
+            if errorlevel 1 goto :error
+          )
+          
+          echo Running configure...
+          call configure --prefix=C:/espeak-ng
+          if errorlevel 1 goto :error
+          
+          goto :end
+          
+          :error
+          echo Error occurred
+          exit /b 1
+          
+          :end
+          "@ > autogen.bat
+          
+          # ビルドとインストール
+          mkdir build
+          cd build
+          cmake .. -G "Ninja" -DCMAKE_INSTALL_PREFIX=C:/espeak-ng -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+          cmake --install .
+          cd ../..
+          
+          # 環境変数の設定
+          $env:PATH = "C:\espeak-ng\bin;$env:PATH"
+          $env:ESPEAK_DATA_PATH = "C:\espeak-ng\share\espeak-ng-data"
+          [Environment]::SetEnvironmentVariable("PATH", $env:PATH, "Process")
+          [Environment]::SetEnvironmentVariable("ESPEAK_DATA_PATH", $env:ESPEAK_DATA_PATH, "Process")
+
       - name: Configure build
         run: |
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # CMakeの設定
+          cmake -Bbuild `
+            -G "Ninja" `
+            -DCMAKE_INSTALL_PREFIX=_install/piper `
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
+            -DESPEAK_NG_ROOT=C:/espeak-ng
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "CMake configuration failed"
+            exit 1
+          }
 
       - name: Build package
         run: |
+          # ビルドの実行
           cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed"
+            exit 1
+          }
+          
+          # ビルド成果物の確認
+          if (-not (Test-Path "build\Release\piper.exe")) {
+            Write-Error "piper.exe not found in build directory"
+            exit 1
+          }
 
       - name: Install package
         run: |
+          # インストールの実行
           cmake --install build
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Installation failed"
+            exit 1
+          }
+          
+          # インストール後の確認
+          if (-not (Test-Path "_install\piper\bin\piper.exe")) {
+            Write-Error "piper.exe not found in install directory"
+            Get-ChildItem -Path "_install\piper\bin" -ErrorAction SilentlyContinue
+            exit 1
+          }
 
       - name: Verify Windows package
         run: |
-          if (-not (Test-Path "_install/piper/bin/piper.exe")) {
+          # バイナリの存在確認
+          if (-not (Test-Path "_install\piper\bin\piper.exe")) {
             Write-Error "Windows package is missing piper.exe"
+            exit 1
+          }
+          
+          # 簡単なテスト実行
+          Write-Output "Testing piper binary..." | .\_install\piper\bin\piper.exe --help
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "piper.exe test failed"
             exit 1
           }
 
       - name: Create archive
         run: |
-          cd _install
-          Compress-Archive -LiteralPath piper -DestinationPath piper_windows_amd64.zip -Force
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # アーカイブの作成
+          Compress-Archive -Path "_install\piper\*" -DestinationPath "piper_windows_amd64.zip" -Force
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to create archive"
+            exit 1
+          }
+          
+          # アーカイブの確認
+          if (-not (Test-Path "piper_windows_amd64.zip")) {
+            Write-Error "Archive not created"
+            exit 1
+          }
 
       - name: Upload Windows package
         id: upload
@@ -291,38 +356,166 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Rosetta 2 (x64 only)
+        if: matrix.arch == 'x64'
+        run: |
+          # Rosetta 2のインストールを待機
+          /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
+          # インストールの完了を確認
+          /usr/bin/arch -x86_64 /usr/bin/true || {
+            echo "Rosetta 2 installation failed or not ready"
+            exit 1
+          }
+
+      - name: Setup Homebrew
+        run: |
+          # Homebrewの環境設定
+          echo "::group::Setup Homebrew"
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            # x64用のHomebrew設定
+            eval "$(/usr/local/bin/brew shellenv)"
+          else
+            # arm64用のHomebrew設定
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          fi
+          echo "::endgroup::"
+
+      - name: Install dependencies
+        run: |
+          echo "::group::Install dependencies"
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            # x64用の依存関係（Rosetta 2を使用）
+            arch -x86_64 brew install cmake espeak-ng ninja
+          else
+            # arm64用の依存関係
+            brew install cmake espeak-ng ninja
+          fi
+          echo "::endgroup::"
+
       - name: Configure build
         run: |
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
-          if [ $? -ne 0 ]; then exit 1; fi
+          echo "::group::Configure build"
+          # アーキテクチャに応じたCMAKE_OSX_ARCHITECTURESを設定
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            export CMAKE_OSX_ARCHITECTURES="x86_64"
+            export CMAKE_OSX_DEPLOYMENT_TARGET="10.15"
+            # x64用のビルド環境（Rosetta 2を使用）
+            arch -x86_64 cmake -Bbuild \
+              -G "Ninja" \
+              -DCMAKE_INSTALL_PREFIX=_install/piper \
+              -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+              -DCMAKE_OSX_ARCHITECTURES=$CMAKE_OSX_ARCHITECTURES \
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=$CMAKE_OSX_DEPLOYMENT_TARGET
+          else
+            export CMAKE_OSX_ARCHITECTURES="arm64"
+            export CMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+            # arm64用のビルド環境
+            cmake -Bbuild \
+              -G "Ninja" \
+              -DCMAKE_INSTALL_PREFIX=_install/piper \
+              -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+              -DCMAKE_OSX_ARCHITECTURES=$CMAKE_OSX_ARCHITECTURES \
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=$CMAKE_OSX_DEPLOYMENT_TARGET
+          fi
+          
+          if [ $? -ne 0 ]; then
+            echo "::error::CMake configuration failed"
+            exit 1
+          fi
+          echo "::endgroup::"
 
       - name: Build package
         run: |
-          cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
-          if [ $? -ne 0 ]; then exit 1; fi
+          echo "::group::Build package"
+          # アーキテクチャに応じたビルド
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            arch -x86_64 cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+          else
+            cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+          fi
+          
+          if [ $? -ne 0 ]; then
+            echo "::error::Build failed"
+            exit 1
+          fi
+          
+          # ビルド成果物の確認
+          if [ ! -f "build/piper" ]; then
+            echo "::error::piper binary not found in build directory"
+            exit 1
+          fi
+          echo "::endgroup::"
 
       - name: Install package
         run: |
-          cmake --install build
-          if [ $? -ne 0 ]; then exit 1; fi
+          # アーキテクチャに応じたインストール
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            /usr/bin/arch -x86_64 /opt/homebrew/bin/cmake --install build
+          else
+            /opt/homebrew/bin/cmake --install build
+          fi
+          
+          if [ $? -ne 0 ]; then
+            echo "::error::Installation failed"
+            exit 1
+          fi
+          
+          # インストール後の確認
+          if [ ! -f "_install/piper/bin/piper" ]; then
+            echo "::error::piper binary not found in install directory"
+            ls -la _install/piper/bin/ || true
+            exit 1
+          fi
+          
+          # 実行権限の確認と設定
+          chmod +x _install/piper/bin/piper
+          if [ ! -x "_install/piper/bin/piper" ]; then
+            echo "::error::Failed to set executable permissions"
+            exit 1
+          fi
 
       - name: Verify macOS package
         run: |
+          # バイナリの存在確認
           if [ ! -f "_install/piper/bin/piper" ]; then
             echo "::error::macOS package is missing piper binary"
             exit 1
           fi
-          # バイナリの実行権限を確認
+          
+          # バイナリの実行権限確認
           if [ ! -x "_install/piper/bin/piper" ]; then
             echo "::error::macOS package binary is not executable"
             exit 1
           fi
+          
+          # バイナリのアーキテクチャ確認
+          file "_install/piper/bin/piper"
+          lipo -info "_install/piper/bin/piper"
+          
+          # アーキテクチャに応じたテスト実行
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            /usr/bin/arch -x86_64 echo "Testing piper binary..." | _install/piper/bin/piper --help
+          else
+            /usr/bin/arch -arm64 echo "Testing piper binary..." | _install/piper/bin/piper --help
+          fi || {
+            echo "::error::piper binary test failed"
+            exit 1
+          }
 
       - name: Create archive
         run: |
           cd _install && \
           tar -czf piper_macos_${{ matrix.arch }}.tar.gz piper/
-          if [ $? -ne 0 ]; then exit 1; fi
+          if [ $? -ne 0 ]; then
+            echo "::error::Failed to create archive"
+            exit 1
+          fi
+          
+          # アーカイブの確認
+          if [ ! -f "piper_macos_${{ matrix.arch }}.tar.gz" ]; then
+            echo "::error::Archive not created"
+            exit 1
+          fi
 
       - name: Upload macOS package
         id: upload
