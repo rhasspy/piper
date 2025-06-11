@@ -6,6 +6,7 @@ import itertools
 import json
 import logging
 import os
+import sys
 import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
@@ -15,6 +16,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 import pyopenjtalk
+from tqdm import tqdm
 
 from piper_phonemize import (
     phonemize_espeak,
@@ -136,6 +138,10 @@ def main() -> None:
     # Prevent log spam
     logging.getLogger("numba").setLevel(logging.WARNING)
 
+    # pyopenjtalkの警告メッセージを抑制（プログレスバーの表示を妨げないため）
+    import warnings
+    warnings.filterwarnings("ignore", category=UserWarning)
+    
     # Ensure enum
     args.phoneme_type = PhonemeType(args.phoneme_type)
 
@@ -257,6 +263,19 @@ def main() -> None:
     _LOGGER.info(
         "Processing %s utterance(s) with %s worker(s)", num_utterances, args.max_workers
     )
+    # プログレスバーを表示（stdoutに表示し、早めに初期化）
+    print(f"Starting to process {num_utterances} utterances...", file=sys.stdout, flush=True)
+    pbar = tqdm(
+        total=num_utterances,
+        desc="Preprocessing",
+        unit="utt",
+        file=sys.stdout,
+        leave=True,
+        dynamic_ncols=True,
+        ascii=True,
+        disable=False,
+    )
+
     with open(args.output_dir / "dataset.jsonl", "w", encoding="utf-8") as dataset_file:
         for utt_batch in batched(
             make_dataset(args),
@@ -286,6 +305,12 @@ def main() -> None:
 
                 missing_phonemes.update(utt.missing_phonemes)
 
+            # プログレスバーを最後に更新（処理済みかどうかに関わらず）
+            pbar.update(1)
+            if (pbar.n % 500) == 0:
+                pbar.refresh()
+
+        pbar.close()
         if missing_phonemes:
             for phoneme, count in missing_phonemes.most_common():
                 _LOGGER.warning("Missing %s (%s)", phoneme, count)
@@ -321,6 +346,11 @@ def phonemize_batch_espeak(
     args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
 ):
     try:
+        # Suppress C-level warnings from pyopenjtalk/OpenJTalk to keep output clean
+        if not getattr(args, "debug", False):
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 2)
+
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
@@ -370,6 +400,10 @@ def phonemize_batch_text(
     args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
 ):
     try:
+        if not getattr(args, "debug", False):
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 2)
+
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
@@ -419,6 +453,10 @@ def phonemize_batch_openjtalk(
     args: argparse.Namespace, queue_in: JoinableQueue, queue_out: Queue
 ):
     try:
+        if not getattr(args, "debug", False):
+            devnull_fd = os.open(os.devnull, os.O_RDWR)
+            os.dup2(devnull_fd, 2)
+
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
