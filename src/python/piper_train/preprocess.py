@@ -276,7 +276,9 @@ def main() -> None:
         disable=False,
     )
 
-    with open(args.output_dir / "dataset.jsonl", "w", encoding="utf-8") as dataset_file:
+    output_dataset_path = args.output_dir / "dataset.jsonl"
+    # 途中で処理が停止してもこれまでの結果を保持できるよう、追加(append)モードで開く
+    with open(output_dataset_path, "a", encoding="utf-8") as dataset_file:
         for utt_batch in batched(
             make_dataset(args),
             batch_size,
@@ -309,6 +311,10 @@ def main() -> None:
             pbar.update(1)
             if (pbar.n % 500) == 0:
                 pbar.refresh()
+
+            # データ損失を防ぐため、定期的にフラッシュする
+            if (pbar.n % 100) == 0:
+                dataset_file.flush()
 
         pbar.close()
         if missing_phonemes:
