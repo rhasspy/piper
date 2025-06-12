@@ -3,9 +3,14 @@
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
 Piper is used in a [variety of projects](#people-using-piper).
 
-以下の機能を追加
+## 追加機能
 * 日本語の事前学習及び追加学習/推論対応
-* GitHub ActionsによるLinux/Windows/macOSのビルドおよびバイナリー配布の自動化
+* GitHub ActionsによるLinuxのビルドおよびバイナリー配布の自動化
+
+## 関連記事
+* [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)
+* [jvs音声データセットを使ったpiper日本語モデルの作成](https://ayousanz.hatenadiary.jp/entry/2025/06/05/093217)
+* [piperモデルからつくよみちゃんデータセットを使って追加学習を行う](https://ayousanz.hatenadiary.jp/entry/2025/06/07/074232)
 
 ``` sh
 echo 'Welcome to the world of speech synthesis!' | \
