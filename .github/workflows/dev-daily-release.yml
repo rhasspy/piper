@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - dev
+      - fix/*
+      - feat/*
   workflow_dispatch:
     inputs:
       release_name:
