@@ -345,19 +345,23 @@ jobs:
 
   build_macos:
     name: "Build macOS packages"
-    runs-on: macos-latest
     needs: create_dev_release
     strategy:
       fail-fast: true
       matrix:
-        arch: [x64, aarch64]
+        include:
+          - arch: x64
+            runner: macos-13   # Intel
+          - arch: aarch64
+            runner: macos-14   # Apple Silicon
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
       - name: Install Rosetta 2 (x64 only)
-        if: matrix.arch == 'x64'
+        if: matrix.arch == 'x64' && runner.arch == 'ARM64'
         run: |
           # Rosetta 2のインストールを待機
           /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
@@ -450,7 +454,7 @@ jobs:
         run: |
           # アーキテクチャに応じたインストール
           if [ "${{ matrix.arch }}" = "x64" ]; then
-            /usr/bin/arch -x86_64 /opt/homebrew/bin/cmake --install build
+            /usr/bin/arch -x86_64 cmake --install build
           else
             /opt/homebrew/bin/cmake --install build
           fi

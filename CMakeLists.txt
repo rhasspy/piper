@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.13)
 project(piper C CXX)
 
 file(READ "${CMAKE_CURRENT_LIST_DIR}/VERSION" piper_version)
+# 末尾の改行がコンパイラ定義に混入しないようにトリム
+string(STRIP "${piper_version}" piper_version)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -73,6 +75,10 @@ if(MSVC)
 elseif(NOT APPLE)
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
+  string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
+elseif(APPLE)
+  # macOS
+  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
@@ -208,7 +214,8 @@ target_link_libraries(test_piper PUBLIC
 
 install(
   TARGETS piper
-  DESTINATION ${CMAKE_INSTALL_PREFIX})
+  RUNTIME DESTINATION bin
+)
 
 # Dependencies
 install(
@@ -223,10 +230,11 @@ install(
 
 install(
   DIRECTORY ${PIPER_PHONEMIZE_DIR}/lib/
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
   FILES_MATCHING
   PATTERN "*.dll"
   PATTERN "*.so*"
+  PATTERN "*.dylib"
 )
 
 install(
@@ -268,4 +276,22 @@ if(MSVC)
     ONNXRUNTIME_STATIC_LIB
     _Frees_ptr_opt_=__declspec(dllexport)
   )
+endif()
+
+install(
+  DIRECTORY ${FMT_DIR}/lib/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  FILES_MATCHING PATTERN "*.dylib" PATTERN "*.so*"
+)
+
+install(
+  DIRECTORY ${SPDLOG_DIR}/lib/
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  FILES_MATCHING PATTERN "*.dylib" PATTERN "*.so*"
+)
+
+# macOS 実行時に同梱 lib を検索させる
+if(APPLE)
+  set_target_properties(piper PROPERTIES
+    INSTALL_RPATH "@loader_path/../lib")
 endif()
