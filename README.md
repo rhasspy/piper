@@ -8,6 +8,7 @@ Piper is used in a [variety of projects](#people-using-piper).
 * GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
   * Linux (amd64, arm64)
   * macOS (x64, arm64)
+  * Windows (x64)
 
 ## 関連記事
 * [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)

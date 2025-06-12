@@ -6,27 +6,22 @@ ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
 # パッケージリストの更新とインストールを分離
-RUN apt-get update && \
-    apt-get install --yes --no-install-recommends \
-        ca-certificates \
-        curl \
-        gnupg \
-        lsb-release && \
-    # リポジトリの追加（アーキテクチャに依存しない）
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    # パッケージのインストール
-    apt-get update && \
-    apt-get install --yes --no-install-recommends \
-        build-essential \
-        cmake \
-        git \
-        pkg-config \
-        libicu-dev \
-        libespeak-ng-dev \
-        make \
-        ninja-build \
-        python3 && \
+RUN set -e; \
+    echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries; \
+    # -- 基本ツール --
+    for i in 1 2 3; do \
+      apt-get update && \
+      apt-get install --yes --no-install-recommends \
+        ca-certificates curl gnupg lsb-release && break || { echo "apt preinstall failed ($i)"; sleep 5; }; \
+    done; \
+    # docker repo key
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null; \
+    for i in 1 2 3; do \
+      apt-get update && \
+      apt-get install --yes --no-install-recommends \
+        build-essential cmake git pkg-config libicu-dev libespeak-ng-dev make ninja-build python3 ccache && break || { echo "apt core install failed ($i)"; sleep 5; }; \
+    done; \
     # --- クロスコンパイルツール ----
     # buildx/QEMU ではビルド用コンテナ自体がターゲットと同じアーキテクチャになる。
     # その場合追加ツールは不要で、Debian arm リポジトリには crossbuild-essential-* が存在しない。
@@ -35,9 +30,13 @@ RUN apt-get update && \
     if [ "$HOST_ARCH" = "amd64" ] && [ "$TARGETARCH" = "arm64" ]; then \
         apt-get install --yes --no-install-recommends \
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu; \
+        ln -s /usr/bin/ccache /usr/local/bin/aarch64-linux-gnu-gcc; \
+        ln -s /usr/bin/ccache /usr/local/bin/aarch64-linux-gnu-g++; \
     elif [ "$HOST_ARCH" = "amd64" ] && [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
         apt-get install --yes --no-install-recommends \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf; \
+        ln -s /usr/bin/ccache /usr/local/bin/arm-linux-gnueabihf-gcc; \
+        ln -s /usr/bin/ccache /usr/local/bin/arm-linux-gnueabihf-g++; \
     fi && \
     # クリーンアップ
     apt-get clean && \
@@ -76,17 +75,23 @@ COPY ./ ./
 
 # アーキテクチャに応じたビルド設定
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
-        cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install && \
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
         cmake --build build --config Release && \
         cmake --install build; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
         cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install \
-            -DCMAKE_TOOLCHAIN_FILE=cmake/linux-aarch64.cmake && \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/linux-aarch64.cmake \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
         cmake --build build --config Release && \
         cmake --install build; \
     elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
         cmake -Bbuild -DCMAKE_INSTALL_PREFIX=install \
-            -DCMAKE_TOOLCHAIN_FILE=cmake/linux-armv7.cmake && \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/linux-armv7.cmake \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache && \
         cmake --build build --config Release && \
         cmake --install build; \
     else \
