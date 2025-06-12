@@ -5,7 +5,9 @@ Piper is used in a [variety of projects](#people-using-piper).
 
 ## 追加機能
 * 日本語の事前学習及び追加学習/推論対応
-* GitHub ActionsによるLinuxのビルドおよびバイナリー配布の自動化
+* GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
+  * Linux (amd64, arm64)
+  * macOS (x64, arm64)
 
 ## 関連記事
 * [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)

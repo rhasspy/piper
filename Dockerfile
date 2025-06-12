@@ -27,19 +27,17 @@ RUN apt-get update && \
         make \
         ninja-build \
         python3 && \
-    # アーキテクチャに応じたクロスコンパイルツールのインストール
-    if [ "$TARGETARCH" = "arm64" ]; then \
+    # --- クロスコンパイルツール ----
+    # buildx/QEMU ではビルド用コンテナ自体がターゲットと同じアーキテクチャになる。
+    # その場合追加ツールは不要で、Debian arm リポジトリには crossbuild-essential-* が存在しない。
+    #   ・ホスト = amd64 かつ TARGETARCH が異なるときだけインストールする。
+    HOST_ARCH=$(dpkg --print-architecture); \
+    if [ "$HOST_ARCH" = "amd64" ] && [ "$TARGETARCH" = "arm64" ]; then \
         apt-get install --yes --no-install-recommends \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            binutils-aarch64-linux-gnu \
-            crossbuild-essential-arm64; \
-    elif [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu; \
+    elif [ "$HOST_ARCH" = "amd64" ] && [ "$TARGETARCH" = "arm" ] && [ "$TARGETVARIANT" = "v7" ]; then \
         apt-get install --yes --no-install-recommends \
-            gcc-arm-linux-gnueabihf \
-            g++-arm-linux-gnueabihf \
-            binutils-arm-linux-gnueabihf \
-            crossbuild-essential-armhf; \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf; \
     fi && \
     # クリーンアップ
     apt-get clean && \
