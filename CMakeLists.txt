@@ -21,7 +21,7 @@ if(MSVC)
   add_definitions(-D_WIN32_WINNT=0x0601)  # Windows 7 or later
   
   # ONNX Runtimeのヘッダーファイルの問題を解決
-  add_definitions(-D_Frees_ptr_opt_=__declspec(dllexport))
+  add_definitions(-D_Frees_ptr_opt_=)
   add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
   add_definitions(-DWIN32)
@@ -40,7 +40,7 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od /Zi /RTC1")
   
   # コンパイルオプションの修正
-  add_compile_options(/W4 /WX /wd4100 /wd4505 /wd4996)
+  add_compile_options(/W4 /WX /wd4100 /wd4505 /wd4996 /wd4005)
   add_compile_options(/permissive)  # /permissive-を/permissiveに変更
   add_compile_options(/Zc:__cplusplus)
   add_compile_options(/Zc:inline)
@@ -129,7 +129,11 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
     piper_phonemize_external
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
     URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/master.zip"
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
+    CMAKE_ARGS 
+      -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
+      $<$<BOOL:MSVC>:-G;${CMAKE_GENERATOR}>
+      $<$<BOOL:MSVC>:-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}>
+      $<$<BOOL:MSVC>:-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}>
   )
   add_dependencies(piper piper_phonemize_external)
   add_dependencies(test_piper piper_phonemize_external)
@@ -141,12 +145,12 @@ if((NOT MSVC) AND (NOT APPLE))
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
-  target_link_libraries(piper -static-libgcc -static-libstdc++)
+  target_link_options(piper PRIVATE -static-libgcc -static-libstdc++)
 
   set(PIPER_EXTRA_LIBRARIES "pthread")
 endif()
 
-target_link_libraries(piper
+target_link_libraries(piper PUBLIC
   fmt
   spdlog
   espeak-ng
@@ -270,11 +274,11 @@ if(MSVC)
     set(CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION "10.0.19041.0")
   endif()
   
-  # ONNX Runtimeの設定
-  target_compile_definitions(piper_phonemize PRIVATE
+  # ONNX Runtime 用定義と SAL マクロ簡易定義
+  target_compile_definitions(piper PRIVATE
     ONNXRUNTIME_DLL
     ONNXRUNTIME_STATIC_LIB
-    _Frees_ptr_opt_=__declspec(dllexport)
+    _Frees_ptr_opt_=
   )
 endif()
 

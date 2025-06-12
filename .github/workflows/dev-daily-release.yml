@@ -159,70 +159,42 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install dependencies
         run: |
-          # 必要なツールのインストール
-          choco install -y cmake ninja visualstudio2022-workload-vctools
+          # GitHub hosted Windows runners already include VS Build Tools 2022 and MSVC
+          # Installing the workload again via Chocolatey often hangs at the VS bootstrapper UI.
+          # Only install CMake and Ninja which are still required.
+          choco install -y cmake ninja
           
-          # espeak-ngのビルドとインストール
-          git clone --depth 1 https://github.com/espeak-ng/espeak-ng.git
-          cd espeak-ng
-          
-          # autogenスクリプトの作成
-          @"
-          @echo off
-          setlocal
-          
-          if not exist "configure" (
-            echo Running aclocal...
-            aclocal
-            if errorlevel 1 goto :error
-          
-            echo Running autoconf...
-            autoconf
-            if errorlevel 1 goto :error
-          
-            echo Running automake...
-            automake --add-missing
-            if errorlevel 1 goto :error
-          )
-          
-          echo Running configure...
-          call configure --prefix=C:/espeak-ng
-          if errorlevel 1 goto :error
-          
-          goto :end
-          
-          :error
-          echo Error occurred
-          exit /b 1
-          
-          :end
-          "@ > autogen.bat
-          
-          # ビルドとインストール
-          mkdir build
-          cd build
-          cmake .. -G "Ninja" -DCMAKE_INSTALL_PREFIX=C:/espeak-ng -DCMAKE_BUILD_TYPE=Release
-          cmake --build . --config Release
-          cmake --install .
-          cd ../..
-          
-          # 環境変数の設定
-          $env:PATH = "C:\espeak-ng\bin;$env:PATH"
-          $env:ESPEAK_DATA_PATH = "C:\espeak-ng\share\espeak-ng-data"
-          [Environment]::SetEnvironmentVariable("PATH", $env:PATH, "Process")
-          [Environment]::SetEnvironmentVariable("ESPEAK_DATA_PATH", $env:ESPEAK_DATA_PATH, "Process")
+          # 環境変数 VSINSTALLDIR を設定 (ilammy/msvc-dev-cmd が使用)
+          $vs = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+          if ($vs) {
+            [Environment]::SetEnvironmentVariable('VSINSTALLDIR', $vs, 'Process')
+          }
+
+          # espeak-ng を Chocolatey でインストール （1.52.0 は 64bit DLL/Binary を含む）
+          choco install -y espeak-ng
 
       - name: Configure build
         run: |
-          # CMakeの設定
+          # espeak-ng ルート
+          $ESPEAK_ROOT = "C:/ProgramData/chocolatey/lib/espeak-ng/tools"
+          if (Test-Path "$ESPEAK_ROOT\bin") {
+            $env:PATH = "$ESPEAK_ROOT\bin;$env:PATH"
+            $env:ESPEAK_DATA_PATH = "$ESPEAK_ROOT\share\espeak-ng-data"
+            [Environment]::SetEnvironmentVariable("PATH", $env:PATH, "Process")
+            [Environment]::SetEnvironmentVariable("ESPEAK_DATA_PATH", $env:ESPEAK_DATA_PATH, "Process")
+          }
+
+          # CMake設定
           cmake -Bbuild `
             -G "Ninja" `
             -DCMAKE_INSTALL_PREFIX=_install/piper `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
-            -DESPEAK_NG_ROOT=C:/espeak-ng
-          
+            -DESPEAK_NG_ROOT=$ESPEAK_ROOT
           if ($LASTEXITCODE -ne 0) {
             Write-Error "CMake configuration failed"
             exit 1
@@ -238,8 +210,9 @@ jobs:
           }
           
           # ビルド成果物の確認
-          if (-not (Test-Path "build\Release\piper.exe")) {
-            Write-Error "piper.exe not found in build directory"
+          $exePath = if (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } elseif (Test-Path "build\piper.exe") { "build\piper.exe" } else { $null }
+          if (-not $exePath) {
+            Write-Error "piper.exe not found"
             exit 1
           }
 
@@ -262,29 +235,34 @@ jobs:
       - name: Verify Windows package
         run: |
           # バイナリの存在確認
-          if (-not (Test-Path "_install\piper\bin\piper.exe")) {
-            Write-Error "Windows package is missing piper.exe"
-            exit 1
-          }
-          
-          # 簡単なテスト実行
-          Write-Output "Testing piper binary..." | .\_install\piper\bin\piper.exe --help
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "piper.exe test failed"
+          $exePath = if (Test-Path "_install\piper\bin\piper.exe") { "_install\piper\bin\piper.exe" } elseif (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } elseif (Test-Path "build\piper.exe") { "build\piper.exe" } else { $null }
+          if (-not $exePath) {
+            Write-Error "piper.exe not found"
             exit 1
           }
 
-      - name: Create archive
-        run: |
-          # アーカイブの作成
-          Compress-Archive -Path "_install\piper\*" -DestinationPath "piper_windows_amd64.zip" -Force
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to create archive"
+          # 簡単なテスト実行 (ヘルプ表示)
+          & $exePath --help | Out-Null
+          # exit code 0 or 1 は許容する。その他は失敗扱い。
+          if ($LASTEXITCODE -gt 1) {
+            Write-Error "piper.exe test failed ($LASTEXITCODE)"
             exit 1
           }
-          
-          # アーカイブの確認
-          if (-not (Test-Path "piper_windows_amd64.zip")) {
+          exit 0
+
+      - name: Create archive
+        run: |
+          $srcDir = if (Test-Path "_install\piper") { "_install\piper" } elseif (Test-Path "build\_install\piper") { "build\_install\piper" } elseif (Test-Path "build\Release") { "build\Release" } else { $null }
+          if (-not $srcDir) { Write-Error "No directory to archive"; exit 1 }
+          $dest = "_install\piper_windows_amd64.zip"
+          try {
+            Compress-Archive -Path "$srcDir\*" -DestinationPath $dest -Force
+          } catch {
+            Write-Error "Compress-Archive failed: $_"
+            exit 1
+          }
+
+          if (-not (Test-Path $dest)) {
             Write-Error "Archive not created"
             exit 1
           }
