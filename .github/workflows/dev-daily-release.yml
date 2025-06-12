@@ -77,8 +77,9 @@ jobs:
               echo "- プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)"
             } > description.txt
             
-            # 説明文を1行に変換して出力
-            echo "description=$(cat description.txt | tr '\n' ' ' | sed 's/  */ /g')" >> $GITHUB_OUTPUT
+            # 改行を %0A にエスケープして出力 (GitHub Actions 仕様)
+            DESCRIPTION_ESCAPED=$(sed ':a;N;$!ba;s/\n/%0A/g' description.txt)
+            echo "description=$DESCRIPTION_ESCAPED" >> $GITHUB_OUTPUT
           fi
 
       - name: Create release
