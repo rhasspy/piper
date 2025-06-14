@@ -162,6 +162,7 @@ class VitsModel(pl.LightningModule):
             ),
             num_workers=self.hparams.num_workers,
             batch_size=self.hparams.batch_size,
+            pin_memory=True,
         )
 
     def val_dataloader(self):
@@ -173,6 +174,7 @@ class VitsModel(pl.LightningModule):
             ),
             num_workers=self.hparams.num_workers,
             batch_size=self.hparams.batch_size,
+            pin_memory=True,
         )
 
     def test_dataloader(self):
