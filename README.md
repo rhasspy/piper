@@ -11,6 +11,7 @@ Piper is used in a [variety of projects](#people-using-piper).
   * Windows (x64)
 * 前処理済み .pt ファイルが破損していても学習時に自動スキップして継続できるように改善
 * DataLoader に `pin_memory=True` を設定し GPU 転送を最適化
+* `preprocess.py` に `--timeout-seconds` を追加し、ハングする発話を自動タイムアウト/スキップ
 
 ## 関連記事
 * [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)
