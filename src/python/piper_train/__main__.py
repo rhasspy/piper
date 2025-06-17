@@ -34,6 +34,12 @@ def main():
         "--resume_from_single_speaker_checkpoint",
         help="For multi-speaker models only. Converts a single-speaker checkpoint to multi-speaker and resumes training",
     )
+    parser.add_argument(
+        "--save-top-k",
+        type=int,
+        default=-1,
+        help="Save top k checkpoints (-1 to save all).",
+    )
     Trainer.add_argparse_args(parser)
     VitsModel.add_model_specific_args(parser)
     parser.add_argument("--seed", type=int, default=1234)
@@ -59,7 +65,7 @@ def main():
 
     trainer = Trainer.from_argparse_args(args)
     if args.checkpoint_epochs is not None:
-        trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs)]
+        trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs, save_top_k=args.save_top_k)]
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
         )
@@ -146,7 +152,7 @@ def main():
             # 新しいTrainerインスタンスを作成（ckpt_pathをクリアするため）
             trainer = Trainer.from_argparse_args(args)
             if args.checkpoint_epochs is not None:
-                trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs)]
+                trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs, save_top_k=args.save_top_k)]
                 _LOGGER.debug(
                     "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
                 )
