@@ -75,15 +75,34 @@ class PiperDataset(Dataset):
 
     def __getitem__(self, idx) -> UtteranceTensors:
         utt = self.utterances[idx]
-        return UtteranceTensors(
-            phoneme_ids=LongTensor(utt.phoneme_ids),
-            audio_norm=torch.load(utt.audio_norm_path),
-            spectrogram=torch.load(utt.audio_spec_path),
-            speaker_id=LongTensor([utt.speaker_id])
-            if utt.speaker_id is not None
-            else None,
-            text=utt.text,
-        )
+        # 問題のあるファイルでロードが失敗した場合はスキップして次を試す
+        while True:
+            try:
+                audio_norm = torch.load(utt.audio_norm_path, map_location="cpu")
+                spectrogram = torch.load(utt.audio_spec_path, map_location="cpu")
+
+                return UtteranceTensors(
+                    phoneme_ids=LongTensor(utt.phoneme_ids),
+                    audio_norm=audio_norm,
+                    spectrogram=spectrogram,
+                    speaker_id=LongTensor([utt.speaker_id]) if utt.speaker_id is not None else None,
+                    text=utt.text,
+                )
+            except Exception as e:
+                _LOGGER.error("Failed to load tensors for %s (spec: %s): %s", utt.audio_norm_path, utt.audio_spec_path, e)
+
+                # 破損ファイルとみなし、データセットから除外
+                self.utterances.pop(idx)
+
+                # データがすべて無効になった場合はエラー
+                if len(self.utterances) == 0:
+                    raise RuntimeError("All utterances failed to load") from e
+
+                # 同じインデックスで次の要素を再試行
+                if idx >= len(self.utterances):
+                    idx = len(self.utterances) - 1
+                utt = self.utterances[idx]
+                # 次のファイルでリトライ（ログは出さない）
 
     @staticmethod
     def load_dataset(

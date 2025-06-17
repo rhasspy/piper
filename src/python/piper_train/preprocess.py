@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import signal
 import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
@@ -124,6 +125,12 @@ def main() -> None:
     )
     parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to the console"
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=60,
+        help="Timeout in seconds for processing utterances",
     )
     args = parser.parse_args()
 
@@ -360,6 +367,15 @@ def phonemize_batch_espeak(
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
+        # Timeout
+        timeout_sec = getattr(args, "timeout_seconds", 0)
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError()
+
+        if timeout_sec > 0:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+
         while True:
             utt_batch = queue_in.get()
             if utt_batch is None:
@@ -370,6 +386,8 @@ def phonemize_batch_espeak(
                     if args.tashkeel:
                         utt.text = tashkeel_run(utt.text)
 
+                    if timeout_sec > 0:
+                        signal.alarm(timeout_sec)
                     _LOGGER.debug(utt)
                     all_phonemes = phonemize_espeak(casing(utt.text), args.language)
 
@@ -391,8 +409,11 @@ def phonemize_batch_espeak(
                             args.sample_rate,
                         )
                     queue_out.put(utt)
+                    if timeout_sec > 0:
+                        signal.alarm(0)
                 except TimeoutError:
                     _LOGGER.error("Skipping utterance due to timeout: %s", utt)
+                    queue_out.put(None)
                 except Exception:
                     _LOGGER.exception("Failed to process utterance: %s", utt)
                     queue_out.put(None)
@@ -413,6 +434,14 @@ def phonemize_batch_text(
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
+        timeout_sec = getattr(args, "timeout_seconds", 0)
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError()
+
+        if timeout_sec > 0:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+
         while True:
             utt_batch = queue_in.get()
             if utt_batch is None:
@@ -423,6 +452,8 @@ def phonemize_batch_text(
                     if args.tashkeel:
                         utt.text = tashkeel_run(utt.text)
 
+                    if timeout_sec > 0:
+                        signal.alarm(timeout_sec)
                     _LOGGER.debug(utt)
                     all_phonemes = phonemize_codepoints(casing(utt.text))
                     # Flatten
@@ -444,8 +475,11 @@ def phonemize_batch_text(
                             args.sample_rate,
                         )
                     queue_out.put(utt)
+                    if timeout_sec > 0:
+                        signal.alarm(0)
                 except TimeoutError:
                     _LOGGER.error("Skipping utterance due to timeout: %s", utt)
+                    queue_out.put(None)
                 except Exception:
                     _LOGGER.exception("Failed to process utterance: %s", utt)
                     queue_out.put(None)
@@ -466,6 +500,14 @@ def phonemize_batch_openjtalk(
         casing = get_text_casing(args.text_casing)
         silence_detector = make_silence_detector()
 
+        timeout_sec = getattr(args, "timeout_seconds", 0)
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError()
+
+        if timeout_sec > 0:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+
         while True:
             utt_batch = queue_in.get()
             if utt_batch is None:
@@ -473,6 +515,8 @@ def phonemize_batch_openjtalk(
 
             for utt in utt_batch:
                 try:
+                    if timeout_sec > 0:
+                        signal.alarm(timeout_sec)
                     _LOGGER.debug(utt)
                     # 高低アクセントを含む日本語 phonemizer
                     utt.phonemes = phonemize_japanese(casing(utt.text))
@@ -493,8 +537,11 @@ def phonemize_batch_openjtalk(
                             args.sample_rate,
                         )
                     queue_out.put(utt)
+                    if timeout_sec > 0:
+                        signal.alarm(0)
                 except TimeoutError:
                     _LOGGER.error("Skipping utterance due to timeout: %s", utt)
+                    queue_out.put(None)
                 except Exception:
                     _LOGGER.exception("Failed to process utterance: %s", utt)
                     queue_out.put(None)

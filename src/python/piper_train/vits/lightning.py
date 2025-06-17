@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
@@ -162,6 +163,7 @@ class VitsModel(pl.LightningModule):
             ),
             num_workers=self.hparams.num_workers,
             batch_size=self.hparams.batch_size,
+            pin_memory=True,
         )
 
     def val_dataloader(self):
@@ -173,6 +175,7 @@ class VitsModel(pl.LightningModule):
             ),
             num_workers=self.hparams.num_workers,
             batch_size=self.hparams.batch_size,
+            pin_memory=True,
         )
 
     def test_dataloader(self):
@@ -348,5 +351,11 @@ class VitsModel(pl.LightningModule):
         parser.add_argument("--filter-channels", type=int, default=768)
         parser.add_argument("--n-layers", type=int, default=6)
         parser.add_argument("--n-heads", type=int, default=2)
+        parser.add_argument(
+            "--num-workers",
+            type=int,
+            default=min(16, os.cpu_count()),
+            help="Number of workers for DataLoader",
+        )
         #
         return parent_parser

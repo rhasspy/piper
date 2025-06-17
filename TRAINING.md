@@ -177,7 +177,8 @@ python3 -m piper_train \
     --max_epochs 10000 \
     --resume_from_checkpoint /path/to/lessac/epoch=2164-step=1355540.ckpt \
     --checkpoint-epochs 1 \
-    --precision 32
+    --precision 32 \
+    --num-workers 48
 ```
 
 Use `--quality high` to train a [larger voice model](https://github.com/rhasspy/piper/blob/master/src/python/piper_train/vits/config.py#L45) (sounds better, but is much slower).
@@ -243,3 +244,19 @@ If the export is successful, you can now use your voice with Piper:
 echo 'This is a test.' | \
   piper -m /path/to/model.onnx --output_file test.wav
 ```
+
+### DataLoader ワーカー数 (`--num-workers`)
+
+`DataLoader` が使用するワーカー数はデフォルトで `min(16, CPU コア数)` に設定されています。
+必要に応じて学習コマンドに `--num-workers <N>` を追加することで変更できます。
+
+```sh
+python3 -m piper_train \
+  --dataset-dir /path/to/training_dir/ \
+  --accelerator 'gpu' \
+  --devices 1 \
+  --batch-size 32 \
+  --num-workers 48   # 例: 48 スレッドを使用
+```
+
+ワーカー数を増やしすぎると、ディスク I/O や CPU ボトルネックによって逆に遅くなることがあります。マシンのコア数や負荷を確認しながら調整してください。
