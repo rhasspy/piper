@@ -58,15 +58,17 @@ jobs:
             echo "tag_name=dev-${DATE}-${TIMESTAMP}" >> $GITHUB_OUTPUT
           fi
           
+          # --- リリースノート作成 ---
           if [ -n "${{ github.event.inputs.release_description }}" ]; then
-            echo "description=${{ github.event.inputs.release_description }}" >> $GITHUB_OUTPUT
+            # 手動入力がある場合はそのままファイルへ
+            printf "%s\n" "${{ github.event.inputs.release_description }}" > description.txt
           else
+            # 自動生成
             COMMIT_SHA=$(git rev-parse --short HEAD)
             COMMIT_MSG=$(git log -1 --pretty=%B)
             BUILD_DATE=$(date +'%Y-%m-%d')
             BUILD_TIME=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
-            
-            # 説明文を一時ファイルに書き込み
+
             {
               echo "Development build for ${BUILD_DATE}"
               echo ""
@@ -78,11 +80,10 @@ jobs:
               echo "- ビルド日時: ${BUILD_TIME}"
               echo "- プラットフォーム: Linux (x86_64, ARM64, ARMv7), Windows (x64), macOS (x64, ARM64)"
             } > description.txt
-            
-            # 改行を %0A にエスケープして出力 (GitHub Actions 仕様)
-            DESCRIPTION_ESCAPED=$(sed ':a;N;$!ba;s/\n/%0A/g' description.txt)
-            echo "description=$DESCRIPTION_ESCAPED" >> $GITHUB_OUTPUT
           fi
+
+          # description.txt のパスを出力
+          echo "description_path=$(pwd)/description.txt" >> $GITHUB_OUTPUT
 
       - name: Create release
         id: create_release
@@ -92,7 +93,7 @@ jobs:
         with:
           tag_name: ${{ steps.get_release_name.outputs.tag_name }}
           release_name: ${{ steps.get_release_name.outputs.name }}
-          body: ${{ steps.get_release_name.outputs.description }}
+          body_path: ${{ steps.get_release_name.outputs.description_path }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           prerelease: false
 
