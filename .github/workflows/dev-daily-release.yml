@@ -94,7 +94,7 @@ jobs:
           tag_name: ${{ steps.get_release_name.outputs.tag_name }}
           release_name: ${{ steps.get_release_name.outputs.name }}
           body_path: ${{ steps.get_release_name.outputs.description_path }}
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          draft: ${{ github.event_name == 'workflow_dispatch' || github.ref_name != 'dev' }}
           prerelease: false
 
   build_linux:
