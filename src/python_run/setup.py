@@ -18,12 +18,12 @@ data_files = [module_dir / "voices.json"]
 # -----------------------------------------------------------------------------
 
 setup(
-    name="piper-tts",
+    name="piper-tts-plus",
     version="1.2.0",
     description="A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.",
-    url="http://github.com/rhasspy/piper",
-    author="Michael Hansen",
-    author_email="mike@rhasspy.org",
+    url="https://github.com/ayutaz/piper-plus",
+    author="yousan",
+    author_email="rabbitcats77@gmail.com",
     license="MIT",
     packages=setuptools.find_packages(),
     package_data={"piper": [str(p.relative_to(module_dir)) for p in data_files]},
@@ -44,5 +44,5 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    keywords="rhasspy piper tts",
+    keywords="piper japanese and other languages tts",
 )

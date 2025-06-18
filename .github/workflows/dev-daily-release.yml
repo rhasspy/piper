@@ -36,6 +36,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_name: ${{ steps.get_release_name.outputs.name }}
+      tag_name: ${{ steps.get_release_name.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v4.2.2
         with:
@@ -556,3 +557,42 @@ jobs:
             }
             
             await uploadWithRetry();
+
+  publish_pypi:
+    name: "Build & Publish Python package to PyPI"
+    needs: [create_dev_release]
+    runs-on: ubuntu-latest
+    if: github.repository == 'ayutaz/piper-plus'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install build tool
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Update python package version
+        run: |
+          TAG_NAME="${{ needs.create_dev_release.outputs.tag_name }}"
+          DATE=$(echo "$TAG_NAME" | cut -d'-' -f2)
+          TIME=$(echo "$TAG_NAME" | cut -d'-' -f3)
+          VERSION="${DATE}.${TIME}"  # CalVer, e.g., 20250619.123456
+          echo "Package version will be $VERSION"
+          sed -i -E "s/version=\"[^\"]+\"/version=\"${VERSION}\"/" src/python_run/setup.py
+
+      - name: Build piper-tts-plus package
+        run: |
+          cd src/python_run
+          python -m build --sdist --wheel -o dist
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PIPY_TOKEN }}
+        run: |
+          python -m twine upload --non-interactive --skip-existing src/python_run/dist/*
