@@ -580,7 +580,7 @@ jobs:
           TAG_NAME="${{ needs.create_dev_release.outputs.tag_name }}"
           DATE=$(echo "$TAG_NAME" | cut -d'-' -f2)
           TIME=$(echo "$TAG_NAME" | cut -d'-' -f3)
-          VERSION="0.0.0.dev${DATE}${TIME}"
+          VERSION="${DATE}.${TIME}"  # CalVer, e.g., 20250619.123456
           echo "Package version will be $VERSION"
           sed -i -E "s/version=\"[^\"]+\"/version=\"${VERSION}\"/" src/python_run/setup.py
 
