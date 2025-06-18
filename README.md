@@ -26,6 +26,7 @@ Piper is used in a [variety of projects](#people-using-piper).
 * `preprocess.py` に `--timeout-seconds` を追加し、ハングする発話を自動タイムアウト/スキップ
 * `piper_train` に `--num-workers` を追加し、DataLoader のワーカー数をコマンドラインから指定可能に
 * `piper_train` に `--save-top-k` を追加し、チェックポイント保存個数をコマンドラインから指定可能に
+* PyPI パッケージ `piper-tts-plus` として公開し、`pip install` で簡単インストール可能に
 
 ## 関連記事
 * [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)
@@ -195,15 +196,17 @@ See [src/python_run](src/python_run)
 Install with `pip`:
 
 ``` sh
-pip install piper-tts
-```
+# 基本機能のみ
+pip install piper-tts-plus
 
-and then run:
+# GPU 版 (CUDA 環境がある場合)
+pip install "piper-tts-plus[gpu]"
 
-``` sh
-echo 'Welcome to the world of speech synthesis!' | piper \
-  --model en_US-lessac-medium \
-  --output_file welcome.wav
+# HTTP サーバー機能を含む場合
+pip install "piper-tts-plus[http]"
+
+# GPU + HTTP
+pip install "piper-tts-plus[gpu,http]"
 ```
 
 This will automatically download [voice files](https://huggingface.co/rhasspy/piper-voices/tree/v1.0.0) the first time they're used. Use `--data-dir` and `--download-dir` to adjust where voices are found/downloaded.
