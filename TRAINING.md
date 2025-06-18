@@ -4,6 +4,20 @@ Check out a [video training guide by Thorsten Müller](https://www.youtube.com/w
 
 For Windows, see [ssamjh's guide using WSL](https://ssamjh.nz/create-custom-piper-tts-voice/)
 
+## 目次
+- [環境](#env)
+- [Getting Started](#getting-started)
+- [Preparing a Dataset](#preparing-a-dataset)
+- [Training a Model](#training-a-model)
+- [Multi-Speaker Fine-Tuning](#multi-speaker-fine-tuning)
+- [Testing](#testing)
+- [Tensorboard](#tensorboard)
+- [Exporting a Model](#exporting-a-model)
+- [DataLoader ワーカー数 (`--num-workers`)](#dataloader-ワーカー数---num-workers)
+- [チェックポイント保存個数 (`--save-top-k`)](#チェックポイント保存個数---save-top-k)
+
+
+
 ---
 
 # env
@@ -179,6 +193,25 @@ python3 -m piper_train \
     --checkpoint-epochs 1 \
     --precision 32 \
     --num-workers 48
+```
+
+
+追加対応機能を踏まえて学習をする場合は、以下のようになります。学習を再開する際には `  --resume_from_checkpoint "${LATEST_CHECKPOINT_PATH}"` をつけて実行します
+
+```sh
+python3 -m piper_train \
+  --dataset-dir ${PREPROCESSED_MOE_DIR} \
+  --accelerator 'gpu' \
+  --devices 1 \
+  --quality medium \
+  --precision 16 \
+  --batch-size 64 \
+  --max_epochs 150 \
+  --checkpoint-epochs 10 \
+  --validation-split 0.01 \
+  --num-test-examples 10 \
+  --num-workers 45 \
+  --save-top-k -1 \
 ```
 
 Use `--quality high` to train a [larger voice model](https://github.com/rhasspy/piper/blob/master/src/python/piper_train/vits/config.py#L45) (sounds better, but is much slower).

@@ -3,6 +3,18 @@
 A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.
 Piper is used in a [variety of projects](#people-using-piper).
 
+## 目次
+- [追加機能](#追加機能)
+- [関連記事](#関連記事)
+- [Voices](#voices)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Streaming Audio](#streaming-audio)
+  - [JSON Input](#json-input)
+- [People using Piper](#people-using-piper)
+- [Training](#training)
+- [Running in Python](#running-in-python)
+
 ## 追加機能
 * 日本語の事前学習及び追加学習/推論対応
 * GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
