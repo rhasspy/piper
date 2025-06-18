@@ -581,9 +581,8 @@ jobs:
           python -m build --sdist --wheel -o dist
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.8
-        with:
-          password: ${{ secrets.PIPY_TOKEN }}
-          packages-dir: src/python_run/dist
-          skip-existing: true
-          verify-metadata: false
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PIPY_TOKEN }}
+        run: |
+          python -m twine upload --non-interactive --skip-existing src/python_run/dist/*
