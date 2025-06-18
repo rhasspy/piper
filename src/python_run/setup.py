@@ -21,7 +21,7 @@ setup(
     name="piper-tts-plus",
     version="1.2.0",
     description="A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.",
-    url="http://github.com/rhasspy/piper",
+    url="https://github.com/ayutaz/piper-plus",
     author="yousan",
     author_email="rabbitcats77@gmail.com",
     license="MIT",
@@ -44,5 +44,5 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    keywords="rhasspy piper tts",
+    keywords="piper japanese and other languages tts",
 )
