@@ -13,6 +13,12 @@ if requirements_path.is_file():
     with open(requirements_path, "r", encoding="utf-8") as requirements_file:
         requirements = requirements_file.read().splitlines()
 
+# README.md を PyPI 用の長い説明として読み込む
+long_description = ""
+readme_path = this_dir / "README.md"
+if readme_path.is_file():
+    long_description = readme_path.read_text(encoding="utf-8")
+
 data_files = [module_dir / "voices.json"]
 
 # -----------------------------------------------------------------------------
@@ -25,6 +31,8 @@ setup(
     author="yousan",
     author_email="rabbitcats77@gmail.com",
     license="MIT",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     package_data={"piper": [str(p.relative_to(module_dir)) for p in data_files]},
     entry_points={

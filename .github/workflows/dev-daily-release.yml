@@ -562,7 +562,7 @@ jobs:
     name: "Build & Publish Python package to PyPI"
     needs: [create_dev_release]
     runs-on: ubuntu-latest
-    if: github.repository == 'ayutaz/piper-plus'
+    if: github.repository == 'ayutaz/piper-plus' && (github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch')
     steps:
       - uses: actions/checkout@v4
 
