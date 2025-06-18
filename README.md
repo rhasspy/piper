@@ -13,6 +13,7 @@ Piper is used in a [variety of projects](#people-using-piper).
 * DataLoader に `pin_memory=True` を設定し GPU 転送を最適化
 * `preprocess.py` に `--timeout-seconds` を追加し、ハングする発話を自動タイムアウト/スキップ
 * `piper_train` に `--num-workers` を追加し、DataLoader のワーカー数をコマンドラインから指定可能に
+* `piper_train` に `--save-top-k` を追加し、チェックポイント保存個数をコマンドラインから指定可能に
 
 ## 関連記事
 * [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)
