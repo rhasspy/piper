@@ -575,6 +575,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build twine
 
+      - name: Update python package version
+        run: |
+          TAG_NAME="${{ needs.create_dev_release.outputs.tag_name }}"
+          DATE=$(echo "$TAG_NAME" | cut -d'-' -f2)
+          TIME=$(echo "$TAG_NAME" | cut -d'-' -f3)
+          VERSION="0.0.0.dev${DATE}${TIME}"
+          echo "Package version will be $VERSION"
+          sed -i -E "s/version=\"[^\"]+\"/version=\"${VERSION}\"/" src/python_run/setup.py
+
       - name: Build piper-tts-plus package
         run: |
           cd src/python_run
