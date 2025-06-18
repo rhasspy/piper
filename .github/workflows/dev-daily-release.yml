@@ -586,3 +586,4 @@ jobs:
           password: ${{ secrets.PIPY_TOKEN }}
           packages-dir: src/python_run/dist
           skip-existing: true
+          verify-metadata: false
