@@ -1,4 +1,5 @@
 from typing import Dict, List
+from .token_mapper import register
 
 __all__ = ["get_japanese_id_map", "JAPANESE_PHONEMES", "SPECIAL_TOKENS"]
 
@@ -72,7 +73,8 @@ def get_japanese_id_map() -> Dict[str, List[int]]:
     padding symbol, mirroring the convention used in Piper's English mapping.
     """
 
-    symbols: List[str] = SPECIAL_TOKENS + JAPANESE_PHONEMES
+    # 各トークンを1文字へ写像
+    symbols: List[str] = [register(s) for s in (SPECIAL_TOKENS + JAPANESE_PHONEMES)]
     id_map: Dict[str, List[int]] = {}
     for idx, symbol in enumerate(symbols):
         id_map[symbol] = [idx]
