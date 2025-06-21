@@ -238,7 +238,7 @@ def main() -> None:
                 "piper_version": _VERSION,
             },
             config_file,
-            ensure_ascii=False,
+            ensure_ascii=True,
             indent=4,
         )
     _LOGGER.info("Wrote dataset config")
@@ -307,7 +307,7 @@ def main() -> None:
                 json.dump(
                     utt_dict,
                     dataset_file,
-                    ensure_ascii=False,
+                    ensure_ascii=True,
                     cls=PathEncoder,
                 )
                 print("", file=dataset_file)

@@ -2,6 +2,7 @@ import re
 from typing import List
 
 import pyopenjtalk
+from .token_mapper import map_sequence
 
 __all__ = ["phonemize_japanese"]
 
@@ -109,4 +110,5 @@ def phonemize_japanese(text: str) -> List[str]:
         if (a2 == 1) and (a2_next == 2):
             tokens.append("[")
 
-    return tokens 
+    # 多文字トークンを1コードポイントへ変換
+    return map_sequence(tokens) 
