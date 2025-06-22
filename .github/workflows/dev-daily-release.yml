@@ -476,10 +476,41 @@ jobs:
             echo "::error::piper binary test failed"
             exit 1
           }
+      - name: Remove quarantine attributes and sign binaries
+        run: |
+          echo "::group::Remove quarantine and sign binaries"
+          
+          # バイナリから検疫属性を削除
+          find _install/piper -type f -exec xattr -cr {} \; 2>/dev/null || true
+          
+          # 実行可能ファイルにアドホック署名を追加
+          # これによりGatekeeperの警告を軽減
+          find _install/piper -type f -perm +111 | while read -r binary; do
+            echo "Signing: $binary"
+            codesign --force --deep --sign - "$binary" || {
+              echo "Warning: Failed to sign $binary"
+            }
+          done
+          
+          # 特に主要バイナリを確実に署名
+          if [ -f "_install/piper/bin/piper" ]; then
+            codesign --force --deep --sign - "_install/piper/bin/piper"
+            echo "Signed main piper binary"
+          fi
+          
+          # ライブラリファイルも署名
+          find _install/piper -name "*.dylib" -o -name "*.so" | while read -r lib; do
+            echo "Signing library: $lib"
+            codesign --force --sign - "$lib" || true
+          done
+          
+          echo "::endgroup::"
+          
       - name: Create archive
         run: |
           cd _install && \
-          tar -czf piper_macos_${{ matrix.arch }}.tar.gz piper/
+          # 検疫属性を保持しないようにアーカイブを作成
+          COPYFILE_DISABLE=1 tar -czf piper_macos_${{ matrix.arch }}.tar.gz piper/
           if [ $? -ne 0 ]; then
             echo "::error::Failed to create archive"
             exit 1
