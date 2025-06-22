@@ -21,6 +21,7 @@ Piper is used in a [variety of projects](#people-using-piper).
   * Linux (amd64, arm64)
   * macOS (x64, arm64)
   * Windows (x64)
+  * 注: ARMv7 (32ビット) はサポート終了。Raspberry Pi 3以降はARM64版をご利用ください
 * 前処理済み .pt ファイルが破損していても学習時に自動スキップして継続できるように改善
 * DataLoader に `pin_memory=True` を設定し GPU 転送を最適化
 * `preprocess.py` に `--timeout-seconds` を追加し、ハングする発話を自動タイムアウト/スキップ
