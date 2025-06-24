@@ -16,11 +16,27 @@ Piper is used in a [variety of projects](#people-using-piper).
 - [Running in Python](#running-in-python)
 
 ## 追加機能
-* 日本語の事前学習及び追加学習/推論対応
+* 日本語の事前学習及び追加学習/推論対応（OpenJTalk統合）
+  * 詳細な使用方法は[日本語音声合成ガイド](JAPANESE_USAGE.md)を参照
 * GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
+
+### macOSユーザーへの注意事項
+
+ダウンロードしたバイナリを初めて実行する際、macOSのセキュリティ機能により警告が表示される場合があります。以下のコマンドで検疫属性を削除してください：
+
+```bash
+# ダウンロードしたファイルを展開後
+xattr -cr piper/
+
+# または特定のバイナリのみ
+xattr -cr piper/bin/piper
+```
+
+これにより、Gatekeeperの警告なしに実行できるようになります。
   * Linux (amd64, arm64)
   * macOS (x64, arm64)
   * Windows (x64)
+  * 注: ARMv7 (32ビット) はサポート終了。Raspberry Pi 3以降はARM64版をご利用ください
 * 前処理済み .pt ファイルが破損していても学習時に自動スキップして継続できるように改善
 * DataLoader に `pin_memory=True` を設定し GPU 転送を最適化
 * `preprocess.py` に `--timeout-seconds` を追加し、ハングする発話を自動タイムアウト/スキップ

@@ -1,4 +1,35 @@
-*
-!VERSION
-!src/cpp/
-!CMakeLists.txt
+# Build artifacts
+build/
+_install/
+*.tar.gz
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+
+# Documentation and notebooks (keep essential files only)
+notebooks/
+TRAINING.md
+VOICES.md
+
+# Test files
+etc/test_sentences/
+etc/test_*.jsonl
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Large binary files
+*.onnx
+*.wav
+
+# Temporary files
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
