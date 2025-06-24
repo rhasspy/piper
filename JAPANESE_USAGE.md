@@ -199,8 +199,14 @@ OpenJTalkが生成する音素は、モデルの学習時に単一文字に変�
 - OpenJTalk: Modified BSD license
 - naist-jdic: Modified BSD license
 
+## モデルの互換性について
+
+現在の実装では、既存のモデルをそのまま使用できますが、音素マッピングに関する警告が表示される場合があります。
+詳細は[音素マッピングについて](PHONEME_MAPPING.md)を参照してください。
+
 ## 関連リンク
 
 - [Piper公式リポジトリ](https://github.com/rhasspy/piper)
 - [OpenJTalk](http://open-jtalk.sourceforge.net/)
 - [日本語音声合成の詳細](README_JAPANESE.md)
+- [音素マッピングについて](PHONEME_MAPPING.md)
