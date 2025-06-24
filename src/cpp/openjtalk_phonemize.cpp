@@ -81,7 +81,21 @@ void phonemize_openjtalk(const std::string &text,
     if (token.size() == 1 && std::isupper(token[0]))
       token[0] = std::tolower(token[0]);
 
-    currentSentence.push_back(mapPhonemeStr(token));
+    // Handle multi-character phonemes by splitting them into individual characters
+    // This matches the Python training side which uses single-character phonemes
+    if (token.size() > 1) {
+      spdlog::debug("  -> Multi-character phoneme '{}', splitting into individual characters", token);
+      for (char c : token) {
+        std::string single_char(1, c);
+        Phoneme ph = mapPhonemeStr(single_char);
+        spdlog::debug("    -> Added character '{}' as phoneme value: {}", c, static_cast<uint32_t>(ph));
+        currentSentence.push_back(ph);
+      }
+    } else {
+      Phoneme ph = mapPhonemeStr(token);
+      spdlog::debug("  -> Mapped to phoneme value: {}", static_cast<uint32_t>(ph));
+      currentSentence.push_back(ph);
+    }
   }
   if (!currentSentence.empty())
     sentences.push_back(currentSentence);
