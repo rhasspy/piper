@@ -16,7 +16,8 @@ Piper is used in a [variety of projects](#people-using-piper).
 - [Running in Python](#running-in-python)
 
 ## 追加機能
-* 日本語の事前学習及び追加学習/推論対応
+* 日本語の事前学習及び追加学習/推論対応（OpenJTalk統合）
+  * 詳細な使用方法は[日本語音声合成ガイド](JAPANESE_USAGE.md)を参照
 * GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
 
 ### macOSユーザーへの注意事項
