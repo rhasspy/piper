@@ -29,6 +29,8 @@ xattr -cr piper/
 
 ```bash
 # シンプルな例
+# espeak-ngのデータパスを設定
+export ESPEAK_DATA_PATH="$(pwd)/piper/espeak-ng-data"
 echo "こんにちは" | ./piper/bin/piper --model your_model.onnx --output_file hello.wav
 
 # 再生（macOSの場合）

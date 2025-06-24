@@ -67,9 +67,26 @@
 
 ## 使用方法
 
+### 重要：初回セットアップ
+
+espeak-ngのデータパスを設定する必要があります：
+
+```bash
+# piperディレクトリに移動した後
+export ESPEAK_DATA_PATH="$(pwd)/piper/espeak-ng-data"
+```
+
+または、シェルの設定ファイル（~/.bashrc や ~/.zshrc）に追加：
+```bash
+export ESPEAK_DATA_PATH="/path/to/piper/espeak-ng-data"
+```
+
 ### 基本的な使い方
 
 ```bash
+# 環境変数を設定（毎回必要）
+export ESPEAK_DATA_PATH="$(pwd)/piper/espeak-ng-data"
+
 # テキストファイルから音声を生成
 ./piper/bin/piper --model path/to/model.onnx --output_file output.wav < input.txt
 
