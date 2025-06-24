@@ -114,6 +114,32 @@ export OPENJTALK_DICTIONARY_DIR=/path/to/custom/dictionary
 
 ## トラブルシューティング
 
+### 「espeak-ng data path」エラー
+
+```
+Error processing file '/usr/share/espeak-ng-data/phontab': No such file or directory.
+```
+
+このエラーが出る場合は、環境変数を設定してください：
+```bash
+export ESPEAK_DATA_PATH="$(pwd)/piper/espeak-ng-data"
+```
+
+### 大量の「Missing phoneme」警告
+
+```
+[warning] Missing "ˈ" (\u02C8): 5 time(s)
+[warning] Missing "ː" (\u02D0): 2 time(s)
+```
+
+**原因：日本語モデルに英語テキストを入力している**
+
+日本語モデル（OpenJTalk形式）は日本語専用です。英語テキストを入力すると、espeak-ngのIPA音素が使用され、これらは日本語モデルに登録されていません。
+
+**解決方法：日本語テキストを使用してください**
+- ✅ 正しい: `echo "こんにちは" | ./piper/bin/piper ...`
+- ❌ 誤り: `echo "Hello" | ./piper/bin/piper ...`
+
 ### 「OpenJTalk: Failed to initialize」エラー
 
 このエラーは辞書ファイルが見つからない場合に発生します。以下を確認してください：

@@ -21,19 +21,20 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if (argc < 3) {
-    std::cerr << "Need espeak-ng-data path" << std::endl;
-    return 1;
-  }
-
   if (argc < 4) {
     std::cerr << "Need output WAV path" << std::endl;
     return 1;
   }
 
   auto modelPath = std::string(argv[1]);
-  piperConfig.eSpeakDataPath = std::string(argv[2]);
   auto outputPath = std::string(argv[3]);
+  
+  // Use provided espeak-ng-data path if available, otherwise auto-detect
+  if (argc >= 3 && std::string(argv[2]) != "auto") {
+    piperConfig.eSpeakDataPath = std::string(argv[2]);
+  } else {
+    piperConfig.eSpeakDataPath = ""; // Will auto-detect in initialize()
+  }
 
   optional<piper::SpeakerId> speakerId;
   loadVoice(piperConfig, modelPath, modelPath + ".json", voice, speakerId,

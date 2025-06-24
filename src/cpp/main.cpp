@@ -152,15 +152,12 @@ int main(int argc, char *argv[]) {
     if (runConfig.eSpeakDataPath) {
       // User provided path
       piperConfig.eSpeakDataPath = runConfig.eSpeakDataPath.value().string();
-    } else {
-      // Assume next to piper executable
-      piperConfig.eSpeakDataPath =
-          std::filesystem::absolute(
-              exePath.parent_path().append("espeak-ng-data"))
-              .string();
-
-      spdlog::debug("espeak-ng-data directory is expected at {}",
+      spdlog::debug("Using user-provided espeak-ng-data directory: {}",
                     piperConfig.eSpeakDataPath);
+    } else {
+      // Let piper::initialize() find the data path automatically
+      piperConfig.eSpeakDataPath = "";
+      spdlog::debug("Will auto-detect espeak-ng-data directory");
     }
   } else {
     // Not using eSpeak
