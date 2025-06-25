@@ -83,10 +83,13 @@ struct RunConfig {
   // }
   bool jsonInput = false;
 
+  // Show conversation progress
+  bool showProgess = false;
+
   // Seconds of extra silence to insert after a single phoneme
   optional<std::map<piper::Phoneme, float>> phonemeSilenceSeconds;
 
-  // true to use CUDA execution provider
+  // Backward compability
   bool useCuda = false;
 };
 
@@ -117,8 +120,7 @@ int main(int argc, char *argv[]) {
 
   auto startTime = chrono::steady_clock::now();
   loadVoice(piperConfig, runConfig.modelPath.string(),
-            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
-            runConfig.useCuda);
+            runConfig.modelConfigPath.string(), voice, runConfig.speakerId);
   auto endTime = chrono::steady_clock::now();
   spdlog::info("Loaded voice in {} second(s)",
                chrono::duration<double>(endTime - startTime).count());
@@ -270,6 +272,14 @@ int main(int argc, char *argv[]) {
         chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
             .count();
 
+    // Callback for show conversion progress
+    std::function<void(uint16_t, size_t)> progressCallback = NULL;
+    if (runConfig.showProgess) {
+      progressCallback = (const std::function<void(uint16_t, size_t)>)[](uint16_t progress, size_t total) {
+        spdlog::info("Audio conversion progress: {}%...", (int)((double)progress / total * 100));
+      };
+    }
+
     if (outputType == OUTPUT_DIRECTORY) {
       // Generate path using timestamp
       stringstream outputName;
@@ -279,7 +289,7 @@ int main(int argc, char *argv[]) {
 
       // Output audio to automatically-named WAV file in a directory
       ofstream audioFile(outputPath.string(), ios::binary);
-      piper::textToWavFile(piperConfig, voice, line, audioFile, result);
+      piper::textToWavFile(piperConfig, voice, line, audioFile, result, progressCallback);
       cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_FILE) {
       if (!maybeOutputPath || maybeOutputPath->empty()) {
@@ -302,11 +312,11 @@ int main(int argc, char *argv[]) {
 
       // Output audio to WAV file
       ofstream audioFile(outputPath.string(), ios::binary);
-      piper::textToWavFile(piperConfig, voice, line, audioFile, result);
+      piper::textToWavFile(piperConfig, voice, line, audioFile, result, progressCallback);
       cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
-      piper::textToWavFile(piperConfig, voice, line, cout, result);
+      piper::textToWavFile(piperConfig, voice, line, cout, result, progressCallback);
     } else if (outputType == OUTPUT_RAW) {
       // Raw output to stdout
       mutex mutAudio;
@@ -337,7 +347,7 @@ int main(int argc, char *argv[]) {
         }
       };
       piper::textToAudio(piperConfig, voice, line, audioBuffer, result,
-                         audioCallback);
+                         audioCallback, progressCallback);
 
       // Signal thread that there is no more audio
       {
@@ -438,7 +448,7 @@ void printUsage(char *argv[]) {
   cerr << "   --json-input                  stdin input is lines of JSON "
           "instead of plain text"
        << endl;
-  cerr << "   --use-cuda                    use CUDA execution provider"
+  cerr << "   --show_progress               print conversation progress (default: no)"
        << endl;
   cerr << "   --debug                       print DEBUG messages to the console"
        << endl;
@@ -524,10 +534,12 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
     } else if (arg == "--json_input" || arg == "--json-input") {
       runConfig.jsonInput = true;
     } else if (arg == "--use_cuda" || arg == "--use-cuda") {
-      runConfig.useCuda = true;
+      // Backward compability
     } else if (arg == "--version") {
       std::cout << piper::getVersion() << std::endl;
       exit(0);
+    } else if (arg == "--show_progress" || arg == "--show-progress") {
+      runConfig.showProgess = true;
     } else if (arg == "--debug") {
       // Set DEBUG logging
       spdlog::set_level(spdlog::level::debug);
