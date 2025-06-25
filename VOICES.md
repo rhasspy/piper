@@ -112,6 +112,9 @@
         * high - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx.json?download=true.json)]
     * sam
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/sam/medium/en_US-sam-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/sam/medium/en_US-sam-medium.onnx.json?download=true.json)]
+* Spanish (`es_AR`, Español)
+    * daniela
+        * high - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx.json?download=true.json)]
 * Spanish (`es_ES`, Español)
     * carlfm
         * x_low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx.json?download=true.json)]
@@ -157,6 +160,11 @@
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/tom/medium/fr_FR-tom-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/tom/medium/fr_FR-tom-medium.onnx.json?download=true.json)]
     * upmc
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx.json?download=true.json)]
+* Hindi (`hi_IN`, हिन्दी)
+    * pratham
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/pratham/medium/hi_IN-pratham-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/pratham/medium/hi_IN-pratham-medium.onnx.json?download=true.json)]
+    * priyamvada
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium.onnx.json?download=true.json)]
 * Hungarian (`hu_HU`, Magyar)
     * anna
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx.json?download=true.json)]
@@ -199,12 +207,9 @@
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/arjun/medium/ml_IN-arjun-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/arjun/medium/ml_IN-arjun-medium.onnx.json?download=true.json)]
     * meera
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/meera/medium/ml_IN-meera-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/meera/medium/ml_IN-meera-medium.onnx.json?download=true.json)]
-* Hindi (`hi_IN`, हिंदी)
-    * pratham
-        * medium - [[model](Link for model hi_IN-pratham-medium.onnx (after you add that from my request in Hugging Face)] [[config](Link for model hi_IN-pratham-medium.onnx.json (after you add that from my request in Hugging Face))]
-    * priyamvada
-        * medium - [[model](Link for model hi_IN-priyamvada-medium.onnx (after you add that from my request in Hugging Face))] [[config](Link for model hi_IN-priyamvada-medium.onnx.json (after you add that from my request in Hugging Face))]
 * Nepali (`ne_NP`, नेपाली)
+    * chitwan
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/chitwan/medium/ne_NP-chitwan-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/chitwan/medium/ne_NP-chitwan-medium.onnx.json?download=true.json)]
     * google
         * x_low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx.json?download=true.json)]
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/medium/ne_NP-google-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/medium/ne_NP-google-medium.onnx.json?download=true.json)]

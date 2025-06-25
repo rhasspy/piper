@@ -29,6 +29,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Ελληνικά, Greece (Greek, el_GR)
 * English, Great Britain (English, en_GB)
 * English, United States (English, en_US)
+* Español, Argentina (Spanish, es_AR)
 * Español, Spain (Spanish, es_ES)
 * Español, Mexico (Spanish, es_MX)
 * فارسی, Iran (Farsi, fa_IR)
