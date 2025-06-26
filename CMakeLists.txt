@@ -185,13 +185,24 @@ target_link_libraries(piper espeak-ng)
 
 # Link OpenJTalk and HTS_Engine libraries
 if(NOT WIN32 AND NOT MSVC)
+  # Add library directories
+  target_link_directories(piper PUBLIC 
+    ${OPENJTALK_DIR}/lib
+    ${HTS_ENGINE_DIR}/lib
+  )
+  target_link_directories(test_piper PUBLIC 
+    ${OPENJTALK_DIR}/lib
+    ${HTS_ENGINE_DIR}/lib
+  )
+  
+  # Link libraries
   target_link_libraries(piper 
-    ${OPENJTALK_DIR}/lib/libOpenJTalk.a
-    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+    OpenJTalk
+    HTSEngine
   )
   target_link_libraries(test_piper 
-    ${OPENJTALK_DIR}/lib/libOpenJTalk.a
-    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+    OpenJTalk
+    HTSEngine
   )
 endif()
 
