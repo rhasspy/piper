@@ -7,14 +7,9 @@ extern "C" {
 
 #include <stdlib.h>
 
-// Simplified wrapper structures (stub implementation)
-typedef struct {
-    int initialized;
-} OpenJTalk;
-
-typedef struct {
-    int valid;
-} HTS_Label_Wrapper;
+// Forward declarations
+typedef struct OpenJTalk_impl OpenJTalk;
+typedef struct HTS_Label_Wrapper_impl HTS_Label_Wrapper;
 
 // Main API functions
 OpenJTalk* openjtalk_initialize();

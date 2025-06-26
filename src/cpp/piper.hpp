@@ -34,7 +34,13 @@ struct PiperConfig {
   std::unique_ptr<tashkeel::State> tashkeelState;
 };
 
-enum PhonemeType { eSpeakPhonemes, TextPhonemes, OpenJTalkPhonemes };
+enum PhonemeType { 
+  eSpeakPhonemes, 
+  TextPhonemes
+#if !defined(_WIN32) && !defined(_MSC_VER)
+  , OpenJTalkPhonemes
+#endif
+};
 
 struct PhonemizeConfig {
   PhonemeType phonemeType = eSpeakPhonemes;

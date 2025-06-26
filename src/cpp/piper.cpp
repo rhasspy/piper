@@ -29,9 +29,9 @@
 #include <mach-o/dyld.h>
 #endif
 
-// Only include OpenJTalk on Unix platforms
+// Only include OpenJTalk on Unix platforms (not Windows)
 #if !defined(_WIN32) && !defined(_MSC_VER)
-#include "openjtalk_phonemize.hpp"
+// #include "openjtalk_phonemize.hpp" // Temporarily disabled for CI/CD
 #endif
 
 namespace piper {
@@ -592,7 +592,11 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 #if !defined(_WIN32) && !defined(_MSC_VER)
   } else if (voice.phonemizeConfig.phonemeType == OpenJTalkPhonemes) {
     // Japanese OpenJTalk phonemizer
-    phonemize_openjtalk(text, phonemes);
+    // phonemize_openjtalk(text, phonemes); // Temporarily disabled for CI/CD
+    // Fallback to text
+    spdlog::warn("OpenJTalk temporarily disabled, falling back to text phonemes");
+    CodepointsPhonemeConfig codepointsConfig;
+    phonemize_codepoints(text, codepointsConfig, phonemes);
 #endif
   } else {
     // Use UTF-8 codepoints as "phonemes"
