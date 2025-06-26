@@ -141,7 +141,6 @@ if(NOT WIN32 AND NOT MSVC)
       INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
       BUILD_IN_SOURCE 1
       BUILD_BYPRODUCTS 
-        ${OPENJTALK_DIR}/lib/libopenjtalk.a
         ${OPENJTALK_DIR}/bin/open_jtalk
       DEPENDS hts_engine_external
     )
@@ -186,12 +185,11 @@ if(NOT WIN32 AND NOT MSVC)
   add_dependencies(test_piper openjtalk_external hts_engine_external)
   
   # Link libraries with absolute paths
+  # Note: OpenJTalk doesn't create a single library, we need to link individual components
   target_link_libraries(piper 
-    ${CMAKE_CURRENT_BINARY_DIR}/oj/lib/libopenjtalk.a
     ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
   )
   target_link_libraries(test_piper 
-    ${CMAKE_CURRENT_BINARY_DIR}/oj/lib/libopenjtalk.a
     ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
   )
 endif()
