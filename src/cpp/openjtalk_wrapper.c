@@ -24,10 +24,15 @@ OpenJTalk* openjtalk_initialize() {
     struct OpenJTalk_impl* oj = (struct OpenJTalk_impl*)calloc(1, sizeof(struct OpenJTalk_impl));
     if (!oj) return NULL;
     
-    // Check if dictionary exists
-    const char* dic_path = OPENJTALK_DIC_PATH;
+    // Check if dictionary exists - prefer environment variable
+    const char* dic_path = getenv("OPENJTALK_DICTIONARY_DIR");
+    if (!dic_path) {
+        dic_path = OPENJTALK_DIC_PATH;
+    }
+    
     if (access(dic_path, R_OK) != 0) {
         fprintf(stderr, "OpenJTalk dictionary not found at: %s\n", dic_path);
+        fprintf(stderr, "Please set OPENJTALK_DICTIONARY_DIR environment variable or install dictionary at the default location\n");
         free(oj);
         return NULL;
     }

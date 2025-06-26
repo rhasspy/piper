@@ -103,13 +103,9 @@ void phonemize_openjtalk(const std::string &text,
                          std::vector<std::vector<Phoneme>> &sentences) {
   ensure_init();
   if (!oj) {
-    // Fallback: treat whole text as one sentence of codepoints
-    std::vector<Phoneme> line;
-    for (auto it = text.begin(); it != text.end(); ) {
-      auto cp = utf8::next(it, text.end());
-      line.push_back(cp);
-    }
-    sentences.push_back(line);
+    // OpenJTalk not available - this should only happen for English text
+    // Don't try to apply PUA mapping on regular text
+    // Just return empty to indicate phonemization failed
     return;
   }
 
