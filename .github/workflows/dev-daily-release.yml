@@ -676,12 +676,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libespeak-ng1
+          sudo apt-get install -y libespeak-ng1 open-jtalk open-jtalk-mecab-naist-jdic
           
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          # Note: espeak-ng is bundled with piper, no need to install separately
+          # Install open-jtalk for Japanese TTS
+          brew install open-jtalk
           echo "Using bundled espeak-ng from piper build"
           
       - name: Install dependencies (Windows)
@@ -770,14 +771,25 @@ jobs:
         run: |
           echo "Testing Japanese TTS..."
           
-          # Download Japanese dictionary for OpenJTalk
-          echo "Downloading NAIST Japanese Dictionary..."
-          mkdir -p piper/share/naist-jdic
-          curl -L -o dict.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
-          tar -xzf dict.tar.gz --strip-components=1 -C piper/share/naist-jdic
-          rm dict.tar.gz
-          export OPENJTALK_DICTIONARY_DIR=$PWD/piper/share/naist-jdic
-          echo "Dictionary downloaded to: $OPENJTALK_DICTIONARY_DIR"
+          # Setup OpenJTalk for Japanese TTS
+          if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
+            echo "Setting up OpenJTalk for Japanese TTS..."
+            
+            # For Ubuntu, dictionary is already installed via apt
+            if [ "${{ runner.os }}" = "Linux" ]; then
+              export OPENJTALK_DICTIONARY_DIR=/var/lib/mecab/dic/open-jtalk/naist-jdic
+              echo "Using system OpenJTalk dictionary: $OPENJTALK_DICTIONARY_DIR"
+            else
+              # For macOS, download dictionary
+              echo "Downloading NAIST Japanese Dictionary..."
+              mkdir -p piper/share/naist-jdic
+              curl -L -o dict.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
+              tar -xzf dict.tar.gz --strip-components=1 -C piper/share/naist-jdic
+              rm dict.tar.gz
+              export OPENJTALK_DICTIONARY_DIR=$PWD/piper/share/naist-jdic
+              echo "Dictionary downloaded to: $OPENJTALK_DICTIONARY_DIR"
+            fi
+          fi
           
           # Set library path for Linux
           if [ "${{ runner.os }}" = "Linux" ]; then
@@ -791,9 +803,16 @@ jobs:
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
           fi
           
-          # Create test input (use English for test model)
-          echo "Hello, this is a test of the text to speech system." > test_input.txt
-          echo "Testing the piper voice synthesis." >> test_input.txt
+          # Create test input
+          # For Japanese model, use Japanese text
+          if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
+            echo "こんにちは、音声合成のテストです。" > test_input.txt
+            echo "日本語の音声合成をテストしています。" >> test_input.txt
+          else
+            # For English model, use English text
+            echo "Hello, this is a test of the text to speech system." > test_input.txt
+            echo "Testing the piper voice synthesis." >> test_input.txt
+          fi
           
           # Test binary exists and is executable
           if [ ! -f "${{ matrix.binary_path }}" ]; then
@@ -819,15 +838,18 @@ jobs:
           "${{ matrix.binary_path }}" --help || echo "Warning: Help command failed"
           
           # Run TTS
-          # Always use English model for CI testing to avoid OpenJTalk dependency
-          if [ -f "etc/test_voice.onnx" ]; then
+          # Prefer Japanese model for testing PUA phoneme mapping
+          if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
+            echo "Using Japanese model with Japanese text"
+            cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav
+            if [ $? -ne 0 ]; then
+              echo "Japanese TTS failed, trying with debug output"
+              cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav --debug
+              exit 1
+            fi
+          elif [ -f "etc/test_voice.onnx" ]; then
             echo "Using test voice from repository (English model)"
-            # Use English text for English model to avoid PUA mapping errors
-            echo "Hello world" | "${{ matrix.binary_path }}" --model etc/test_voice.onnx --output_file test_output.wav || echo "Test voice failed"
-          elif [ -f "test/models/ja_JP-test-medium.onnx" ]; then
-            echo "Warning: Japanese model requires OpenJTalk, using English text as fallback"
-            # For Japanese model, still use English text to avoid crash
-            echo "Hello world" | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav || echo "Japanese model test failed"
+            cat test_input.txt | "${{ matrix.binary_path }}" --model etc/test_voice.onnx --output_file test_output.wav || echo "Test voice failed"
           else
             # Fallback: just test that the binary runs
             echo "Testing binary functionality..."
@@ -856,7 +878,7 @@ jobs:
         run: |
           Write-Host "Testing Japanese TTS..."
           
-          # Create test input
+          # Create test input (Windows uses English only - no OpenJTalk support)
           "Hello, this is a test of the text to speech system." | Out-File -FilePath test_input.txt -Encoding UTF8
           "Testing the piper voice synthesis." | Add-Content -Path test_input.txt -Encoding UTF8
           
