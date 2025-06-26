@@ -25,3 +25,15 @@ Using a `POST` request:
 ```sh
 curl -X POST -H 'Content-Type: text/plain' --data 'This is a test.' -o test.wav 'localhost:5000'
 ```
+
+Using a JSON `POST` request:
+```sh
+curl -qs -H 'Content-Type: application/json' -d '{"text":"Such a nice test", "voice":"en_US-amy-medium"}' -o test.json 'http://localhost:5000'
+```
+
+The JSON will look like
+```json
+{"Content-Type":"audio/wav","text":"Such a nice test","audio":"<base-64 encode wav data>"}
+```
+
+Note: the "voice" parameter is optional.
