@@ -119,8 +119,6 @@ if(NOT WIN32 AND NOT MSVC)
       BUILD_IN_SOURCE 1
       BUILD_BYPRODUCTS ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
     )
-    add_dependencies(piper hts_engine_external)
-    add_dependencies(test_piper hts_engine_external)
   endif()
 
   # ---- OpenJTalk ---
@@ -147,8 +145,6 @@ if(NOT WIN32 AND NOT MSVC)
         ${OPENJTALK_DIR}/bin/open_jtalk
       DEPENDS hts_engine_external
     )
-    add_dependencies(piper openjtalk_external)
-    add_dependencies(test_piper openjtalk_external)
   endif()
 endif()
 
@@ -185,24 +181,29 @@ target_link_libraries(piper espeak-ng)
 
 # Link OpenJTalk and HTS_Engine libraries
 if(NOT WIN32 AND NOT MSVC)
-  # Add library directories
-  target_link_directories(piper PUBLIC 
-    ${OPENJTALK_DIR}/lib
-    ${HTS_ENGINE_DIR}/lib
-  )
-  target_link_directories(test_piper PUBLIC 
-    ${OPENJTALK_DIR}/lib
-    ${HTS_ENGINE_DIR}/lib
+  # Create imported library targets
+  add_library(openjtalk_lib STATIC IMPORTED)
+  set_target_properties(openjtalk_lib PROPERTIES
+    IMPORTED_LOCATION ${OPENJTALK_DIR}/lib/libopenjtalk.a
   )
   
-  # Link libraries (use full paths since library names may vary)
+  add_library(hts_engine_lib STATIC IMPORTED)
+  set_target_properties(hts_engine_lib PROPERTIES
+    IMPORTED_LOCATION ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+  )
+  
+  # Ensure libraries are built before linking
+  add_dependencies(piper openjtalk_external hts_engine_external)
+  add_dependencies(test_piper openjtalk_external hts_engine_external)
+  
+  # Link libraries
   target_link_libraries(piper 
-    ${OPENJTALK_DIR}/lib/libopenjtalk.a
-    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+    openjtalk_lib
+    hts_engine_lib
   )
   target_link_libraries(test_piper 
-    ${OPENJTALK_DIR}/lib/libopenjtalk.a
-    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+    openjtalk_lib
+    hts_engine_lib
   )
 endif()
 
