@@ -1,7 +1,7 @@
 [language info]
 Name=Español
 code=Es
-version=0.1
+version=1.0
 author=Mateo Cedillo
 Copyright=© 2018-2023 MT Programs, todos los derechos Reservados 
 [Strings]
@@ -26,3 +26,6 @@ audio history=Historial de audio
 The Use GPU checkbox is checked, but you don't have a GPU runtime.=La casilla de usar GPU está habilitada, pero no tienes un entorno de ejecución con GPU.
 The Use GPU checkbox is unchecked, however you are using a GPU runtime environment. We recommend you check the checkbox to use GPU to take advantage of it.=La casilla de usar GPU está desmarcada, sin embargo, estás usando un entorno de ejecución GPU. Te recomendamos activar la casilla de usar GPU para aprovecharla.
 Invalid link or ID!=¡Enlace o ID no válido!
+Silence between sentences=Silencio entre oraciones
+Save to mp3=Guardar a mp3
+Too long text=Texto demasiado largo

@@ -23,9 +23,9 @@ def cache_norm_audio(
     cache_dir: Union[str, Path],
     detector: SileroVoiceActivityDetector,
     sample_rate: int,
-    silence_threshold: float = 0.2,
+    silence_threshold: float = 0.5,
     silence_samples_per_chunk: int = 480,
-    silence_keep_chunks_before: int = 2,
+    silence_keep_chunks_before: int = 5,
     silence_keep_chunks_after: int = 2,
     filter_length: int = 1024,
     window_length: int = 1024,
@@ -77,7 +77,7 @@ def cache_norm_audio(
     if ignore_cache or (not audio_spec_path.exists()):
         if audio_norm_tensor is None:
             # Load pre-cached normalized audio
-            audio_norm_tensor = torch.load(audio_norm_path)
+            audio_norm_tensor = torch.load(audio_norm_path, weights_only=True)
 
         audio_spec_tensor = spectrogram_torch(
             y=audio_norm_tensor,
