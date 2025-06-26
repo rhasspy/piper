@@ -15,6 +15,7 @@
 #include "piper.hpp"
 #include "utf8.h"
 #include "wavfile.hpp"
+#include "openjtalk_phonemize.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -592,11 +593,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 #if !defined(_WIN32) && !defined(_MSC_VER)
   } else if (voice.phonemizeConfig.phonemeType == OpenJTalkPhonemes) {
     // Japanese OpenJTalk phonemizer
-    // phonemize_openjtalk(text, phonemes); // Temporarily disabled for CI/CD
-    // Fallback to text
-    spdlog::warn("OpenJTalk temporarily disabled, falling back to text phonemes");
-    CodepointsPhonemeConfig codepointsConfig;
-    phonemize_codepoints(text, codepointsConfig, phonemes);
+    phonemize_openjtalk(text, phonemes);
 #endif
   } else {
     // Use UTF-8 codepoints as "phonemes"

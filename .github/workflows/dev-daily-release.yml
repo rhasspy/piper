@@ -835,8 +835,9 @@ jobs:
             
             # Try to use the test voice from the repository
             if [ -f "etc/test_voice.onnx" ]; then
-              echo "Using test voice from repository"
-              echo "Testing" | "${{ matrix.binary_path }}" --model etc/test_voice.onnx --output_file test_output.wav || echo "Test voice failed"
+              echo "Using test voice from repository (English model)"
+              # Use English text for English model to avoid PUA mapping errors
+              echo "Hello world" | "${{ matrix.binary_path }}" --model etc/test_voice.onnx --output_file test_output.wav || echo "Test voice failed"
             else
               echo "No test model available, skipping TTS test"
             fi

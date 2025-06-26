@@ -22,18 +22,9 @@ else()
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
-add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
-add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
+add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp src/cpp/openjtalk_phonemize.cpp src/cpp/openjtalk_wrapper.c)
+add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp src/cpp/openjtalk_phonemize.cpp src/cpp/openjtalk_wrapper.c)
 
-# Add OpenJTalk support on Unix platforms (not Windows)
-if(NOT WIN32 AND NOT MSVC)
-  target_sources(piper PRIVATE 
-    src/cpp/openjtalk_wrapper.c
-  )
-  target_sources(test_piper PRIVATE 
-    src/cpp/openjtalk_wrapper.c
-  )
-endif()
 
 # Configure RPATH for macOS
 if(APPLE)
@@ -180,7 +171,17 @@ target_link_libraries(piper
 # Link espeak-ng
 target_link_libraries(piper espeak-ng)
 
-# OpenJTalk is used via binary execution, not linked
+# Link OpenJTalk and HTS_Engine libraries
+if(NOT WIN32 AND NOT MSVC)
+  target_link_libraries(piper 
+    ${OPENJTALK_DIR}/lib/libOpenJTalk.a
+    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+  )
+  target_link_libraries(test_piper 
+    ${OPENJTALK_DIR}/lib/libOpenJTalk.a
+    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+  )
+endif()
 
 target_link_directories(piper PUBLIC
   ${FMT_DIR}/lib
@@ -196,6 +197,17 @@ target_include_directories(piper PUBLIC
   ${SPDLOG_DIR}/include
   ${PIPER_PHONEMIZE_DIR}/include
 )
+
+if(NOT WIN32 AND NOT MSVC)
+  target_include_directories(piper PUBLIC
+    ${OPENJTALK_DIR}/include
+    ${HTS_ENGINE_DIR}/include
+  )
+  target_include_directories(test_piper PUBLIC
+    ${OPENJTALK_DIR}/include
+    ${HTS_ENGINE_DIR}/include
+  )
+endif()
 
 # OpenJTalk is used via binary execution, includes not needed
 
