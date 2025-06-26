@@ -22,8 +22,20 @@ else()
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
-add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp src/cpp/openjtalk_phonemize.cpp src/cpp/openjtalk_wrapper.c)
-add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp src/cpp/openjtalk_phonemize.cpp src/cpp/openjtalk_wrapper.c)
+add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
+add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
+
+# Add OpenJTalk support on Unix platforms (not Windows)
+if(NOT WIN32 AND NOT MSVC)
+  target_sources(piper PRIVATE 
+    src/cpp/openjtalk_phonemize.cpp
+    src/cpp/openjtalk_wrapper.c
+  )
+  target_sources(test_piper PRIVATE 
+    src/cpp/openjtalk_phonemize.cpp
+    src/cpp/openjtalk_wrapper.c
+  )
+endif()
 
 
 # Configure RPATH for macOS
@@ -131,7 +143,7 @@ if(NOT WIN32 AND NOT MSVC)
       INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
       BUILD_IN_SOURCE 1
       BUILD_BYPRODUCTS 
-        ${OPENJTALK_DIR}/lib/libopenjtalk.a
+        ${OPENJTALK_DIR}/lib/libOpenJTalk.a
         ${OPENJTALK_DIR}/bin/open_jtalk
       DEPENDS hts_engine_external
     )
