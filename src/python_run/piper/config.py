@@ -1,4 +1,5 @@
 """Piper configuration"""
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Mapping, Sequence
@@ -7,6 +8,7 @@ from typing import Any, Dict, Mapping, Sequence
 class PhonemeType(str, Enum):
     ESPEAK = "espeak"
     TEXT = "text"
+    PHONEMES = "phonemes"
 
 
 @dataclass
@@ -22,8 +24,8 @@ class PiperConfig:
     sample_rate: int
     """Sample rate of output audio"""
 
-    espeak_voice: str
-    """Name of espeak-ng voice or alphabet"""
+    voice: str
+    """Name of voice or alphabet"""
 
     length_scale: float
     noise_scale: float
@@ -47,7 +49,25 @@ class PiperConfig:
             length_scale=inference.get("length_scale", 1.0),
             noise_w=inference.get("noise_w", 0.8),
             #
-            espeak_voice=config["espeak"]["voice"],
+            voice=get_voice(config),
             phoneme_id_map=config["phoneme_id_map"],
-            phoneme_type=PhonemeType(config.get("phoneme_type", PhonemeType.ESPEAK)),
+            phoneme_type=get_phoneme_type(config.get("phoneme_type", "ESPEAK")),
         )
+
+
+def get_voice(config: Dict[str, Any]) -> str:
+    if "voice" in config and isinstance(config["voice"], str):
+        return config["voice"]
+    for key, section_data in config.items():
+        if isinstance(section_data, dict) and "voice" in section_data:
+            return section_data["voice"]
+    return ""
+
+
+def get_phoneme_type(config_value: str) -> PhonemeType:
+    if config_value.startswith("PhonemeType."):
+        config_value = config_value.split(".")[-1]
+    try:
+        return PhonemeType[config_value.upper()]
+    except KeyError:
+        return PhonemeType.ESPEAK
