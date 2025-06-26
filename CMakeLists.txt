@@ -227,8 +227,8 @@ target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 # Add OpenJTalk dictionary path definition on Unix platforms
 if(NOT WIN32 AND NOT MSVC)
   # Dictionary will be downloaded by CI/CD or provided by user
-  # For testing, use build directory path
-  target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="${CMAKE_INSTALL_PREFIX}/share/open_jtalk/dic")
+  # Use relative path from binary location for better portability
+  target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="../share/open_jtalk/dic")
   target_compile_definitions(test_piper PUBLIC OPENJTALK_DIC_PATH="${CMAKE_CURRENT_BINARY_DIR}/naist-jdic")
 endif()
 

@@ -112,13 +112,9 @@ void phonemize_openjtalk(const std::string &text,
   // Use OpenJTalk to extract full-context labels
   HTS_Label_Wrapper *labels = openjtalk_extract_fullcontext(oj, text.c_str());
   if (!labels) {
-    spdlog::error("OpenJTalk failed; using fallback codepoints");
-    std::vector<Phoneme> line;
-    for (auto it = text.begin(); it != text.end(); ) {
-      auto cp = utf8::next(it, text.end());
-      line.push_back(cp);
-    }
-    sentences.push_back(line);
+    spdlog::error("OpenJTalk failed to extract phonemes");
+    // Return empty sentences to indicate failure
+    // This will prevent the crash from trying to map Japanese characters
     return;
   }
 

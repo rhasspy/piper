@@ -44,6 +44,8 @@ OpenJTalk* openjtalk_initialize() {
         "../../build/oj/bin/open_jtalk",
         "/usr/local/bin/open_jtalk",
         "/usr/bin/open_jtalk",
+        "/opt/homebrew/bin/open_jtalk",  // macOS ARM64 homebrew
+        "/opt/local/bin/open_jtalk",      // macOS MacPorts
         NULL
     };
     
@@ -158,13 +160,14 @@ HTS_Label_Wrapper* openjtalk_extract_fullcontext(OpenJTalk* oj, const char* text
     close(output_fd);
     close(trace_fd);
     
-    // Run open_jtalk with trace output
+    // Run open_jtalk with trace output only (no voice synthesis)
     pid_t pid = fork();
     if (pid == 0) {
         // Child process
+        // Note: We don't use -m (HTS voice) or -ow (output wav) options
+        // This allows phoneme extraction without requiring voice model
         execl(impl->openjtalk_bin, "open_jtalk",
               "-x", impl->dic_path,
-              "-ow", output_file,
               "-ot", trace_file,
               input_file,
               NULL);

@@ -594,6 +594,13 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
   } else if (voice.phonemizeConfig.phonemeType == OpenJTalkPhonemes) {
     // Japanese OpenJTalk phonemizer
     phonemize_openjtalk(text, phonemes);
+    
+    // If OpenJTalk failed, fall back to codepoints to prevent crash
+    if (phonemes.empty()) {
+      spdlog::warn("OpenJTalk returned empty phonemes, falling back to codepoints");
+      CodepointsPhonemeConfig codepointsConfig;
+      phonemize_codepoints(text, codepointsConfig, phonemes);
+    }
 #endif
   } else {
     // Use UTF-8 codepoints as "phonemes"
