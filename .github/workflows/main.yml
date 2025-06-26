@@ -1,4 +1,4 @@
-name: main
+name: Release
 
 on:
   workflow_dispatch:
@@ -7,121 +7,187 @@ on:
       - "*"
 
 jobs:
-  create_release:
-    name: Create release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
   build_linux:
-    name: "linux build"
+    name: "Build on Linux (multi-arch)"
     runs-on: ubuntu-latest
-    needs: create_release  # we need to know the upload URL
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
-      - name: build
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build multi-arch
         run: |
-          docker buildx build . --platform linux/amd64,linux/arm64,linux/arm/v7 --output 'type=local,dest=dist'
-      - name: upload-amd64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          docker buildx build . \
+            --platform linux/amd64,linux/arm64,linux/arm/v7 \
+            --output "type=local,dest=dist"
+
+      - name: Upload Linux amd64 artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: dist/linux_amd64/piper_amd64.tar.gz
-          asset_name: piper_linux_x86_64.tar.gz
-          asset_content_type: application/octet-stream
-      - name: upload-arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          name: linux-amd64
+          path: dist/linux_amd64/piper_amd64.tar.gz
+
+      - name: Upload Linux aarch64 artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: dist/linux_arm64/piper_arm64.tar.gz
-          asset_name: piper_linux_aarch64.tar.gz
-          asset_content_type: application/octet-stream
-      - name: upload-armv7
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          name: linux-aarch64
+          path: dist/linux_arm64/piper_arm64.tar.gz
+
+      - name: Upload Linux armv7 artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: dist/linux_arm_v7/piper_armv7.tar.gz
-          asset_name: piper_linux_armv7l.tar.gz
-          asset_content_type: application/octet-stream
+          name: linux-armv7
+          path: dist/linux_arm_v7/piper_armv7.tar.gz
+
   build_windows:
+    name: "Build on Windows"
     runs-on: windows-latest
-    name: "windows build: ${{ matrix.arch }}"
-    needs: create_release # we need to know the upload URL
     strategy:
       fail-fast: true
       matrix:
-        arch: [x64]
+        arch: [amd64]
     steps:
-      - uses: actions/checkout@v3
-      - name: configure
-        run: |
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
-      - name: build
-        run: |
-          cmake --build build --config Release
-      - name: install
-        run: |
-          cmake --install build
-      - name: package
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Package
         run: |
           cd _install
           Compress-Archive -LiteralPath piper -DestinationPath piper_windows_amd64.zip
-      - name: upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload Windows amd64 artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: _install/piper_windows_amd64.zip
-          asset_name: piper_windows_amd64.zip
-          asset_content_type: application/zip
+          name: windows-amd64
+          path: _install/piper_windows_amd64.zip
+
   build_macos:
-    name: "macos build: ${{ matrix.arch }}"
+    name: "Build on macOS"
     runs-on: macos-latest
-    needs: create_release # we need to know the upload URL
     strategy:
       fail-fast: true
       matrix:
-        arch: [x64, aarch64]
+        arch: [x86_x64, arm64]
     steps:
-      - uses: actions/checkout@v3
-      - name: configure
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Package
         run: |
-          cmake -Bbuild -DCMAKE_INSTALL_PREFIX=_install/piper
-      - name: build
-        run: |
-          cmake --build build --config Release
-      - name: install
-        run: |
-          cmake --install build
-      - name: package
-        run: |
-          cd _install && \
+          cd _install
           tar -czf piper_macos_${{ matrix.arch }}.tar.gz piper/
-      - name: upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: _install/piper_macos_${{ matrix.arch }}.tar.gz
-          asset_name: piper_macos_${{ matrix.arch }}.tar.gz
-          asset_content_type: application/octet-stream
+          # We'll name the artifact so we can handle x64 vs. aarch64 distinctly
+          name: macos-${{ matrix.arch }}
+          path: _install/piper_macos_${{ matrix.arch }}.tar.gz
+
+  create_release_and_upload:
+    name: "Create/Update Release & Upload"
+    runs-on: ubuntu-latest
+    needs: [build_linux, build_windows, build_macos]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up GitHub CLI
+        uses: actions/setup-gh-cli@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./release_assets
+
+      - name: Create or update release
+        shell: bash
+        run: |
+          # Extract the tag name from the push ref
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "Creating (or updating) release for tag: $TAG"
+
+          # Attempt to create a release. If it already exists, this will exit non-zero.
+          # We can ignore with '|| true' or handle logic as needed.
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "Automated piper release for $TAG" \
+            || echo "Release for $TAG already exists. Proceeding to upload assets."
+
+      - name: Upload Linux amd64
+        if: always()
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release upload "$TAG" \
+            "./release_assets/linux-amd64/piper_amd64.tar.gz" \
+            --label "piper_linux_amd64.tar.gz" \
+            --clobber
+
+      - name: Upload Linux aarch64
+        if: always()
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release upload "$TAG" \
+            "./release_assets/linux-aarch64/piper_arm64.tar.gz" \
+            --label "piper_linux_aarch64.tar.gz" \
+            --clobber
+
+      - name: Upload Linux armv7
+        if: always()
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release upload "$TAG" \
+            "./release_assets/linux-armv7/piper_armv7.tar.gz" \
+            --label "piper_linux_armv7l.tar.gz" \
+            --clobber
+
+      - name: Upload Windows amd64
+        if: always()
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release upload "$TAG" \
+            "./release_assets/windows-amd64/piper_windows_amd64.zip" \
+            --label "piper_windows_amd64.zip" \
+            --clobber
+
+      - name: Upload macOS amd64
+        if: always()
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # The x64 artifact is under release_assets/macos-x64
+          gh release upload "$TAG" \
+            "./release_assets/macos-x64/piper_macos_x64.tar.gz" \
+            --label "piper_macos_x64.tar.gz" \
+            --clobber
+
+      - name: Upload macOS aarch64
+        if: always()
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # The aarch64 artifact is under release_assets/macos-aarch64
+          gh release upload "$TAG" \
+            "./release_assets/macos-aarch64/piper_macos_aarch64.tar.gz" \
+            --label "piper_macos_aarch64.tar.gz" \
+            --clobber
