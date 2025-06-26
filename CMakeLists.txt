@@ -143,7 +143,7 @@ if(NOT WIN32 AND NOT MSVC)
       INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
       BUILD_IN_SOURCE 1
       BUILD_BYPRODUCTS 
-        ${OPENJTALK_DIR}/lib/libOpenJTalk.a
+        ${OPENJTALK_DIR}/lib/libopenjtalk.a
         ${OPENJTALK_DIR}/bin/open_jtalk
       DEPENDS hts_engine_external
     )
@@ -195,14 +195,14 @@ if(NOT WIN32 AND NOT MSVC)
     ${HTS_ENGINE_DIR}/lib
   )
   
-  # Link libraries
+  # Link libraries (use full paths since library names may vary)
   target_link_libraries(piper 
-    OpenJTalk
-    HTSEngine
+    ${OPENJTALK_DIR}/lib/libopenjtalk.a
+    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
   )
   target_link_libraries(test_piper 
-    OpenJTalk
-    HTSEngine
+    ${OPENJTALK_DIR}/lib/libopenjtalk.a
+    ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
   )
 endif()
 
