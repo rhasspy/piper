@@ -103,6 +103,9 @@ def main() -> None:
     parser.add_argument(
         "--debug", action="store_true", help="Print DEBUG messages to the console"
     )
+    parser.add_argument(
+        "--raw-phonemes", action="store_true", help="Raw espeak compatible phonemes"
+    )
     args = parser.parse_args()
 
     if args.single_speaker and (args.speaker_id is not None):
@@ -299,7 +302,10 @@ def phonemize_batch_espeak(
                         utt.text = tashkeel_run(utt.text)
 
                     _LOGGER.debug(utt)
-                    all_phonemes = phonemize_espeak(casing(utt.text), args.language)
+                    if args.raw_phonemes:
+                        all_phonemes = [utt.text.split()]
+                    else:
+                        all_phonemes = phonemize_espeak(casing(utt.text), args.language)
 
                     # Flatten
                     utt.phonemes = [

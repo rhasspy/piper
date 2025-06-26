@@ -69,6 +69,8 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     auto phonemeTypeStr = configRoot["phoneme_type"].get<std::string>();
     if (phonemeTypeStr == "text") {
       phonemizeConfig.phonemeType = TextPhonemes;
+    } else if (phonemeTypeStr == "raw") {
+      phonemizeConfig.phonemeType = RawPhonemes;
     }
   }
 
@@ -467,7 +469,16 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
   spdlog::debug("Phonemizing text: {}", text);
   std::vector<std::vector<Phoneme>> phonemes;
 
-  if (voice.phonemizeConfig.phonemeType == eSpeakPhonemes) {
+  if (voice.phonemizeConfig.phonemeType == RawPhonemes) {
+    // Use text as raw utf-8 phonemes
+    phonemes.emplace_back();
+    // UTF-8 wide
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::wstring wide_text = converter.from_bytes(text);
+    for (wchar_t c : wide_text) {
+      phonemes.back().push_back(c);  // Adds each wide character as a phoneme
+    }
+  } else if (voice.phonemizeConfig.phonemeType == eSpeakPhonemes) {
     // Use espeak-ng for phonemization
     eSpeakPhonemeConfig eSpeakConfig;
     eSpeakConfig.voice = voice.phonemizeConfig.eSpeak.voice;
