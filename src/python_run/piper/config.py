@@ -1,4 +1,5 @@
 """Piper configuration"""
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Mapping, Sequence
