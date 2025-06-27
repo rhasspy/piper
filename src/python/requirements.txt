@@ -1,5 +1,5 @@
 cython>=0.29.0,<1
-piper-phonemize~=1.1.0
+# piper-phonemize~=1.1.0  # Optional: Built from source in CMake
 librosa>=0.9.2,<1
 numpy>=1.19.0
 onnxruntime>=1.11.0

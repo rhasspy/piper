@@ -8,6 +8,7 @@ Functions
 `write`: Write a NumPy array as a WAV file.
 
 """
+
 import io
 import struct
 import sys
@@ -364,9 +365,9 @@ def _read_fmt_chunk(fid, is_big_endian):
             # MS GUID byte order: first three groups are native byte order,
             # rest is Big Endian
             if is_big_endian:
-                tail = b"\x00\x00\x00\x10\x80\x00\x00\xAA\x00\x38\x9B\x71"
+                tail = b"\x00\x00\x00\x10\x80\x00\x00\xaa\x00\x38\x9b\x71"
             else:
-                tail = b"\x00\x00\x10\x00\x80\x00\x00\xAA\x00\x38\x9B\x71"
+                tail = b"\x00\x00\x10\x00\x80\x00\x00\xaa\x00\x38\x9b\x71"
             if raw_guid.endswith(tail):
                 format_tag = struct.unpack(fmt + "I", raw_guid[:4])[0]
         else:

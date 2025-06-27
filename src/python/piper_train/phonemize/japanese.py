@@ -111,4 +111,4 @@ def phonemize_japanese(text: str) -> List[str]:
             tokens.append("[")
 
     # 多文字トークンを1コードポイントへ変換
-    return map_sequence(tokens) 
+    return map_sequence(tokens)

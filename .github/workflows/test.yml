@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11']  # Removed 3.8 for faster CI
+        python-version: ['3.11', '3.12']  # Supporting Python 3.11+
         
     steps:
     - uses: actions/checkout@v4
@@ -86,9 +86,6 @@ jobs:
       run: |
         brew install cmake espeak-ng
         
-    - name: Download piper-phonemize
-      run: |
-        ./download-piper-phonemize.sh
         
     - name: Build
       run: |
@@ -112,7 +109,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.11'
         
     - name: Install all dependencies
       run: |
@@ -121,7 +118,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r src/python/requirements_test.txt
         pip install -e src/python
-        ./download-piper-phonemize.sh
         
     - name: Build project
       run: |
@@ -169,7 +165,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.11'
         
     - name: Install dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
@@ -205,7 +201,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.11'
         
     - name: Install linting tools
       run: |

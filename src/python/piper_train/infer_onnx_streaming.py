@@ -142,13 +142,13 @@ def main():
         "--chunk-size",
         type=int,
         default=45,
-        help="Number of mel frames to decode at each step"
+        help="Number of mel frames to decode at each step",
     )
     parser.add_argument(
         "--chunk-padding",
         type=int,
         default=5,
-        help="Number of mel frames to add to the start and end of the current chunk to reduce decoding artifacts"
+        help="Number of mel frames to add to the start and end of the current chunk to reduce decoding artifacts",
     )
 
     args = parser.parse_args()

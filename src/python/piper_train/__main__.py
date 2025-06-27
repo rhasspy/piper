@@ -65,7 +65,11 @@ def main():
 
     trainer = Trainer.from_argparse_args(args)
     if args.checkpoint_epochs is not None:
-        trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs, save_top_k=args.save_top_k)]
+        trainer.callbacks = [
+            ModelCheckpoint(
+                every_n_epochs=args.checkpoint_epochs, save_top_k=args.save_top_k
+            )
+        ]
         _LOGGER.debug(
             "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
         )
@@ -129,7 +133,9 @@ def main():
 
     # チェックポイントからの再開処理を修正
     if args.resume_from_checkpoint:
-        _LOGGER.debug("Loading weights from checkpoint: %s", args.resume_from_checkpoint)
+        _LOGGER.debug(
+            "Loading weights from checkpoint: %s", args.resume_from_checkpoint
+        )
         try:
             # まずは通常のResumeを試みる
             trainer.fit(model, ckpt_path=args.resume_from_checkpoint)
@@ -140,23 +146,31 @@ def main():
 
             # モデルの重みだけをロードする (不一致は許容)
             checkpoint = torch.load(args.resume_from_checkpoint, map_location="cpu")
-            model.load_state_dict(checkpoint['state_dict'], strict=False)
+            model.load_state_dict(checkpoint["state_dict"], strict=False)
 
-            _LOGGER.info("Weights loaded successfully with strict=False. Starting training without resuming optimizer state.")
-            
+            _LOGGER.info(
+                "Weights loaded successfully with strict=False. Starting training without resuming optimizer state."
+            )
+
             # argsからresume_from_checkpointを削除
             args_dict = vars(args)
-            if 'resume_from_checkpoint' in args_dict:
-                del args_dict['resume_from_checkpoint']
-            
+            if "resume_from_checkpoint" in args_dict:
+                del args_dict["resume_from_checkpoint"]
+
             # 新しいTrainerインスタンスを作成（ckpt_pathをクリアするため）
             trainer = Trainer.from_argparse_args(args)
             if args.checkpoint_epochs is not None:
-                trainer.callbacks = [ModelCheckpoint(every_n_epochs=args.checkpoint_epochs, save_top_k=args.save_top_k)]
+                trainer.callbacks = [
+                    ModelCheckpoint(
+                        every_n_epochs=args.checkpoint_epochs,
+                        save_top_k=args.save_top_k,
+                    )
+                ]
                 _LOGGER.debug(
-                    "Checkpoints will be saved every %s epoch(s)", args.checkpoint_epochs
+                    "Checkpoints will be saved every %s epoch(s)",
+                    args.checkpoint_epochs,
                 )
-            
+
             # 新しいTrainerで学習を開始
             trainer.fit(model)
     else:

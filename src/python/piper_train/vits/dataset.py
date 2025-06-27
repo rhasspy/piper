@@ -85,11 +85,20 @@ class PiperDataset(Dataset):
                     phoneme_ids=LongTensor(utt.phoneme_ids),
                     audio_norm=audio_norm,
                     spectrogram=spectrogram,
-                    speaker_id=LongTensor([utt.speaker_id]) if utt.speaker_id is not None else None,
+                    speaker_id=(
+                        LongTensor([utt.speaker_id])
+                        if utt.speaker_id is not None
+                        else None
+                    ),
                     text=utt.text,
                 )
             except Exception as e:
-                _LOGGER.error("Failed to load tensors for %s (spec: %s): %s", utt.audio_norm_path, utt.audio_spec_path, e)
+                _LOGGER.error(
+                    "Failed to load tensors for %s (spec: %s): %s",
+                    utt.audio_norm_path,
+                    utt.audio_spec_path,
+                    e,
+                )
 
                 # 破損ファイルとみなし、データセットから除外
                 self.utterances.pop(idx)

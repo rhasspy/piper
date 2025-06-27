@@ -11,25 +11,29 @@ import onnxruntime
 # Try to import piper_phonemize, but make it optional
 try:
     from piper_phonemize import phonemize_codepoints, phonemize_espeak, tashkeel_run
+
     HAS_PIPER_PHONEMIZE = True
 except ImportError:
     HAS_PIPER_PHONEMIZE = False
+
     # Provide fallback implementations
     def phonemize_codepoints(text, lang=None):
         # Simple fallback: return text as list of characters
         return list(text)
-    
+
     def phonemize_espeak(text, voice=None):
         # Simple fallback: return text as list of characters
         return list(text)
-    
+
     def tashkeel_run(text):
         # Simple fallback: return original text
         return text
 
+
 # Try to import pyopenjtalk, but make it optional
 try:
     import pyopenjtalk
+
     HAS_PYOPENJTALK = True
 except ImportError:
     HAS_PYOPENJTALK = False
@@ -134,12 +138,12 @@ class PiperVoice:
                 converted = []
                 # Add BOS marker
                 converted.append("^")
-                
+
                 for ph in phonemes:
                     if ph == "pau":
                         converted.append("_")
                         continue
-                    
+
                     if ph == "sil":
                         # Skip sil in the middle, it will be added as EOS
                         continue
@@ -148,16 +152,16 @@ class PiperVoice:
                     # But NOT 'N' which is a special phoneme
                     if ph in {"A", "I", "U", "E", "O"}:
                         ph = ph.lower()
-                    
+
                     # Check if this is a multi-character phoneme that needs PUA mapping
                     if ph in MULTI_CHAR_TO_PUA:
                         converted.append(MULTI_CHAR_TO_PUA[ph])
                     else:
                         converted.append(ph)
-                
+
                 # Add EOS marker
                 converted.append("$")
-                
+
                 # Log readable phonemes if debug logging is enabled
                 if _LOGGER.isEnabledFor(logging.DEBUG):
                     readable_phonemes = []
@@ -172,7 +176,9 @@ class PiperVoice:
                                 readable_phonemes.append(ph)
                         else:
                             readable_phonemes.append(ph)
-                    _LOGGER.debug("Phonemized '%s' to: %s", text, ' '.join(readable_phonemes))
+                    _LOGGER.debug(
+                        "Phonemized '%s' to: %s", text, " ".join(readable_phonemes)
+                    )
 
                 return [converted]
 
@@ -278,7 +284,7 @@ class PiperVoice:
         args = {
             "input": phoneme_ids_array,
             "input_lengths": phoneme_ids_lengths,
-            "scales": scales
+            "scales": scales,
         }
 
         if self.config.num_speakers <= 1:
@@ -293,6 +299,11 @@ class PiperVoice:
             args["sid"] = sid
 
         # Synthesize through Onnx
-        audio = self.session.run(None, args, )[0].squeeze((0, 1))
+        audio = self.session.run(
+            None,
+            args,
+        )[
+            0
+        ].squeeze((0, 1))
         audio = audio_float_to_int16(audio.squeeze())
         return audio.tobytes()
