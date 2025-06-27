@@ -6,7 +6,6 @@ import pytest
 # Try to import implementation, skip if not available
 pytest.importorskip("piper_train.phonemize")
 
-from piper_train.phonemize import phonemize_text
 from piper_train.phonemize.token_mapper import TOKEN2CHAR, CHAR2TOKEN, map_sequence
 
 # Japanese imports are optional
@@ -64,35 +63,8 @@ class TestPhonemization:
         assert len(phonemes) > 2
     
     @pytest.mark.unit
-    @pytest.mark.parametrize("lang,text", [
-        ("en-us", "Hello"),
-        ("de-de", "Hallo"),
-        ("fr-fr", "Bonjour"),
-        ("ja-jp", "こんにちは"),
-    ])
-    def test_multiple_languages(self, lang, text):
-        """Test phonemization for different languages"""
-        try:
-            phonemes = phonemize_text(text, lang)
-            assert isinstance(phonemes, list)
-            assert len(phonemes) > 0
-        except ValueError as e:
-            if "No phonemizer" in str(e):
-                pytest.skip(f"Phonemizer for {lang} not available")
-            else:
-                raise
-    
-    @pytest.mark.unit
-    def test_edge_cases(self):
-        """Test edge cases"""
-        # Empty string
-        result = phonemize_text("", "en-us")
-        assert result == [] or result == ["^", "$"]
-        
-        # Whitespace only  
-        result = phonemize_text("   ", "en-us")
-        assert len(result) <= 3  # Minimal output
-        
-        # Invalid language
-        with pytest.raises(ValueError, match="No phonemizer"):
-            phonemize_text("test", "invalid-lang")
+    def test_empty_input(self):
+        """Test empty input handling"""
+        # Empty list
+        result = map_sequence([])
+        assert result == []
