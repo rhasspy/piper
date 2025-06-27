@@ -103,26 +103,18 @@ void phonemize_openjtalk(const std::string &text,
                          std::vector<std::vector<Phoneme>> &sentences) {
   ensure_init();
   if (!oj) {
-    // Fallback: treat whole text as one sentence of codepoints
-    std::vector<Phoneme> line;
-    for (auto it = text.begin(); it != text.end(); ) {
-      auto cp = utf8::next(it, text.end());
-      line.push_back(cp);
-    }
-    sentences.push_back(line);
+    // OpenJTalk not available - this should only happen for English text
+    // Don't try to apply PUA mapping on regular text
+    // Just return empty to indicate phonemization failed
     return;
   }
 
   // Use OpenJTalk to extract full-context labels
   HTS_Label_Wrapper *labels = openjtalk_extract_fullcontext(oj, text.c_str());
   if (!labels) {
-    spdlog::error("OpenJTalk failed; using fallback codepoints");
-    std::vector<Phoneme> line;
-    for (auto it = text.begin(); it != text.end(); ) {
-      auto cp = utf8::next(it, text.end());
-      line.push_back(cp);
-    }
-    sentences.push_back(line);
+    spdlog::error("OpenJTalk failed to extract phonemes");
+    // Return empty sentences to indicate failure
+    // This will prevent the crash from trying to map Japanese characters
     return;
   }
 
@@ -137,6 +129,11 @@ void phonemize_openjtalk(const std::string &text,
     if (pos1 == std::string::npos || pos2 == std::string::npos || pos2 <= pos1)
       continue;
     std::string token = lab.substr(pos1 + 1, pos2 - pos1 - 1);
+    // Skip invalid tokens (e.g., error messages that might contain ">")
+    if (token.find('>') != std::string::npos) {
+      spdlog::warn("Skipping invalid token containing '>': {}", token);
+      continue;
+    }
     if (token == "sil" && i == 0) {
       currentSentence.push_back(mapPhonemeStr("^"));
       continue;

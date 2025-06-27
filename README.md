@@ -18,6 +18,10 @@ Piper is used in a [variety of projects](#people-using-piper).
 ## 追加機能
 * 日本語の事前学習及び追加学習/推論対応（OpenJTalk統合）
   * 詳細な使用方法は[日本語音声合成ガイド](JAPANESE_USAGE.md)を参照
+  * PUA音素マッピングによる日本語TTS精度向上 - [技術詳細](docs/PUA_PHONEME_MAPPING.md)を参照
+  * **重要**: 日本語TTSを使用するには、以下の環境変数の設定が必要です：
+    - `OPENJTALK_DICTIONARY_DIR`: OpenJTalk辞書へのパス
+    - `OPENJTALK_VOICE`: HTSボイスモデル（.htsvoice）へのパス
 * GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
 
 ### macOSユーザーへの注意事項

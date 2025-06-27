@@ -364,10 +364,12 @@ jobs:
           echo "::group::Install dependencies"
           if [ "${{ matrix.arch }}" = "x64" ]; then
             # x64用の依存関係（Rosetta 2を使用）
-            arch -x86_64 brew install cmake espeak-ng ninja autoconf automake libtool
+            # Note: We don't install espeak-ng from brew as piper_phonemize builds its own fork
+            arch -x86_64 brew install cmake ninja autoconf automake libtool
           else
             # arm64用の依存関係
-            brew install cmake espeak-ng ninja autoconf automake libtool
+            # Note: We don't install espeak-ng from brew as piper_phonemize builds its own fork
+            brew install cmake ninja autoconf automake libtool
           fi
           echo "::endgroup::"
       - name: Configure build
@@ -449,6 +451,61 @@ jobs:
             echo "::error::Failed to set executable permissions"
             exit 1
           fi
+          
+          # Check library dependencies
+          echo "Checking library dependencies..."
+          otool -L _install/piper/bin/piper
+          
+          echo "Checking piper_phonemize dependencies..."
+          otool -L _install/piper/lib/libpiper_phonemize*.dylib | head -20
+          
+          # Check if libraries are installed
+          echo "Checking installed libraries..."
+          ls -la _install/piper/lib/ || echo "No lib directory found"
+          
+          # Check RPATH
+          echo "Checking RPATH settings..."
+          otool -l _install/piper/bin/piper | grep -A2 LC_RPATH || echo "No RPATH found"
+          
+          # Fix library dependencies on macOS
+          echo "Fixing library dependencies..."
+          
+          # Update library paths for all executables and libraries
+          for binary in _install/piper/bin/*; do
+            if [ -f "$binary" ] && [ -x "$binary" ]; then
+              echo "Updating dependencies for: $binary"
+              # Update espeak-ng library path
+              install_name_tool -change "@rpath/libespeak-ng.dylib" "@loader_path/../lib/libespeak-ng.dylib" "$binary" || true
+              install_name_tool -change "@rpath/libespeak-ng.1.dylib" "@loader_path/../lib/libespeak-ng.1.dylib" "$binary" || true
+              # Update piper_phonemize library path
+              install_name_tool -change "@rpath/libpiper_phonemize.dylib" "@loader_path/../lib/libpiper_phonemize.dylib" "$binary" || true
+              install_name_tool -change "@rpath/libpiper_phonemize.1.dylib" "@loader_path/../lib/libpiper_phonemize.1.dylib" "$binary" || true
+            fi
+          done
+          
+          # Fix library dependencies for the libraries themselves
+          for lib in _install/piper/lib/*.dylib; do
+            if [ -f "$lib" ]; then
+              echo "Updating dependencies for library: $lib"
+              # Update espeak-ng references
+              install_name_tool -change "@rpath/libespeak-ng.dylib" "@loader_path/libespeak-ng.dylib" "$lib" || true
+              install_name_tool -change "@rpath/libespeak-ng.1.dylib" "@loader_path/libespeak-ng.1.dylib" "$lib" || true
+              # Fix the library ID if it's espeak-ng
+              if [[ "$lib" == *"libespeak-ng"* ]]; then
+                lib_name=$(basename "$lib")
+                install_name_tool -id "@loader_path/$lib_name" "$lib" || true
+              fi
+            fi
+          done
+          
+          echo "Final library check:"
+          ls -la _install/piper/lib/
+          
+          echo "Final dependency check for piper:"
+          otool -L _install/piper/bin/piper
+          
+          echo "Final dependency check for libpiper_phonemize:"
+          otool -L _install/piper/lib/libpiper_phonemize*.dylib | head -20
       - name: Verify macOS package
         run: |
           # バイナリの存在確認
@@ -468,10 +525,11 @@ jobs:
           lipo -info "_install/piper/bin/piper"
           
           # アーキテクチャに応じたテスト実行
+          echo "Testing piper binary..."
           if [ "${{ matrix.arch }}" = "x64" ]; then
-            /usr/bin/arch -x86_64 echo "Testing piper binary..." | _install/piper/bin/piper --help
+            /usr/bin/arch -x86_64 _install/piper/bin/piper --help
           else
-            /usr/bin/arch -arm64 echo "Testing piper binary..." | _install/piper/bin/piper --help
+            /usr/bin/arch -arm64 _install/piper/bin/piper --help
           fi || {
             echo "::error::piper binary test failed"
             exit 1
@@ -618,12 +676,14 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libespeak-ng1
+          sudo apt-get install -y libespeak-ng1 open-jtalk open-jtalk-mecab-naist-jdic
           
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew install espeak-ng
+          # Install open-jtalk for Japanese TTS
+          brew install open-jtalk
+          echo "Using bundled espeak-ng from piper build"
           
       - name: Install dependencies (Windows)
         if: runner.os == 'Windows'
@@ -688,9 +748,9 @@ jobs:
                 Write-Host "Creating piper directory structure..."
                 New-Item -ItemType Directory -Force -Path piper | Out-Null
                 Move-Item -Path "bin" -Destination "piper/" -Force
-                Move-Item -Path "espeak-ng-data" -Destination "piper/" -Force -ErrorAction SilentlyContinue
-                Move-Item -Path "*.dll" -Destination "piper/" -Force -ErrorAction SilentlyContinue
-                Move-Item -Path "*.ort" -Destination "piper/" -Force -ErrorAction SilentlyContinue
+                Move-Item -Path "share/espeak-ng-data" -Destination "piper/" -Force -ErrorAction SilentlyContinue
+                Move-Item -Path "lib/*.dll" -Destination "piper/" -Force -ErrorAction SilentlyContinue
+                Move-Item -Path "share/*.ort" -Destination "piper/" -Force -ErrorAction SilentlyContinue
               }
             }
           } else {
@@ -711,16 +771,73 @@ jobs:
         run: |
           echo "Testing Japanese TTS..."
           
+          # Setup OpenJTalk for Japanese TTS
+          if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
+            echo "Setting up OpenJTalk for Japanese TTS..."
+            
+            # Download HTS voice model (required for command-line OpenJTalk)
+            echo "Downloading HTS voice model..."
+            mkdir -p piper/share/hts-voice
+            curl -L -o voice.tar.gz "https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz/download"
+            tar -xzf voice.tar.gz
+            cp hts_voice_nitech_jp_atr503_m001-1.05/*.htsvoice piper/share/hts-voice/
+            rm -rf voice.tar.gz hts_voice_nitech_jp_atr503_m001-1.05
+            export OPENJTALK_VOICE=$PWD/piper/share/hts-voice/nitech_jp_atr503_m001.htsvoice
+            echo "HTS voice downloaded to: $OPENJTALK_VOICE"
+            
+            # For Ubuntu, dictionary is already installed via apt
+            if [ "${{ runner.os }}" = "Linux" ]; then
+              # Find the correct dictionary path
+              DICT_PATH=$(find /usr/share /var/lib -name "naist-jdic" -type d 2>/dev/null | head -1)
+              if [ -z "$DICT_PATH" ]; then
+                echo "Dictionary not found, downloading..."
+                mkdir -p piper/share/naist-jdic
+                curl -L -o dict.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
+                tar -xzf dict.tar.gz --strip-components=1 -C piper/share/naist-jdic
+                rm dict.tar.gz
+                export OPENJTALK_DICTIONARY_DIR=$PWD/piper/share/naist-jdic
+              else
+                export OPENJTALK_DICTIONARY_DIR=$DICT_PATH
+              fi
+              echo "Using OpenJTalk dictionary: $OPENJTALK_DICTIONARY_DIR"
+              
+              # Check OpenJTalk binary location
+              which open_jtalk || echo "open_jtalk not in PATH"
+              ls -la /usr/bin/open_jtalk || echo "open_jtalk not in /usr/bin"
+            else
+              # For macOS, download dictionary
+              echo "Downloading NAIST Japanese Dictionary..."
+              mkdir -p piper/share/naist-jdic
+              curl -L -o dict.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
+              tar -xzf dict.tar.gz --strip-components=1 -C piper/share/naist-jdic
+              rm dict.tar.gz
+              export OPENJTALK_DICTIONARY_DIR=$PWD/piper/share/naist-jdic
+              echo "Dictionary downloaded to: $OPENJTALK_DICTIONARY_DIR"
+            fi
+          fi
+          
           # Set library path for Linux
           if [ "${{ runner.os }}" = "Linux" ]; then
             export LD_LIBRARY_PATH=$PWD/piper/lib:$LD_LIBRARY_PATH
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
           fi
           
+          # Set library path for macOS
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            export DYLD_LIBRARY_PATH=$PWD/piper/lib:$DYLD_LIBRARY_PATH
+            echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+          fi
+          
           # Create test input
-          echo "こんにちは、音声合成のテストです。" > test_input.txt
-          echo "日本語の音声が正しく生成されることを確認しています。" >> test_input.txt
-          echo "本日は晴天なり。" >> test_input.txt
+          # For Japanese model, use Japanese text
+          if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
+            echo "こんにちは、音声合成のテストです。" > test_input.txt
+            echo "日本語の音声合成をテストしています。" >> test_input.txt
+          else
+            # For English model, use English text
+            echo "Hello, this is a test of the text to speech system." > test_input.txt
+            echo "Testing the piper voice synthesis." >> test_input.txt
+          fi
           
           # Test binary exists and is executable
           if [ ! -f "${{ matrix.binary_path }}" ]; then
@@ -746,22 +863,33 @@ jobs:
           "${{ matrix.binary_path }}" --help || echo "Warning: Help command failed"
           
           # Run TTS
+          # Prefer Japanese model for testing PUA phoneme mapping
           if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
-            cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav
+            echo "Using Japanese model with Japanese text"
+            echo "Environment variables:"
+            echo "OPENJTALK_DICTIONARY_DIR=$OPENJTALK_DICTIONARY_DIR"
+            echo "OPENJTALK_VOICE=$OPENJTALK_VOICE"
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+            echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+            
+            # Run with debug output from the start
+            echo "Running TTS with debug output..."
+            cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav --debug
+            if [ $? -ne 0 ]; then
+              echo "Japanese TTS failed!"
+              # Try to get more information
+              echo "Checking for core dump..."
+              ls -la core* || echo "No core dump found"
+              exit 1
+            fi
+          elif [ -f "etc/test_voice.onnx" ]; then
+            echo "Using test voice from repository (English model)"
+            cat test_input.txt | "${{ matrix.binary_path }}" --model etc/test_voice.onnx --output_file test_output.wav || echo "Test voice failed"
           else
             # Fallback: just test that the binary runs
             echo "Testing binary functionality..."
             # Test with --version command
             "${{ matrix.binary_path }}" --version || echo "Version check failed"
-            
-            # Check if espeak-ng data is available
-            if [ -d "piper/espeak-ng-data" ]; then
-              echo "Found espeak-ng data directory"
-              export ESPEAK_DATA_PATH=$PWD/piper/espeak-ng-data
-            fi
-            
-            # Try simple TTS without model (will fail but shows binary works)
-            echo "Testing" | "${{ matrix.binary_path }}" --output_file test_output.wav 2>&1 | grep -E "(model|help|usage)" || true
             
             echo "✅ Binary test completed (model test skipped)"
           fi
@@ -785,10 +913,9 @@ jobs:
         run: |
           Write-Host "Testing Japanese TTS..."
           
-          # Create test input
-          "こんにちは、音声合成のテストです。" | Out-File -FilePath test_input.txt -Encoding UTF8
-          "日本語の音声が正しく生成されることを確認しています。" | Add-Content -Path test_input.txt -Encoding UTF8
-          "本日は晴天なり。" | Add-Content -Path test_input.txt -Encoding UTF8
+          # Create test input (Windows uses English only - no OpenJTalk support)
+          "Hello, this is a test of the text to speech system." | Out-File -FilePath test_input.txt -Encoding UTF8
+          "Testing the piper voice synthesis." | Add-Content -Path test_input.txt -Encoding UTF8
           
           # Test binary exists
           if (!(Test-Path "${{ matrix.binary_path }}")) {
@@ -843,8 +970,16 @@ jobs:
               Write-Host "Version check failed with exit code $versionExitCode"
             }
             
-            # Try simple TTS without model (will fail but shows binary works)
-            "Testing" | & "${{ matrix.binary_path }}" --output_file test_output.wav 2>&1 | Select-String -Pattern "model|help|usage"
+            # Try to use the test voice from the repository
+            if (Test-Path "etc\test_voice.onnx") {
+              Write-Host "Using test voice from repository"
+              "Testing" | & "${{ matrix.binary_path }}" --model etc\test_voice.onnx --output_file test_output.wav
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "Test voice failed with exit code $LASTEXITCODE"
+              }
+            } else {
+              Write-Host "No test model available, skipping TTS test"
+            }
             
             Write-Host "✅ Binary test completed (model test skipped)"
           }
