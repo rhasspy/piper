@@ -15,14 +15,14 @@ TEST(PhonemeMappingTest, MultiCharToPUA) {
         std::string input;
         uint32_t expected_codepoint;
     };
-    
+
     std::vector<TestCase> cases = {
         {"ch", 0xE00E},
         {"ts", 0xE00F},
         {"ky", 0xE006},
         {"sh", 0xE010}
     };
-    
+
     // In real test, would call actual mapping function
     for (const auto& test : cases) {
         // EXPECT_EQ(mapPhoneme(test.input), test.expected_codepoint);
@@ -33,7 +33,7 @@ TEST(PhonemeMappingTest, MultiCharToPUA) {
 // Test audio generation basics
 TEST(AudioGenerationTest, SampleRateValidation) {
     std::vector<int> valid_rates = {16000, 22050, 24000, 44100, 48000};
-    
+
     for (int rate : valid_rates) {
         EXPECT_GT(rate, 0);
         EXPECT_LE(rate, 48000);
@@ -43,7 +43,7 @@ TEST(AudioGenerationTest, SampleRateValidation) {
 TEST(AudioGenerationTest, Int16Range) {
     // Test that audio samples are in valid int16 range
     std::vector<int16_t> test_samples = {-32768, -16384, 0, 16383, 32767};
-    
+
     for (int16_t sample : test_samples) {
         EXPECT_GE(sample, -32768);
         EXPECT_LE(sample, 32767);
@@ -54,7 +54,7 @@ TEST(AudioGenerationTest, Int16Range) {
 TEST(WAVFormatTest, HeaderStructure) {
     // WAV header should be 44 bytes
     const int WAV_HEADER_SIZE = 44;
-    
+
     // Test header fields
     struct WAVHeader {
         char riff[4];      // "RIFF"
@@ -71,7 +71,7 @@ TEST(WAVFormatTest, HeaderStructure) {
         char data[4];      // "data"
         uint32_t data_size;
     };
-    
+
     EXPECT_EQ(sizeof(WAVHeader), WAV_HEADER_SIZE);
 }
 
@@ -79,7 +79,7 @@ TEST(WAVFormatTest, HeaderStructure) {
 TEST(TextProcessingTest, EmptyStringHandling) {
     std::string empty = "";
     std::string whitespace = "   ";
-    
+
     // Empty strings should be handled gracefully
     EXPECT_EQ(empty.length(), 0);
     EXPECT_GT(whitespace.length(), 0);
@@ -89,7 +89,7 @@ TEST(TextProcessingTest, UTF8Support) {
     // Test UTF-8 Japanese text
     std::string japanese = "こんにちは";
     EXPECT_GT(japanese.length(), 0);
-    
+
     // Test mixed content
     std::string mixed = "Hello世界123";
     EXPECT_GT(mixed.length(), 0);

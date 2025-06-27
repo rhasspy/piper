@@ -35,11 +35,11 @@ endif()
 
 # Add OpenJTalk support on Unix platforms (not Windows)
 if(NOT WIN32 AND NOT MSVC)
-  target_sources(piper PRIVATE 
+  target_sources(piper PRIVATE
     src/cpp/openjtalk_phonemize.cpp
     src/cpp/openjtalk_wrapper.c
   )
-  target_sources(test_piper PRIVATE 
+  target_sources(test_piper PRIVATE
     src/cpp/openjtalk_phonemize.cpp
     src/cpp/openjtalk_wrapper.c
   )
@@ -116,7 +116,7 @@ if(NOT WIN32 AND NOT MSVC)
   if(NOT DEFINED HTS_ENGINE_DIR)
     set(HTS_ENGINE_DIR "${CMAKE_CURRENT_BINARY_DIR}/he")
     set(HTS_ENGINE_VERSION "1.10")
-    
+
     ExternalProject_Add(
       hts_engine_external
       PREFIX "${CMAKE_CURRENT_BINARY_DIR}/h"
@@ -130,17 +130,17 @@ if(NOT WIN32 AND NOT MSVC)
   endif()
 
   # ---- OpenJTalk ---
-  
+
   if(NOT DEFINED OPENJTALK_DIR)
     set(OPENJTALK_DIR "${CMAKE_CURRENT_BINARY_DIR}/oj")
     set(OPENJTALK_VERSION "1.11")
-    
+
     ExternalProject_Add(
       openjtalk_external
       PREFIX "${CMAKE_CURRENT_BINARY_DIR}/o"
       URL "https://downloads.sourceforge.net/project/open-jtalk/Open%20JTalk/open_jtalk-${OPENJTALK_VERSION}/open_jtalk-${OPENJTALK_VERSION}.tar.gz"
       PATCH_COMMAND ""
-      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./configure 
+      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./configure
         --prefix=${OPENJTALK_DIR}
         --with-hts-engine-header-path=${HTS_ENGINE_DIR}/include
         --with-hts-engine-library-path=${HTS_ENGINE_DIR}/lib
@@ -148,7 +148,7 @@ if(NOT WIN32 AND NOT MSVC)
       BUILD_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make
       INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
       BUILD_IN_SOURCE 1
-      BUILD_BYPRODUCTS 
+      BUILD_BYPRODUCTS
         ${OPENJTALK_DIR}/bin/open_jtalk
       DEPENDS hts_engine_external
     )
@@ -191,13 +191,13 @@ if(NOT WIN32 AND NOT MSVC)
   # Ensure libraries are built before linking
   add_dependencies(piper openjtalk_external hts_engine_external)
   add_dependencies(test_piper openjtalk_external hts_engine_external)
-  
+
   # Link libraries with absolute paths
   # Note: OpenJTalk doesn't create a single library, we need to link individual components
-  target_link_libraries(piper 
+  target_link_libraries(piper
     ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
   )
-  target_link_libraries(test_piper 
+  target_link_libraries(test_piper
     ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
   )
 endif()
@@ -318,7 +318,7 @@ if(NOT WIN32 AND NOT MSVC)
     DESTINATION bin
     OPTIONAL  # Don't fail if not built
   )
-  
+
   # Install OpenJTalk dictionary
   install(
     DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/share/open_jtalk

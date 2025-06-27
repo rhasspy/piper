@@ -21,7 +21,7 @@ std::map<std::string, char32_t> testMultiCharToPUA = {
 // Mock phoneme mapping function
 std::vector<std::string> mapPhonemes(const std::vector<std::string>& phonemes) {
     std::vector<std::string> mapped;
-    
+
     for (const auto& phoneme : phonemes) {
         auto it = testMultiCharToPUA.find(phoneme);
         if (it != testMultiCharToPUA.end()) {
@@ -45,7 +45,7 @@ std::vector<std::string> mapPhonemes(const std::vector<std::string>& phonemes) {
             mapped.push_back(phoneme);
         }
     }
-    
+
     return mapped;
 }
 
@@ -55,7 +55,7 @@ std::vector<std::string> mapPhonemes(const std::vector<std::string>& phonemes) {
 TEST(PhonemizeTest, BasicPhonemeMapping) {
     std::vector<std::string> input = {"a", "ch", "i"};
     auto result = piper::mapPhonemes(input);
-    
+
     EXPECT_EQ(result.size(), 3);
     EXPECT_EQ(result[0], "a");
     EXPECT_NE(result[1], "ch"); // Should be mapped to PUA
@@ -66,9 +66,9 @@ TEST(PhonemizeTest, BasicPhonemeMapping) {
 TEST(PhonemizeTest, AllMultiCharMappings) {
     std::vector<std::string> multiCharPhonemes = {"ch", "ts", "ky", "sh"};
     auto result = piper::mapPhonemes(multiCharPhonemes);
-    
+
     EXPECT_EQ(result.size(), multiCharPhonemes.size());
-    
+
     // All should be mapped (not equal to original)
     for (size_t i = 0; i < multiCharPhonemes.size(); ++i) {
         EXPECT_NE(result[i], multiCharPhonemes[i]);
@@ -79,13 +79,13 @@ TEST(PhonemizeTest, AllMultiCharMappings) {
 TEST(PhonemizeTest, MixedPhonemes) {
     std::vector<std::string> input = {"k", "o", "n", "n", "i", "ch", "i", "w", "a"};
     auto result = piper::mapPhonemes(input);
-    
+
     EXPECT_EQ(result.size(), input.size());
-    
+
     // Single char phonemes should remain unchanged
     EXPECT_EQ(result[0], "k");
     EXPECT_EQ(result[1], "o");
-    
+
     // Multi-char should be mapped
     EXPECT_NE(result[5], "ch");
 }
@@ -94,7 +94,7 @@ TEST(PhonemizeTest, MixedPhonemes) {
 TEST(PhonemizeTest, EmptyInput) {
     std::vector<std::string> input = {};
     auto result = piper::mapPhonemes(input);
-    
+
     EXPECT_TRUE(result.empty());
 }
 
@@ -102,7 +102,7 @@ TEST(PhonemizeTest, EmptyInput) {
 TEST(PhonemizeTest, SingleCharPhonemes) {
     std::vector<std::string> input = {"a", "i", "u", "e", "o"};
     auto result = piper::mapPhonemes(input);
-    
+
     EXPECT_EQ(result, input); // Should be unchanged
 }
 
@@ -110,11 +110,11 @@ TEST(PhonemizeTest, SingleCharPhonemes) {
 TEST(PhonemizeTest, JapanesePhonemes) {
     std::vector<std::string> input = {"^", "k", "o", "N", "n", "i", "ch", "i", "w", "a", "$"};
     auto result = piper::mapPhonemes(input);
-    
+
     // Check markers are preserved
     EXPECT_EQ(result.front(), "^");
     EXPECT_EQ(result.back(), "$");
-    
+
     // Check "ch" is mapped
     bool found_ch_mapping = false;
     for (size_t i = 0; i < input.size(); ++i) {
@@ -131,13 +131,13 @@ TEST(PhonemizeTest, PUAEncodingTest) {
     // Test that PUA characters are properly encoded
     std::vector<std::string> input = {"ch"};
     auto result = piper::mapPhonemes(input);
-    
+
     ASSERT_EQ(result.size(), 1);
-    
+
     // Check it's a 3-byte UTF-8 sequence (PUA is in range E000-F8FF)
     const std::string& pua_char = result[0];
     EXPECT_EQ(pua_char.length(), 3); // PUA chars are 3 bytes in UTF-8
-    
+
     // Check first byte starts with 1110 (0xE0)
     EXPECT_EQ((unsigned char)pua_char[0] & 0xF0, 0xE0);
 }
