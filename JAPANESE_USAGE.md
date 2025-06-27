@@ -90,13 +90,15 @@ tar -xzf hts_voice.tar.gz
 #### 2. 環境変数の設定
 
 ```bash
-# espeak-ngのデータパス
+# espeak-ngのデータパス（Piperの初期化に必要）
+# 注意：日本語の音素抽出にはespeak-ngは使用されませんが、
+# Piperの起動時に初期化が必要なため、この設定は必須です
 export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
 
-# OpenJTalk辞書のパス
+# OpenJTalk辞書のパス（日本語の音素抽出に使用）
 export OPENJTALK_DICTIONARY_DIR="$(pwd)/open_jtalk_dic_utf_8-1.11"
 
-# HTSボイスモデルのパス
+# HTSボイスモデルのパス（OpenJTalkの音素抽出に必要）
 export OPENJTALK_VOICE="$(pwd)/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice"
 ```
 
