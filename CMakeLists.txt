@@ -302,6 +302,23 @@ install(
   DESTINATION share
 )
 
+# Install OpenJTalk for Japanese TTS support
+if(NOT WIN32 AND NOT MSVC)
+  # Install OpenJTalk binary
+  install(
+    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/oj/bin/open_jtalk
+    DESTINATION bin
+    OPTIONAL  # Don't fail if not built
+  )
+  
+  # Install OpenJTalk dictionary
+  install(
+    DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/share/open_jtalk
+    DESTINATION share
+    OPTIONAL  # Don't fail if not present
+  )
+endif()
+
 # Note: We don't need to copy espeak-ng library on macOS separately
 # because piper_phonemize builds and installs its own custom fork
 # of espeak-ng that includes the required espeak_TextToPhonemesWithTerminator

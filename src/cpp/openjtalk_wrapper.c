@@ -39,9 +39,14 @@ OpenJTalk* openjtalk_initialize() {
     
     // Find open_jtalk binary
     const char* possible_paths[] = {
+        // Check relative to piper binary first (for packaged version)
+        "../bin/open_jtalk",              // When piper is in bin/ directory
+        "./open_jtalk",                   // Same directory as piper
+        // Build directory paths
         "./oj/bin/open_jtalk",
         "../oj/bin/open_jtalk",
         "../../build/oj/bin/open_jtalk",
+        // System paths
         "/usr/local/bin/open_jtalk",
         "/usr/bin/open_jtalk",
         "/opt/homebrew/bin/open_jtalk",  // macOS ARM64 homebrew
@@ -67,7 +72,11 @@ OpenJTalk* openjtalk_initialize() {
     }
     
     if (!found_bin) {
-        fprintf(stderr, "open_jtalk binary not found\n");
+        fprintf(stderr, "open_jtalk binary not found. Searched paths:\n");
+        for (int i = 0; possible_paths[i] != NULL; i++) {
+            fprintf(stderr, "  %s\n", possible_paths[i]);
+        }
+        fprintf(stderr, "Please ensure OpenJTalk is installed or built\n");
         free(oj);
         return NULL;
     }

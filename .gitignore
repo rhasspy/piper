@@ -21,3 +21,6 @@ htmlcov
 .venv/
 lightning_logs/
 
+# Test artifacts
+test_japanese_tts.sh
+test_piper/
