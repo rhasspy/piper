@@ -775,6 +775,16 @@ jobs:
           if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
             echo "Setting up OpenJTalk for Japanese TTS..."
             
+            # Download HTS voice model (required for command-line OpenJTalk)
+            echo "Downloading HTS voice model..."
+            mkdir -p piper/share/hts-voice
+            curl -L -o voice.tar.gz "https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz/download"
+            tar -xzf voice.tar.gz
+            cp hts_voice_nitech_jp_atr503_m001-1.05/*.htsvoice piper/share/hts-voice/
+            rm -rf voice.tar.gz hts_voice_nitech_jp_atr503_m001-1.05
+            export OPENJTALK_VOICE=$PWD/piper/share/hts-voice/nitech_jp_atr503_m001.htsvoice
+            echo "HTS voice downloaded to: $OPENJTALK_VOICE"
+            
             # For Ubuntu, dictionary is already installed via apt
             if [ "${{ runner.os }}" = "Linux" ]; then
               # Find the correct dictionary path
@@ -858,6 +868,7 @@ jobs:
             echo "Using Japanese model with Japanese text"
             echo "Environment variables:"
             echo "OPENJTALK_DICTIONARY_DIR=$OPENJTALK_DICTIONARY_DIR"
+            echo "OPENJTALK_VOICE=$OPENJTALK_VOICE"
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
             echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
             

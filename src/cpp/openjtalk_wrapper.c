@@ -164,13 +164,25 @@ HTS_Label_Wrapper* openjtalk_extract_fullcontext(OpenJTalk* oj, const char* text
     pid_t pid = fork();
     if (pid == 0) {
         // Child process
-        // Note: We don't use -m (HTS voice) or -ow (output wav) options
-        // This allows phoneme extraction without requiring voice model
-        execl(impl->openjtalk_bin, "open_jtalk",
-              "-x", impl->dic_path,
-              "-ot", trace_file,
-              input_file,
-              NULL);
+        // Check if HTS voice is provided via environment variable
+        const char* voice_path = getenv("OPENJTALK_VOICE");
+        if (voice_path) {
+            // Use provided voice model
+            execl(impl->openjtalk_bin, "open_jtalk",
+                  "-x", impl->dic_path,
+                  "-m", voice_path,
+                  "-ot", trace_file,
+                  "-ow", "/dev/null",  // Discard audio output
+                  input_file,
+                  NULL);
+        } else {
+            // Try without voice model (may not work with all OpenJTalk versions)
+            execl(impl->openjtalk_bin, "open_jtalk",
+                  "-x", impl->dic_path,
+                  "-ot", trace_file,
+                  input_file,
+                  NULL);
+        }
         _exit(1);
     } else if (pid < 0) {
         // Fork failed
