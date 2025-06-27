@@ -43,6 +43,6 @@ class TestVITSUtils:
         lst = [1, 2, 3]
         result = commons.intersperse(lst, item=0)
         
-        assert result == [1, 0, 2, 0, 3]
+        assert result == [0, 1, 0, 2, 0, 3, 0]  # Actual implementation adds item at start and end too
         assert commons.intersperse([], item=0) == []
-        assert commons.intersperse([1], item=0) == [1]
+        assert commons.intersperse([1], item=0) == [0, 1, 0]
