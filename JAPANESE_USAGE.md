@@ -69,24 +69,48 @@
 
 ### 重要：初回セットアップ
 
-espeak-ngのデータパスを設定する必要があります：
+日本語TTSを使用するには、以下の設定が必要です：
+
+#### 1. 必要なファイルのダウンロード
 
 ```bash
-# piperディレクトリに移動した後
-export ESPEAK_DATA_PATH="$(pwd)/piper/espeak-ng-data"
+# 作業ディレクトリを作成
+mkdir -p ~/piper-japanese
+cd ~/piper-japanese
+
+# OpenJTalk辞書をダウンロード
+curl -L -o open_jtalk_dic.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
+tar -xzf open_jtalk_dic.tar.gz
+
+# HTSボイスモデルをダウンロード（音素抽出に必要）
+curl -L -o hts_voice.tar.gz "https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz/download"
+tar -xzf hts_voice.tar.gz
 ```
 
-または、シェルの設定ファイル（~/.bashrc や ~/.zshrc）に追加：
+#### 2. 環境変数の設定
+
 ```bash
-export ESPEAK_DATA_PATH="/path/to/piper/espeak-ng-data"
+# espeak-ngのデータパス
+export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
+
+# OpenJTalk辞書のパス
+export OPENJTALK_DICTIONARY_DIR="$(pwd)/open_jtalk_dic_utf_8-1.11"
+
+# HTSボイスモデルのパス
+export OPENJTALK_VOICE="$(pwd)/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice"
+```
+
+シェルの設定ファイル（~/.bashrc や ~/.zshrc）に追加する場合：
+```bash
+# Piper日本語TTS設定
+export ESPEAK_DATA_PATH="$HOME/piper-japanese/piper/share/espeak-ng-data"
+export OPENJTALK_DICTIONARY_DIR="$HOME/piper-japanese/open_jtalk_dic_utf_8-1.11"
+export OPENJTALK_VOICE="$HOME/piper-japanese/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice"
 ```
 
 ### 基本的な使い方
 
 ```bash
-# 環境変数を設定（毎回必要）
-export ESPEAK_DATA_PATH="$(pwd)/piper/espeak-ng-data"
-
 # テキストファイルから音声を生成
 ./piper/bin/piper --model path/to/model.onnx --output_file output.wav < input.txt
 
@@ -95,6 +119,42 @@ echo "こんにちは、世界" | ./piper/bin/piper --model path/to/model.onnx -
 
 # 標準出力に音声データを出力（他のプログラムにパイプ）
 echo "おはようございます" | ./piper/bin/piper --model path/to/model.onnx --output_raw | aplay -r 22050 -f S16_LE -t raw -
+```
+
+### 完全な手順例（ゼロから始める場合）
+
+```bash
+# 1. 作業ディレクトリを作成
+mkdir -p ~/piper-japanese-setup
+cd ~/piper-japanese-setup
+
+# 2. Piperバイナリをダウンロード（Apple Silicon Macの例）
+curl -L https://github.com/ayutaz/piper-plus/releases/latest/download/piper_macos_aarch64.tar.gz -o piper.tar.gz
+tar -xzf piper.tar.gz
+
+# 3. OpenJTalk辞書をダウンロード
+curl -L -o open_jtalk_dic.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
+tar -xzf open_jtalk_dic.tar.gz
+
+# 4. HTSボイスモデルをダウンロード
+curl -L -o hts_voice.tar.gz "https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz/download"
+tar -xzf hts_voice.tar.gz
+
+# 5. 日本語モデルをダウンロード（例：テストモデル）
+mkdir -p models
+curl -L -o models/ja_JP-test-medium.onnx "https://example.com/path/to/model.onnx"
+curl -L -o models/ja_JP-test-medium.onnx.json "https://example.com/path/to/model.onnx.json"
+
+# 6. 環境変数を設定
+export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
+export OPENJTALK_DICTIONARY_DIR="$(pwd)/open_jtalk_dic_utf_8-1.11"
+export OPENJTALK_VOICE="$(pwd)/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice"
+
+# 7. 日本語音声を生成
+echo "こんにちは、音声合成のテストです" | ./piper/bin/piper --model models/ja_JP-test-medium.onnx --output_file test.wav
+
+# 8. 生成された音声を再生（macOSの場合）
+afplay test.wav
 ```
 
 ### コマンドラインオプション
