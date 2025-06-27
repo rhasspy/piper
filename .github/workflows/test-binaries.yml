@@ -41,7 +41,7 @@ jobs:
 
     - name: Download latest release (workflow_run)
       if: github.event_name == 'workflow_run'
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: piper-${{ matrix.platform }}-${{ matrix.arch }}
         path: ./dist
