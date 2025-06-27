@@ -13,4 +13,4 @@ for parent in _current.parents:
         break
 
 if python_src and (str(python_src) not in sys.path):
-    sys.path.insert(0, str(python_src)) 
+    sys.path.insert(0, str(python_src))

@@ -7,7 +7,8 @@ import math
 import os
 import sys
 import time
-from pathlib import Path
+
+# from pathlib import Path  # noqa: F401 - May be used in future
 
 import numpy as np
 import onnxruntime
@@ -26,7 +27,7 @@ class SpeechStreamer:
         decoder_path: path to decoder ONNX model
         sample_rate: output sample rate
         chunk_size: number of mel frames to decode in each steps (time in secs = chunk_size * 256)
-        chunk_padding: number of mel frames to be concatinated to the start and end of the current chunk to reduce decoding artifacts
+        chunk_padding: number of mel frames to be concatinated to the start and end of the current chunk to reduce decoding artifacts  # noqa: E501
     """
 
     def __init__(
@@ -142,13 +143,13 @@ def main():
         "--chunk-size",
         type=int,
         default=45,
-        help="Number of mel frames to decode at each step"
+        help="Number of mel frames to decode at each step",
     )
     parser.add_argument(
         "--chunk-padding",
         type=int,
         default=5,
-        help="Number of mel frames to add to the start and end of the current chunk to reduce decoding artifacts"
+        help="Number of mel frames to add to the start and end of the current chunk to reduce decoding artifacts",  # noqa: E501
     )
 
     args = parser.parse_args()
@@ -169,7 +170,7 @@ def main():
             continue
 
         utt = json.loads(line)
-        utt_id = str(i)
+        # utt_id = str(i)  # noqa: F841 - Not used currently
         phoneme_ids = utt["phoneme_ids"]
         speaker_id = utt.get("speaker_id")
 
@@ -237,7 +238,7 @@ def stft(x, fft_size, hopsamp):
 def istft(X, fft_size, hopsamp):
     """Invert a STFT into a time domain signal.
     Args:
-        X (2-dim Numpy array): Input spectrogram. The rows are the time slices and columns are the frequency bins.
+        X (2-dim Numpy array): Input spectrogram. The rows are the time slices and columns are the frequency bins.  # noqa: E501
         fft_size (int):
         hopsamp (int): The hop size, in samples.
     Returns:

@@ -40,29 +40,45 @@ JAPANESE_PHONEMES: List[str] = [
     "e:",
     "o:",
     # special consonant-centric phonemes
-    "N",   # 撥音 (ん)
+    "N",  # 撥音 (ん)
     "cl",  # 促音 / 終止閉鎖
-    "q",   # 促音 (alternate label)
+    "q",  # 促音 (alternate label)
     # plosives + voiced counterparts
-    "k", "ky",
+    "k",
+    "ky",
     "kw",  # くゎ系歴史的仮名・方言
-    "g", "gy",
+    "g",
+    "gy",
     "gw",  # ぐゎ系
-    "t", "ty",
-    "d", "dy",
-    "p", "py",
-    "b", "by",
+    "t",
+    "ty",
+    "d",
+    "dy",
+    "p",
+    "py",
+    "b",
+    "by",
     # affricates, fricatives, etc.
-    "ch", "ts",
-    "s", "sh",
-    "z", "j", "zy",
-    "f", "h", "hy",
+    "ch",
+    "ts",
+    "s",
+    "sh",
+    "z",
+    "j",
+    "zy",
+    "f",
+    "h",
+    "hy",
     "v",  # 外来音ヴ用
     # nasals / approximants
-    "n", "ny",
-    "m", "my",
-    "r", "ry",
-    "w", "y",
+    "n",
+    "ny",
+    "m",
+    "my",
+    "r",
+    "ry",
+    "w",
+    "y",
 ]
 
 
@@ -78,4 +94,4 @@ def get_japanese_id_map() -> Dict[str, List[int]]:
     id_map: Dict[str, List[int]] = {}
     for idx, symbol in enumerate(symbols):
         id_map[symbol] = [idx]
-    return id_map 
+    return id_map

@@ -29,7 +29,7 @@ FIXED_PUA_MAPPING = {
     # Palatalized nasals/liquids
     "ny": 0xE013,
     "my": 0xE014,
-    "ry": 0xE015
+    "ry": 0xE015,
 }
 
 # Build bidirectional mappings
@@ -45,6 +45,7 @@ for token, codepoint in FIXED_PUA_MAPPING.items():
 # Private Use Area for dynamic allocation (starting after fixed mappings)
 _PUA_START = 0xE020  # Start after the last fixed mapping
 _next = _PUA_START
+
 
 def register(token: str) -> str:
     """Register *token* and return its single-codepoint replacement."""
@@ -68,4 +69,4 @@ def register(token: str) -> str:
 
 def map_sequence(seq):
     """seq は List[str]。各要素を1文字に置換したリストを返す"""
-    return [register(t) for t in seq] 
+    return [register(t) for t in seq]

@@ -26,7 +26,10 @@ data_files = [module_dir / "voices.json"]
 setup(
     name="piper-tts-plus",
     version="1.2.0",
-    description="A fast, local neural text to speech system that sounds great and is optimized for the Raspberry Pi 4.",
+    description=(
+        "A fast, local neural text to speech system that sounds great and is "
+        "optimized for the Raspberry Pi 4."
+    ),
     url="https://github.com/ayutaz/piper-plus",
     author="yousan",
     author_email="rabbitcats77@gmail.com",

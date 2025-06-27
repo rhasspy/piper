@@ -1,4 +1,5 @@
 """Configuration classes"""
+
 from dataclasses import dataclass, field
 from typing import Optional, Tuple
 
@@ -157,7 +158,7 @@ class TrainingConfig:
 #     symbols: typing.Optional[typing.List[str]] = None
 
 #     def split_word_phonemes(self, phonemes_str: str) -> typing.List[typing.List[str]]:
-#         """Split phonemes string into a list of lists (outer is words, inner is individual phonemes in each word)"""
+#         """Split phonemes string into a list of lists (outer is words, inner is individual phonemes in each word)"""  # noqa: E501
 #         return [
 #             word_phonemes_str.split(self.phoneme_separator)
 #             if self.phoneme_separator
@@ -166,7 +167,7 @@ class TrainingConfig:
 #         ]
 
 #     def join_word_phonemes(self, word_phonemes: typing.List[typing.List[str]]) -> str:
-#         """Split phonemes string into a list of lists (outer is words, inner is individual phonemes in each word)"""
+#         """Split phonemes string into a list of lists (outer is words, inner is individual phonemes in each word)"""  # noqa: E501
 #         return self.word_separator.join(
 #             self.phoneme_separator.join(wp) for wp in word_phonemes
 #         )
@@ -298,7 +299,7 @@ class TrainingConfig:
 #         config: "TrainingConfig",
 #         config_files: typing.Iterable[typing.Union[str, Path, typing.TextIO]],
 #     ) -> "TrainingConfig":
-#         """Loads one or more JSON configuration files and overlays them on top of an existing config"""
+#         """Loads one or more JSON configuration files and overlays them on top of an existing config"""  # noqa: E501
 #         base_dict = config.to_dict()
 #         for maybe_config_file in config_files:
 #             if isinstance(maybe_config_file, (str, Path)):

@@ -1,4 +1,5 @@
 """Shared access to package resources"""
+
 import os
 import typing
 from pathlib import Path

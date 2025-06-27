@@ -8,7 +8,8 @@ import logging
 import os
 import sys
 import signal
-import unicodedata
+
+# import unicodedata  # noqa: F401 - May be used for text normalization
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
@@ -16,7 +17,7 @@ from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
-import pyopenjtalk
+# import pyopenjtalk  # noqa: F401 - Used in conditional imports
 from tqdm import tqdm
 
 from piper_phonemize import (
@@ -147,8 +148,9 @@ def main() -> None:
 
     # pyopenjtalkの警告メッセージを抑制（プログレスバーの表示を妨げないため）
     import warnings
+
     warnings.filterwarnings("ignore", category=UserWarning)
-    
+
     # Ensure enum
     args.phoneme_type = PhonemeType(args.phoneme_type)
 
@@ -158,7 +160,10 @@ def main() -> None:
         args.phoneme_type = PhonemeType.OPENJTALK
         japanese_id_map = get_japanese_id_map()
         args.phoneme_id_map = japanese_id_map  # 子プロセスへ渡すため
-        _LOGGER.info("Using pyopenjtalk for Japanese phonemization (%s symbols)", len(japanese_id_map))
+        _LOGGER.info(
+            "Using pyopenjtalk for Japanese phonemization (%s symbols)",
+            len(japanese_id_map),
+        )
 
     # Convert to paths and create output directories
     args.input_dir = Path(args.input_dir)
@@ -227,11 +232,15 @@ def main() -> None:
                     get_codepoints_map()[args.language]
                     if args.phoneme_type == PhonemeType.TEXT
                     else (
-                        japanese_id_map if japanese_id_map is not None else get_espeak_map()
+                        japanese_id_map
+                        if japanese_id_map is not None
+                        else get_espeak_map()
                     )
                 ),
                 "num_symbols": (
-                    len(japanese_id_map) if japanese_id_map is not None else get_max_phonemes()
+                    len(japanese_id_map)
+                    if japanese_id_map is not None
+                    else get_max_phonemes()
                 ),
                 "num_speakers": len(speaker_counts),
                 "speaker_id_map": speaker_ids,
@@ -271,7 +280,11 @@ def main() -> None:
         "Processing %s utterance(s) with %s worker(s)", num_utterances, args.max_workers
     )
     # プログレスバーを表示（stdoutに表示し、早めに初期化）
-    print(f"Starting to process {num_utterances} utterances...", file=sys.stdout, flush=True)
+    print(
+        f"Starting to process {num_utterances} utterances...",
+        file=sys.stdout,
+        flush=True,
+    )
     pbar = tqdm(
         total=num_utterances,
         desc="Preprocessing",
