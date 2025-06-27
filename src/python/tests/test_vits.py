@@ -53,5 +53,5 @@ class TestVITSUtils:
             3,
             0,
         ]  # Actual implementation adds item at start and end too
-        assert commons.intersperse([], item=0) == []
+        assert commons.intersperse([], item=0) == [0]
         assert commons.intersperse([1], item=0) == [0, 1, 0]

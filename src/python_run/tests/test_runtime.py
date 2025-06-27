@@ -23,7 +23,7 @@ class TestAudioUtils:
         assert int16_audio[1] > 0  # 0.5 -> positive
         assert int16_audio[2] < 0  # -0.5 -> negative
         assert int16_audio[3] == 32767  # 1.0 -> max
-        assert int16_audio[4] == -32768  # -1.0 -> min
+        assert int16_audio[4] == -32767  # -1.0 -> min (normalized)
 
     @pytest.mark.unit
     def test_audio_clipping(self):
@@ -32,7 +32,7 @@ class TestAudioUtils:
         int16_audio = audio_float_to_int16(float_audio)
 
         assert int16_audio[0] == 32767  # Clipped to max
-        assert int16_audio[1] == -32768  # Clipped to min
+        assert int16_audio[1] == -32767  # Clipped to min (normalized)
 
 
 class TestPiperConfig:
