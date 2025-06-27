@@ -777,8 +777,23 @@ jobs:
             
             # For Ubuntu, dictionary is already installed via apt
             if [ "${{ runner.os }}" = "Linux" ]; then
-              export OPENJTALK_DICTIONARY_DIR=/var/lib/mecab/dic/open-jtalk/naist-jdic
-              echo "Using system OpenJTalk dictionary: $OPENJTALK_DICTIONARY_DIR"
+              # Find the correct dictionary path
+              DICT_PATH=$(find /usr/share /var/lib -name "naist-jdic" -type d 2>/dev/null | head -1)
+              if [ -z "$DICT_PATH" ]; then
+                echo "Dictionary not found, downloading..."
+                mkdir -p piper/share/naist-jdic
+                curl -L -o dict.tar.gz "https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download"
+                tar -xzf dict.tar.gz --strip-components=1 -C piper/share/naist-jdic
+                rm dict.tar.gz
+                export OPENJTALK_DICTIONARY_DIR=$PWD/piper/share/naist-jdic
+              else
+                export OPENJTALK_DICTIONARY_DIR=$DICT_PATH
+              fi
+              echo "Using OpenJTalk dictionary: $OPENJTALK_DICTIONARY_DIR"
+              
+              # Check OpenJTalk binary location
+              which open_jtalk || echo "open_jtalk not in PATH"
+              ls -la /usr/bin/open_jtalk || echo "open_jtalk not in /usr/bin"
             else
               # For macOS, download dictionary
               echo "Downloading NAIST Japanese Dictionary..."
@@ -841,10 +856,19 @@ jobs:
           # Prefer Japanese model for testing PUA phoneme mapping
           if [ -f "test/models/ja_JP-test-medium.onnx" ]; then
             echo "Using Japanese model with Japanese text"
-            cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav
+            echo "Environment variables:"
+            echo "OPENJTALK_DICTIONARY_DIR=$OPENJTALK_DICTIONARY_DIR"
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+            echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+            
+            # Run with debug output from the start
+            echo "Running TTS with debug output..."
+            cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav --debug
             if [ $? -ne 0 ]; then
-              echo "Japanese TTS failed, trying with debug output"
-              cat test_input.txt | "${{ matrix.binary_path }}" --model test/models/ja_JP-test-medium.onnx --output_file test_output.wav --debug
+              echo "Japanese TTS failed!"
+              # Try to get more information
+              echo "Checking for core dump..."
+              ls -la core* || echo "No core dump found"
               exit 1
             fi
           elif [ -f "etc/test_voice.onnx" ]; then
