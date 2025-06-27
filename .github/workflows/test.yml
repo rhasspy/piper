@@ -79,17 +79,17 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake espeak-ng libespeak-ng-dev
+        sudo apt-get install -y build-essential cmake espeak-ng libespeak-ng-dev libgtest-dev
         
     - name: Install dependencies (macOS)  
       if: matrix.os == 'macos-latest'
       run: |
-        brew install cmake espeak-ng
+        brew install cmake espeak-ng googletest
         
         
     - name: Build
       run: |
-        cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+        cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
         cmake --build build --config Release
         
     - name: Run C++ tests
@@ -114,7 +114,7 @@ jobs:
     - name: Install all dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake espeak-ng libespeak-ng-dev
+        sudo apt-get install -y build-essential cmake espeak-ng libespeak-ng-dev libgtest-dev
         python -m pip install --upgrade pip
         pip install -r src/python/requirements_test.txt
         pip install -e src/python
@@ -171,14 +171,14 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake espeak-ng libespeak-ng-dev
+        sudo apt-get install -y build-essential cmake espeak-ng libespeak-ng-dev libgtest-dev
         # Install pyopenjtalk for Japanese tests
         pip install pyopenjtalk
         
     - name: Install dependencies (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install cmake espeak-ng
+        brew install cmake espeak-ng googletest
         pip install pyopenjtalk
         
     - name: Install Python dependencies

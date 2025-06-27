@@ -49,7 +49,7 @@ class TestUtilImplementation:
         # Empty array will cause division by zero in normalization
         # This is expected behavior - skip this test
         try:
-            int16_audio = audio_float_to_int16(float_audio)
+            audio_float_to_int16(float_audio)  # Test that it doesn't crash
         except ValueError:
             # Expected for empty array
             pass

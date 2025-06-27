@@ -3,5 +3,5 @@ cython>=0.29.0,<1
 librosa>=0.9.2,<1
 numpy>=1.19.0
 onnxruntime>=1.11.0
-pytorch-lightning~=1.7.0
+pytorch-lightning>=2.0.0,<3
 torch>=1.11.0,<2

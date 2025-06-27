@@ -5,8 +5,6 @@ Tests actual implementation without excessive mocking
 
 import pytest
 import numpy as np
-import json
-from pathlib import Path
 from piper.util import audio_float_to_int16
 
 
@@ -43,7 +41,7 @@ class TestPiperConfig:
     @pytest.mark.unit
     def test_config_from_dict(self):
         """Test creating config from dictionary"""
-        from piper.config import PiperConfig
+        # from piper.config import PiperConfig  # noqa: F401
 
         config_dict = {
             "audio": {"sample_rate": 22050},
