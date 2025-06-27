@@ -8,7 +8,11 @@ import pytest
 pytest.importorskip("piper_train.phonemize")
 
 # noqa: E402 - Import after pytest.importorskip
-from piper_train.phonemize.token_mapper import TOKEN2CHAR, CHAR2TOKEN, map_sequence  # noqa: E402
+from piper_train.phonemize.token_mapper import (
+    TOKEN2CHAR,
+    CHAR2TOKEN,
+    map_sequence,
+)  # noqa: E402
 
 # Japanese imports are optional
 try:

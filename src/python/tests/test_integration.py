@@ -156,7 +156,9 @@ class TestRealIntegration:
                 # Assuming 16-bit mono at 22050Hz
                 # bytes / (bytes_per_sample * sample_rate)
                 estimated_duration = file_size / (2 * 22050)
-                rtf = synthesis_time / estimated_duration if estimated_duration > 0 else 0
+                rtf = (
+                    synthesis_time / estimated_duration if estimated_duration > 0 else 0
+                )
 
                 # Should be faster than real-time
                 assert rtf < 5.0, f"Synthesis too slow: RTF={rtf}"
