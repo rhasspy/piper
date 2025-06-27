@@ -25,6 +25,14 @@ endif()
 add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
 add_executable(test_piper src/cpp/test.cpp src/cpp/piper.cpp)
 
+# Testing support
+option(BUILD_TESTS "Build unit tests" OFF)
+if(BUILD_TESTS)
+  enable_testing()
+  find_package(GTest REQUIRED)
+  add_subdirectory(src/cpp/tests)
+endif()
+
 # Add OpenJTalk support on Unix platforms (not Windows)
 if(NOT WIN32 AND NOT MSVC)
   target_sources(piper PRIVATE 

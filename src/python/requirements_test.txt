@@ -1,0 +1,13 @@
+# Testing requirements for piper-tts
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-xdist==3.5.0  # For parallel test execution
+pytest-timeout==2.2.0  # For test timeouts
+pytest-mock==3.12.0  # For mocking
+coverage[toml]==7.3.2
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+pylint==3.0.2
+types-requests==2.31.0
+types-PyYAML==6.0.12
