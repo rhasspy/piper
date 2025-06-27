@@ -22,7 +22,15 @@ Piper is used in a [variety of projects](#people-using-piper).
   * **重要**: 日本語TTSを使用するには、以下の環境変数の設定が必要です：
     - `OPENJTALK_DICTIONARY_DIR`: OpenJTalk辞書へのパス
     - `OPENJTALK_VOICE`: HTSボイスモデル（.htsvoice）へのパス
+    - `ESPEAK_DATA_PATH`: espeak-ngデータへのパス（通常は`piper/share/espeak-ng-data`）
+  * 既存の日本語モデルは**再学習不要** - 設定ファイルの更新のみで対応可能
 * GitHub Actionsによる以下のプラットフォームのビルドおよびバイナリー配布の自動化
+
+  * Linux (amd64)
+  * macOS (x64, arm64) - OpenJTalkバイナリを含む
+  * Windows (x64)
+  * 注: Linux ARM64は現在OpenJTalkサポートなし（[#42](https://github.com/ayutaz/piper-plus/issues/42)で対応予定）
+  * 注: ARMv7 (32ビット) はサポート終了。Raspberry Pi 3以降はARM64版をご利用ください
 
 ### macOSユーザーへの注意事項
 
@@ -34,13 +42,10 @@ xattr -cr piper/
 
 # または特定のバイナリのみ
 xattr -cr piper/bin/piper
+xattr -cr piper/bin/open_jtalk  # 日本語TTSを使用する場合
 ```
 
 これにより、Gatekeeperの警告なしに実行できるようになります。
-  * Linux (amd64, arm64)
-  * macOS (x64, arm64)
-  * Windows (x64)
-  * 注: ARMv7 (32ビット) はサポート終了。Raspberry Pi 3以降はARM64版をご利用ください
 * 前処理済み .pt ファイルが破損していても学習時に自動スキップして継続できるように改善
 * DataLoader に `pin_memory=True` を設定し GPU 転送を最適化
 * `preprocess.py` に `--timeout-seconds` を追加し、ハングする発話を自動タイムアウト/スキップ
