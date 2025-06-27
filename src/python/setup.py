@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from collections import defaultdict
 from pathlib import Path
 
 import setuptools
@@ -42,7 +41,7 @@ setup(
         "piper_train": ["VERSION", "py.typed"],
     },
     install_requires=requirements,
-    python_requires=">=3.11",
+    extras_require={':python_version<"3.9"': ["importlib_resources"]},
     entry_points={
         "console_scripts": [
             "piper-train = piper_train.__main__:main",
@@ -53,8 +52,9 @@ setup(
         "Intended Audience :: Developers",
         "Topic :: Text Processing :: Linguistic",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     keywords="rhasspy tts speech voice",
 )

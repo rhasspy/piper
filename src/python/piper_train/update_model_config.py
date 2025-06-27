@@ -11,8 +11,8 @@ import json
 import argparse
 import shutil
 from pathlib import Path
-from typing import Dict, List, Any
-from piper_train.phonemize.token_mapper import FIXED_PUA_MAPPING, TOKEN2CHAR, CHAR2TOKEN
+from typing import Dict, Any
+from piper_train.phonemize.token_mapper import FIXED_PUA_MAPPING, TOKEN2CHAR
 
 
 def update_phoneme_id_map(config: Dict[str, Any]) -> bool:

@@ -27,8 +27,8 @@ setup(
     name="piper-tts-plus",
     version="1.2.0",
     description=(
-        "A fast, local neural text to speech system that sounds great "
-        "and is optimized for the Raspberry Pi 4."
+        "A fast, local neural text to speech system that sounds great and is "
+        "optimized for the Raspberry Pi 4."
     ),
     url="https://github.com/ayutaz/piper-plus",
     author="yousan",
@@ -44,15 +44,16 @@ setup(
         ]
     },
     install_requires=requirements,
-    python_requires=">=3.11",
     extras_require={"gpu": ["onnxruntime-gpu>=1.11.0,<2"], "http": ["flask>=3,<4"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "Topic :: Text Processing :: Linguistic",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     keywords="piper japanese and other languages tts",
 )

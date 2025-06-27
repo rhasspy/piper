@@ -7,11 +7,12 @@ import pytest
 # Try to import implementation, skip if not available
 pytest.importorskip("piper_train.phonemize")
 
-from piper_train.phonemize.token_mapper import TOKEN2CHAR, CHAR2TOKEN, map_sequence
+# noqa: E402 - Import after pytest.importorskip
+from piper_train.phonemize.token_mapper import TOKEN2CHAR, CHAR2TOKEN, map_sequence  # noqa: E402
 
 # Japanese imports are optional
 try:
-    import pyopenjtalk
+    import pyopenjtalk  # noqa: F401
     from piper_train.phonemize.japanese import phonemize_japanese
 
     HAS_JAPANESE = True

@@ -32,7 +32,7 @@ def main():
     )
     parser.add_argument(
         "--resume_from_single_speaker_checkpoint",
-        help="For multi-speaker models only. Converts a single-speaker checkpoint to multi-speaker and resumes training",
+        help="For multi-speaker models only. Converts a single-speaker checkpoint to multi-speaker and resumes training",  # noqa: E501
     )
     parser.add_argument(
         "--save-top-k",
@@ -102,7 +102,7 @@ def main():
     if args.resume_from_single_speaker_checkpoint:
         assert (
             num_speakers > 1
-        ), "--resume_from_single_speaker_checkpoint is only for multi-speaker models. Use --resume_from_checkpoint for single-speaker models."
+        ), "--resume_from_single_speaker_checkpoint is only for multi-speaker models. Use --resume_from_checkpoint for single-speaker models."  # noqa: E501
 
         # Load single-speaker checkpoint
         _LOGGER.debug(
@@ -149,7 +149,7 @@ def main():
             model.load_state_dict(checkpoint["state_dict"], strict=False)
 
             _LOGGER.info(
-                "Weights loaded successfully with strict=False. Starting training without resuming optimizer state."
+                "Weights loaded successfully with strict=False. Starting training without resuming optimizer state."  # noqa: E501
             )
 
             # argsからresume_from_checkpointを削除

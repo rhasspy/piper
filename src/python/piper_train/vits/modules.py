@@ -211,9 +211,9 @@ class WN(torch.nn.Module):
     def remove_weight_norm(self):
         if self.gin_channels != 0:
             torch.nn.utils.remove_weight_norm(self.cond_layer)
-        for l in self.in_layers:
+        for l in self.in_layers:  # noqa: E741
             torch.nn.utils.remove_weight_norm(l)
-        for l in self.res_skip_layers:
+        for l in self.res_skip_layers:  # noqa: E741
             torch.nn.utils.remove_weight_norm(l)
 
 
@@ -314,9 +314,9 @@ class ResBlock1(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
-        for l in self.convs1:
+        for l in self.convs1:  # noqa: E741
             remove_weight_norm(l)
-        for l in self.convs2:
+        for l in self.convs2:  # noqa: E741
             remove_weight_norm(l)
 
 
@@ -364,7 +364,7 @@ class ResBlock2(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
-        for l in self.convs:
+        for l in self.convs:  # noqa: E741
             remove_weight_norm(l)
 
 

@@ -8,7 +8,7 @@ import logging
 import os
 import sys
 import signal
-import unicodedata
+# import unicodedata  # noqa: F401 - May be used for text normalization
 from collections import Counter
 from dataclasses import dataclass, field
 from enum import Enum
@@ -16,7 +16,7 @@ from multiprocessing import JoinableQueue, Process, Queue
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
-import pyopenjtalk
+# import pyopenjtalk  # noqa: F401 - Used in conditional imports
 from tqdm import tqdm
 
 from piper_phonemize import (

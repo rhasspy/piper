@@ -142,7 +142,7 @@ def stft(x, fft_size, hopsamp):
 def istft(X, fft_size, hopsamp):
     """Invert a STFT into a time domain signal.
     Args:
-        X (2-dim Numpy array): Input spectrogram. The rows are the time slices and columns are the frequency bins.
+        X (2-dim Numpy array): Input spectrogram. The rows are the time slices and columns are the frequency bins.  # noqa: E501
         fft_size (int):
         hopsamp (int): The hop size, in samples.
     Returns:

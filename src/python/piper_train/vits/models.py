@@ -369,9 +369,9 @@ class Generator(torch.nn.Module):
 
     def remove_weight_norm(self):
         print("Removing weight norm...")
-        for l in self.ups:
+        for l in self.ups:  # noqa: E741
             remove_weight_norm(l)
-        for l in self.resblocks:
+        for l in self.resblocks:  # noqa: E741
             l.remove_weight_norm()
 
 
@@ -450,7 +450,7 @@ class DiscriminatorP(torch.nn.Module):
             t = t + n_pad
         x = x.view(b, c, t // self.period, self.period)
 
-        for l in self.convs:
+        for l in self.convs:  # noqa: E741
             x = l(x)
             x = F.leaky_relu(x, self.LRELU_SLOPE)
             fmap.append(x)
@@ -481,7 +481,7 @@ class DiscriminatorS(torch.nn.Module):
     def forward(self, x):
         fmap = []
 
-        for l in self.convs:
+        for l in self.convs:  # noqa: E741
             x = l(x)
             x = F.leaky_relu(x, self.LRELU_SLOPE)
             fmap.append(x)
