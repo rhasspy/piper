@@ -53,6 +53,23 @@
 
 日本語の音声合成を行うには、OpenJTalk形式の音素を使用するモデルが必要です。
 
+### 現在利用可能なモデル
+
+1. **テスト用モデル**（開発・検証用）
+   - piper-plusリポジトリの`test/models/`ディレクトリに含まれています
+   - ファイル名: `ja_JP-test-medium.onnx`と`ja_JP-test-medium.onnx.json`
+   - GitHubからダウンロード:
+     ```bash
+     # ONNXモデル（約63MB）
+     curl -L -o ja_JP-test-medium.onnx https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx
+     
+     # 設定ファイル
+     curl -L -o ja_JP-test-medium.onnx.json https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx.json
+     ```
+
+2. **自作モデル**
+   - [トレーニングガイド](TRAINING.md)を参照して独自のモデルを作成できます
+
 ### モデルの要件
 
 モデルの設定ファイル（.onnx.json）に以下の設定が必要です：
@@ -142,10 +159,15 @@ tar -xzf open_jtalk_dic.tar.gz
 curl -L -o hts_voice.tar.gz "https://sourceforge.net/projects/open-jtalk/files/HTS%20voice/hts_voice_nitech_jp_atr503_m001-1.05/hts_voice_nitech_jp_atr503_m001-1.05.tar.gz/download"
 tar -xzf hts_voice.tar.gz
 
-# 5. 日本語モデルをダウンロード（例：テストモデル）
+# 5. 日本語モデルをダウンロード
 mkdir -p models
-curl -L -o models/ja_JP-test-medium.onnx "https://example.com/path/to/model.onnx"
-curl -L -o models/ja_JP-test-medium.onnx.json "https://example.com/path/to/model.onnx.json"
+cd models
+
+# テスト用モデルをGitHubからダウンロード
+curl -L -o ja_JP-test-medium.onnx https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx
+curl -L -o ja_JP-test-medium.onnx.json https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx.json
+
+cd ..
 
 # 6. 環境変数を設定
 export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
