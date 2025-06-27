@@ -129,6 +129,11 @@ void phonemize_openjtalk(const std::string &text,
     if (pos1 == std::string::npos || pos2 == std::string::npos || pos2 <= pos1)
       continue;
     std::string token = lab.substr(pos1 + 1, pos2 - pos1 - 1);
+    // Skip invalid tokens (e.g., error messages that might contain ">")
+    if (token.find('>') != std::string::npos) {
+      spdlog::warn("Skipping invalid token containing '>': {}", token);
+      continue;
+    }
     if (token == "sil" && i == 0) {
       currentSentence.push_back(mapPhonemeStr("^"));
       continue;

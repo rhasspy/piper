@@ -104,6 +104,9 @@ static char* extract_phoneme_from_label(const char* label) {
     size_t len = end - start;
     if (len == 0) return NULL;
     
+    // Skip if phoneme contains invalid characters like '>'
+    if (memchr(start, '>', len) != NULL) return NULL;
+    
     char* phoneme = (char*)malloc(len + 1);
     if (!phoneme) return NULL;
     
@@ -155,7 +158,12 @@ HTS_Label_Wrapper* openjtalk_extract_fullcontext(OpenJTalk* oj, const char* text
         return NULL;
     }
     
-    fprintf(fp, "%s\n", text);
+    // Write the text exactly as provided
+    fprintf(fp, "%s", text);
+    // Ensure proper line ending
+    if (text[strlen(text)-1] != '\n') {
+        fprintf(fp, "\n");
+    }
     fclose(fp);
     close(output_fd);
     close(trace_fd);
@@ -249,7 +257,8 @@ HTS_Label_Wrapper* openjtalk_extract_fullcontext(OpenJTalk* oj, const char* text
         if (strlen(line) == 0) continue;
         
         // Check if this is a label line (contains phoneme information)
-        if (strstr(line, "-") && strstr(line, "+") && strstr(line, "/")) {
+        // Also skip any error/warning lines that might contain ">"
+        if (strstr(line, "-") && strstr(line, "+") && strstr(line, "/") && !strstr(line, ">")) {
             // Grow array if needed
             if (wrapper->size >= wrapper->capacity) {
                 size_t new_capacity = wrapper->capacity * 2;
