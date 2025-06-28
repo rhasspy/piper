@@ -1,0 +1,210 @@
+{
+  "model_repository": {
+    "url": "https://huggingface.co/rhasspy/piper-voices",
+    "version": "v1.0.0"
+  },
+  "test_configurations": {
+    "basic": {
+      "description": "Basic functionality test with simple sentences",
+      "timeout_seconds": 30,
+      "min_output_size_bytes": 10000,
+      "languages": ["en_US", "de_DE", "fr_FR", "es_ES", "it_IT", "pt_BR"]
+    },
+    "comprehensive": {
+      "description": "Comprehensive test including special characters and edge cases",
+      "timeout_seconds": 60,
+      "min_output_size_bytes": 10000,
+      "languages": ["en_US", "en_GB", "de_DE", "fr_FR", "es_ES", "it_IT", "pt_BR", "ru_RU", "zh_CN", "nl_NL", "pl_PL", "sv_SE"],
+      "additional_tests": [
+        "special_characters",
+        "numbers_and_dates",
+        "long_text",
+        "empty_input",
+        "multiline_input"
+      ]
+    },
+    "performance": {
+      "description": "Performance benchmarking with large text samples",
+      "timeout_seconds": 120,
+      "min_output_size_bytes": 10000,
+      "languages": ["en_US", "de_DE", "fr_FR", "es_ES", "zh_CN"],
+      "text_repetitions": 50,
+      "measure_metrics": true
+    }
+  },
+  "language_models": {
+    "en_US": {
+      "name": "English (United States)",
+      "model": "en_US-lessac-medium",
+      "speaker": "lessac",
+      "sample_text": "Hello, this is a test of the text to speech system.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "en_GB": {
+      "name": "English (United Kingdom)",
+      "model": "en_GB-alan-medium",
+      "speaker": "alan",
+      "sample_text": "Good morning, this is a British English voice test.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "de_DE": {
+      "name": "German",
+      "model": "de_DE-thorsten-medium",
+      "speaker": "thorsten",
+      "sample_text": "Hallo, dies ist ein Test des Sprachsynthesesystems.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "fr_FR": {
+      "name": "French",
+      "model": "fr_FR-upmc-medium",
+      "speaker": "upmc",
+      "sample_text": "Bonjour, ceci est un test du système de synthèse vocale.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "es_ES": {
+      "name": "Spanish (Spain)",
+      "model": "es_ES-mls_9972-low",
+      "speaker": "mls_9972",
+      "sample_text": "Hola, esta es una prueba del sistema de síntesis de voz.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "it_IT": {
+      "name": "Italian",
+      "model": "it_IT-riccardo-x_low",
+      "speaker": "riccardo",
+      "sample_text": "Ciao, questo è un test del sistema di sintesi vocale.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "pt_BR": {
+      "name": "Portuguese (Brazil)",
+      "model": "pt_BR-faber-medium",
+      "speaker": "faber",
+      "sample_text": "Olá, este é um teste do sistema de síntese de voz.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "ru_RU": {
+      "name": "Russian",
+      "model": "ru_RU-denis-medium",
+      "speaker": "denis",
+      "sample_text": "Привет, это тест системы синтеза речи.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "zh_CN": {
+      "name": "Chinese (Simplified)",
+      "model": "zh_CN-huayan-medium",
+      "speaker": "huayan",
+      "sample_text": "你好，这是语音合成系统的测试。",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos"],
+      "notes": "Limited support on Windows due to phonemizer constraints"
+    },
+    "ja_JP": {
+      "name": "Japanese",
+      "model": "ja_JP-kokoro-medium",
+      "speaker": "kokoro",
+      "sample_text": "こんにちは、音声合成システムのテストです。",
+      "phonemizer": "openjtalk",
+      "supported_platforms": ["linux", "macos"],
+      "notes": "Requires OpenJTalk installation and environment variables"
+    },
+    "nl_NL": {
+      "name": "Dutch",
+      "model": "nl_NL-nathalie-x_low",
+      "speaker": "nathalie",
+      "sample_text": "Hallo, dit is een test van het spraaksynthesesysteem.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "pl_PL": {
+      "name": "Polish",
+      "model": "pl_PL-gosia-medium",
+      "speaker": "gosia",
+      "sample_text": "Witaj, to jest test systemu syntezy mowy.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "sv_SE": {
+      "name": "Swedish",
+      "model": "sv_SE-nst-medium",
+      "speaker": "nst",
+      "sample_text": "Hej, detta är ett test av talsyntessystemet.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos", "windows"]
+    },
+    "ar_JO": {
+      "name": "Arabic",
+      "model": "ar_JO-kareem-medium",
+      "speaker": "kareem",
+      "sample_text": "مرحبا، هذا اختبار لنظام تركيب الكلام.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos"],
+      "notes": "Right-to-left language support"
+    },
+    "ko_KR": {
+      "name": "Korean",
+      "model": "ko_KR-kss-x_low",
+      "speaker": "kss",
+      "sample_text": "안녕하세요, 이것은 음성 합성 시스템의 테스트입니다.",
+      "phonemizer": "espeak",
+      "supported_platforms": ["linux", "macos"],
+      "notes": "Requires proper Unicode support"
+    }
+  },
+  "test_cases": {
+    "special_characters": {
+      "description": "Test handling of special characters and punctuation",
+      "test_texts": [
+        "Testing exclamation! Question? And... ellipsis.",
+        "Email: test@example.com, Website: https://example.com",
+        "Prices: $100, €50, £75, ¥1000",
+        "Math: 2+2=4, 10-5=5, 3×4=12, 15÷3=5"
+      ]
+    },
+    "numbers_and_dates": {
+      "description": "Test number and date pronunciation",
+      "test_texts": [
+        "The year 2025",
+        "January 1st, December 31st",
+        "Phone: +1-555-0123",
+        "Temperature: -5°C, 23°F",
+        "Fractions: 1/2, 3/4, 5/8"
+      ]
+    },
+    "edge_cases": {
+      "description": "Test edge cases and error handling",
+      "test_texts": [
+        "",
+        " ",
+        "A",
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "🚀 Emoji test 😊"
+      ]
+    }
+  },
+  "platform_specific": {
+    "linux": {
+      "library_path_var": "LD_LIBRARY_PATH",
+      "binary_name": "piper",
+      "requirements": []
+    },
+    "macos": {
+      "library_path_var": "DYLD_LIBRARY_PATH",
+      "binary_name": "piper",
+      "requirements": ["Remove quarantine attributes with xattr -cr"]
+    },
+    "windows": {
+      "library_path_var": "PATH",
+      "binary_name": "piper.exe",
+      "requirements": ["Visual C++ Redistributables"],
+      "unsupported_languages": ["zh_CN", "ja_JP", "ar_JO", "ko_KR"]
+    }
+  }
+}
