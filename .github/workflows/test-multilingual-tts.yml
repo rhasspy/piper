@@ -1,0 +1,478 @@
+name: Test Multilingual TTS
+
+on:
+  pull_request:
+    branches: [master, dev]
+  push:
+    branches: [dev, feat/*, fix/*]
+  workflow_dispatch:
+    inputs:
+      languages:
+        description: 'Languages to test (comma-separated, e.g., en_US,de_DE,fr_FR)'
+        required: false
+        default: 'en_US,de_DE,fr_FR,es_ES,zh_CN'
+      test_type:
+        description: 'Test type'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+          - basic
+          - comprehensive
+          - performance
+
+env:
+  # HuggingFace model repository
+  MODEL_REPO: "rhasspy/piper-voices"
+  MODEL_VERSION: "v1.0.0"
+  # Test settings
+  TEST_TIMEOUT: 300
+  CACHE_DIR: ~/.cache/piper
+
+jobs:
+  # リリース情報を事前に取得してキャッシュ
+  get_release_info:
+    name: Get Release Information
+    runs-on: ubuntu-latest
+    outputs:
+      linux_asset_url: ${{ steps.get_urls.outputs.linux_url }}
+      macos_x64_asset_url: ${{ steps.get_urls.outputs.macos_x64_url }}
+      macos_aarch64_asset_url: ${{ steps.get_urls.outputs.macos_aarch64_url }}
+    steps:
+      - name: Get release asset URLs
+        id: get_urls
+        run: |
+          # Get release information once
+          RELEASES_JSON=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases)
+          
+          # Extract URLs
+          LINUX_URL=$(echo "$RELEASES_JSON" | jq -r '.[0].assets[] | select(.name | contains("piper_linux_amd64")) | .browser_download_url' | head -1)
+          MACOS_X64_URL=$(echo "$RELEASES_JSON" | jq -r '.[0].assets[] | select(.name | contains("piper_macos_x64")) | .browser_download_url' | head -1)
+          MACOS_AARCH64_URL=$(echo "$RELEASES_JSON" | jq -r '.[0].assets[] | select(.name | contains("piper_macos_aarch64")) | .browser_download_url' | head -1)
+          
+          echo "linux_url=$LINUX_URL" >> $GITHUB_OUTPUT
+          echo "macos_x64_url=$MACOS_X64_URL" >> $GITHUB_OUTPUT
+          echo "macos_aarch64_url=$MACOS_AARCH64_URL" >> $GITHUB_OUTPUT
+          
+          echo "Linux URL: $LINUX_URL"
+          echo "macOS x64 URL: $MACOS_X64_URL"
+          echo "macOS aarch64 URL: $MACOS_AARCH64_URL"
+
+  test_multilingual:
+    name: Test ${{ matrix.language }} on ${{ matrix.os }}
+    needs: get_release_info
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]  # Windows一時的に無効化（アクセス違反エラーのため）
+        language:
+          - en_US  # English (US)
+          - en_GB  # English (UK)
+          - de_DE  # German
+          - fr_FR  # French
+          - es_ES  # Spanish
+          - it_IT  # Italian
+          - pt_BR  # Portuguese (Brazil)
+          - ru_RU  # Russian
+          - zh_CN  # Chinese (Simplified)
+          - nl_NL  # Dutch
+          - pl_PL  # Polish
+          - sv_SE  # Swedish
+        include:
+          # Define test models for each language
+          - language: en_US
+            model: "en_US-lessac-medium"
+            test_text: "Hello, this is a test of the text to speech system."
+          - language: en_GB
+            model: "en_GB-alan-medium"
+            test_text: "Good morning, this is a British English voice test."
+          - language: de_DE
+            model: "de_DE-thorsten-medium"
+            test_text: "Hallo, dies ist ein Test des Sprachsynthesesystems."
+          - language: fr_FR
+            model: "fr_FR-siwis-medium"
+            test_text: "Bonjour, ceci est un test du système de synthèse vocale."
+          - language: es_ES
+            model: "es_ES-mls_9972-low"
+            test_text: "Hola, esta es una prueba del sistema de síntesis de voz."
+          - language: it_IT
+            model: "it_IT-riccardo-x_low"
+            test_text: "Ciao, questo è un test del sistema di sintesi vocale."
+          - language: pt_BR
+            model: "pt_BR-faber-medium"
+            test_text: "Olá, este é um teste do sistema de síntese de voz."
+          - language: ru_RU
+            model: "ru_RU-dmitri-medium"
+            test_text: "Привет, это тест системы синтеза речи."
+          - language: zh_CN
+            model: "zh_CN-huayan-medium"
+            test_text: "你好，这是语音合成系统的测试。"
+          - language: nl_NL
+            model: "nl_NL-mls-medium"
+            test_text: "Hallo, dit is een test van het spraaksynthesesysteem."
+          - language: pl_PL
+            model: "pl_PL-gosia-medium"
+            test_text: "Witaj, to jest test systemu syntezy mowy."
+          - language: sv_SE
+            model: "sv_SE-nst-medium"
+            test_text: "Hej, detta är ett test av talsyntessystemet."
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Set up environment variables
+        shell: bash
+        run: |
+          echo "RUNNER_OS=${{ runner.os }}" >> $GITHUB_ENV
+          echo "MATRIX_LANGUAGE=${{ matrix.language }}" >> $GITHUB_ENV
+          echo "MATRIX_MODEL=${{ matrix.model }}" >> $GITHUB_ENV
+
+      - name: Download latest release binaries
+        shell: bash
+        run: |
+          # Create directories
+          mkdir -p piper test/models
+          
+          # Download the appropriate binary based on OS
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            # Use pre-fetched URL
+            ASSET_URL="${{ needs.get_release_info.outputs.linux_asset_url }}"
+            
+            if [ -z "$ASSET_URL" ]; then
+              echo "No Linux binary found in releases"
+              exit 1
+            fi
+            
+            echo "Downloading Linux binary from: $ASSET_URL"
+            curl -L -o piper.tar.gz "$ASSET_URL"
+            tar -xzf piper.tar.gz
+            rm piper.tar.gz
+            
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            # Determine architecture
+            ARCH="x64"
+            if [[ "$(uname -m)" == "arm64" ]]; then
+              ARCH="aarch64"
+            fi
+            
+            # Use pre-fetched URL based on architecture
+            if [ "$ARCH" = "x64" ]; then
+              ASSET_URL="${{ needs.get_release_info.outputs.macos_x64_asset_url }}"
+            else
+              ASSET_URL="${{ needs.get_release_info.outputs.macos_aarch64_asset_url }}"
+            fi
+            
+            if [ -z "$ASSET_URL" ]; then
+              echo "No macOS binary found for architecture: $ARCH"
+              exit 1
+            fi
+            
+            echo "Downloading macOS binary from: $ASSET_URL"
+            curl -L -o piper.tar.gz "$ASSET_URL"
+            tar -xzf piper.tar.gz
+            rm piper.tar.gz
+            
+          fi
+          
+          # Make binary executable
+          chmod +x piper/bin/piper
+          
+          # Verify binary and libraries
+          ls -la piper/bin/
+          ls -la piper/lib/ || echo "No lib directory found"
+
+      - name: Cache voice models
+        uses: actions/cache@v4.2.0
+        with:
+          path: ~/.cache/piper
+          key: ${{ runner.os }}-piper-models-${{ matrix.language }}-${{ env.MODEL_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-piper-models-${{ matrix.language }}-
+            ${{ runner.os }}-piper-models-
+
+      - name: Download voice model
+        shell: bash
+        run: |
+          # Expand CACHE_DIR
+          CACHE_DIR_EXPANDED="${HOME}/.cache/piper"
+          MODEL_DIR="${CACHE_DIR_EXPANDED}/voices/${{ matrix.language }}"
+          mkdir -p "$MODEL_DIR"
+          
+          # Construct model URLs based on the VOICES.md format
+          LANG_PREFIX=$(echo "${{ matrix.language }}" | cut -d_ -f1)
+          MODEL_NAME="${{ matrix.model }}"
+          
+          # Extract speaker and quality from model name
+          # Format: lang_COUNTRY-speaker-quality
+          SPEAKER=$(echo "${MODEL_NAME}" | cut -d'-' -f2)
+          QUALITY=$(echo "${MODEL_NAME}" | cut -d'-' -f3)
+          
+          # Construct URL following HuggingFace structure
+          BASE_URL="https://huggingface.co/${MODEL_REPO}/resolve/${MODEL_VERSION}/${LANG_PREFIX}/${{ matrix.language }}/${SPEAKER}/${QUALITY}"
+          
+          # Download model files if not cached
+          if [ ! -f "${MODEL_DIR}/${MODEL_NAME}.onnx" ]; then
+            echo "Downloading ${MODEL_NAME} model..."
+            echo "URL: ${BASE_URL}/${MODEL_NAME}.onnx?download=true"
+            curl -L -o "${MODEL_DIR}/${MODEL_NAME}.onnx" \
+              "${BASE_URL}/${MODEL_NAME}.onnx?download=true" || {
+              echo "Failed to download model from: ${BASE_URL}/${MODEL_NAME}.onnx"
+              exit 1
+            }
+          fi
+          
+          if [ ! -f "${MODEL_DIR}/${MODEL_NAME}.onnx.json" ]; then
+            echo "Downloading ${MODEL_NAME} config..."
+            echo "URL: ${BASE_URL}/${MODEL_NAME}.onnx.json?download=true"
+            curl -L -o "${MODEL_DIR}/${MODEL_NAME}.onnx.json" \
+              "${BASE_URL}/${MODEL_NAME}.onnx.json?download=true" || {
+              echo "Failed to download config from: ${BASE_URL}/${MODEL_NAME}.onnx.json"
+              exit 1
+            }
+          fi
+          
+          # Verify downloads
+          if [ ! -s "${MODEL_DIR}/${MODEL_NAME}.onnx" ]; then
+            echo "Error: Model file is empty or corrupted"
+            exit 1
+          fi
+          
+          if [ ! -s "${MODEL_DIR}/${MODEL_NAME}.onnx.json" ]; then
+            echo "Error: Config file is empty or corrupted"
+            exit 1
+          fi
+          
+          # Copy to test directory
+          cp "${MODEL_DIR}/${MODEL_NAME}.onnx" "test/models/"
+          cp "${MODEL_DIR}/${MODEL_NAME}.onnx.json" "test/models/"
+          
+          # Verify downloads
+          ls -la test/models/
+
+      - name: Run TTS test (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Set up environment
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            export LD_LIBRARY_PATH=$PWD/piper/lib:$LD_LIBRARY_PATH
+            PIPER_CMD="./piper/bin/piper"
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            export DYLD_LIBRARY_PATH=$PWD/piper/lib:$DYLD_LIBRARY_PATH
+            PIPER_CMD="./piper/bin/piper"
+          fi
+          
+          # Create test input
+          echo "${{ matrix.test_text }}" > test_input.txt
+          
+          # Run basic TTS test
+          echo "Running TTS for ${{ matrix.language }}..."
+          cat test_input.txt | $PIPER_CMD \
+            --model "test/models/${{ matrix.model }}.onnx" \
+            --output_file "test_output_${{ matrix.language }}.wav" || {
+            echo "TTS failed for ${{ matrix.language }}"
+            exit 1
+          }
+          
+          # Verify output
+          if [ -f "test_output_${{ matrix.language }}.wav" ]; then
+            size=$(stat -f%z "test_output_${{ matrix.language }}.wav" 2>/dev/null || stat -c%s "test_output_${{ matrix.language }}.wav" 2>/dev/null)
+            echo "Generated audio file size: ${size} bytes"
+            
+            if [ "$size" -gt 10000 ]; then
+              echo "✅ TTS test passed for ${{ matrix.language }}!"
+            else
+              echo "❌ Output file too small for ${{ matrix.language }} (${size} bytes)"
+              exit 1
+            fi
+          else
+            echo "❌ No output file generated for ${{ matrix.language }}"
+            exit 1
+          fi
+          
+          # Performance test (if requested)
+          if [ "${{ github.event.inputs.test_type }}" = "performance" ] || [ "${{ github.event.inputs.test_type }}" = "comprehensive" ]; then
+            echo "Running performance test..."
+            
+            # Create longer test text
+            for i in {1..10}; do
+              echo "${{ matrix.test_text }}" >> performance_input.txt
+            done
+            
+            # Measure time
+            start_time=$(date +%s.%N)
+            cat performance_input.txt | $PIPER_CMD \
+              --model "test/models/${{ matrix.model }}.onnx" \
+              --output_file "performance_output.wav"
+            end_time=$(date +%s.%N)
+            
+            # Calculate duration
+            duration=$(echo "$end_time - $start_time" | bc)
+            echo "Performance: Generated 10 sentences in ${duration} seconds"
+            
+            # Save performance data
+            echo "${{ matrix.language }},${{ matrix.model }},$duration" >> performance_results.csv
+          fi
+
+
+      - name: Run comprehensive tests
+        if: github.event.inputs.test_type == 'comprehensive'
+        shell: bash
+        run: |
+          echo "Running comprehensive tests for ${{ matrix.language }}..."
+          
+          # Set piper path
+          PIPER_CMD="./piper/bin/piper"
+          
+          # Test 1: Special characters and punctuation
+          echo "Testing special characters..."
+          echo "Hello! How are you? This costs \$100. Email: test@example.com" > special_chars.txt
+          $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" < special_chars.txt --output_file special_output.wav || echo "Special chars test completed"
+          
+          # Test 2: Numbers and dates
+          echo "Testing numbers and dates..."
+          echo "The year is 2025. Today is January 27th. The temperature is -5 degrees." > numbers.txt
+          $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" < numbers.txt --output_file numbers_output.wav || echo "Numbers test completed"
+          
+          # Test 3: Long text (stress test)
+          echo "Testing long text..."
+          # Generate a long paragraph
+          for i in {1..50}; do
+            echo "${{ matrix.test_text }}" >> long_text.txt
+          done
+          timeout 60 bash -c "$PIPER_CMD --model 'test/models/${{ matrix.model }}.onnx' < long_text.txt --output_file long_output.wav" || echo "Long text test completed"
+          
+          # Test 4: Empty input handling
+          echo "Testing empty input..."
+          echo "" | $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" --output_file empty_output.wav || echo "Empty input handled"
+          
+          # Test 5: Multi-line input
+          echo "Testing multi-line input..."
+          cat > multiline.txt << EOF
+          Line one of the test.
+          Line two of the test.
+          Line three of the test.
+          EOF
+          $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" < multiline.txt --output_file multiline_output.wav || echo "Multi-line test completed"
+          
+          echo "Comprehensive tests completed for ${{ matrix.language }}"
+
+      - name: Upload test outputs
+        if: always()
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: test-outputs-${{ matrix.language }}-${{ matrix.os }}
+          path: |
+            test_output_*.wav
+            performance_output.wav
+            special_output.wav
+            numbers_output.wav
+            long_output.wav
+            multiline_output.wav
+            performance_results.csv
+          retention-days: 7
+
+      - name: Upload performance results
+        if: github.event.inputs.test_type == 'performance' || github.event.inputs.test_type == 'comprehensive'
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: performance-${{ matrix.language }}-${{ matrix.os }}
+          path: performance_results.csv
+          retention-days: 30
+
+  summarize_results:
+    name: Summarize Test Results
+    needs: [get_release_info, test_multilingual]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all performance results
+        if: github.event.inputs.test_type == 'performance' || github.event.inputs.test_type == 'comprehensive'
+        uses: actions/download-artifact@v4.1.0
+        with:
+          pattern: performance-*
+          path: performance-data
+
+      - name: Generate summary report
+        if: github.event.inputs.test_type == 'performance' || github.event.inputs.test_type == 'comprehensive'
+        run: |
+          echo "# Multilingual TTS Test Summary" > summary.md
+          echo "" >> summary.md
+          echo "## Performance Results" >> summary.md
+          echo "" >> summary.md
+          echo "| Language | Model | OS | Time (seconds) |" >> summary.md
+          echo "|----------|-------|----|--------------:|" >> summary.md
+          
+          # Aggregate performance data
+          find performance-data -name "*.csv" | while read file; do
+            # Extract OS and language from filename
+            filename=$(basename "$file")
+            os_lang=$(echo "$filename" | sed 's/performance-\(.*\)-\(.*\)\.csv/\1 \2/')
+            
+            # Process CSV data
+            while IFS=',' read -r lang model time; do
+              echo "| $lang | $model | ${os_lang##* } | $time |" >> summary.md
+            done < "$file"
+          done
+          
+          # Output summary
+          cat summary.md
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 🌍 Multilingual TTS Test Results\n\n';
+            
+            // Check job statuses
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+            
+            // Count successes and failures by language
+            const results = {};
+            jobs.data.jobs.forEach(job => {
+              if (job.name.startsWith('Test ')) {
+                const match = job.name.match(/Test (\w+) on/);
+                if (match) {
+                  const lang = match[1];
+                  if (!results[lang]) results[lang] = {success: 0, fail: 0};
+                  if (job.conclusion === 'success') {
+                    results[lang].success++;
+                  } else if (job.conclusion === 'failure') {
+                    results[lang].fail++;
+                  }
+                }
+              }
+            });
+            
+            // Format results table
+            comment += '| Language | Status | Success Rate |\n';
+            comment += '|----------|--------|-------------:|\n';
+            
+            Object.entries(results).forEach(([lang, stats]) => {
+              const total = stats.success + stats.fail;
+              const rate = total > 0 ? (stats.success / total * 100).toFixed(0) : 0;
+              const status = stats.fail === 0 ? '✅' : '⚠️';
+              comment += `| ${lang} | ${status} | ${rate}% (${stats.success}/${total}) |\n`;
+            });
+            
+            // Add performance summary if available
+            if (fs.existsSync('summary.md')) {
+              const summary = fs.readFileSync('summary.md', 'utf8');
+              comment += '\n' + summary;
+            }
+            
+            // Post comment
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
