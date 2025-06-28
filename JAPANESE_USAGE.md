@@ -84,9 +84,34 @@
 
 ## 使用方法
 
-### 重要：初回セットアップ
+### 自動セットアップ（新機能）
 
-日本語TTSを使用するには、以下の設定が必要です：
+最新バージョンでは、OpenJTalk辞書とHTSボイスモデルが**自動的にダウンロード**されます！
+
+```bash
+# espeak-ngのデータパスだけ設定すれば、すぐに使えます
+export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
+
+# 日本語音声を生成（初回実行時に必要なファイルが自動ダウンロードされます）
+echo "こんにちは" | ./piper/bin/piper --model path/to/model.onnx --output_file hello.wav
+```
+
+#### 自動ダウンロードの詳細
+
+初回実行時に以下のファイルが自動的にダウンロードされます：
+- **OpenJTalk辞書**: `~/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11/`
+- **HTSボイスモデル**: `~/.piper/voices/hts/hts_voice_nitech_jp_atr503_m001-1.05/`
+
+#### 環境変数による制御
+
+- `PIPER_AUTO_DOWNLOAD_DICT=0`: 自動ダウンロードを無効化
+- `PIPER_OFFLINE_MODE=1`: オフラインモード（ダウンロードを試みない）
+- `OPENJTALK_DICTIONARY_DIR`: カスタム辞書パスを指定
+- `OPENJTALK_VOICE`: カスタムボイスモデルパスを指定
+
+### 手動セットアップ（従来の方法）
+
+自動ダウンロードを使用したくない場合や、カスタムファイルを使用する場合は、以下の手順で手動セットアップできます：
 
 #### 1. 必要なファイルのダウンロード
 
@@ -108,8 +133,6 @@ tar -xzf hts_voice.tar.gz
 
 ```bash
 # espeak-ngのデータパス（Piperの初期化に必要）
-# 注意：日本語の音素抽出にはespeak-ngは使用されませんが、
-# Piperの起動時に初期化が必要なため、この設定は必須です
 export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
 
 # OpenJTalk辞書のパス（日本語の音素抽出に使用）
@@ -117,14 +140,6 @@ export OPENJTALK_DICTIONARY_DIR="$(pwd)/open_jtalk_dic_utf_8-1.11"
 
 # HTSボイスモデルのパス（OpenJTalkの音素抽出に必要）
 export OPENJTALK_VOICE="$(pwd)/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice"
-```
-
-シェルの設定ファイル（~/.bashrc や ~/.zshrc）に追加する場合：
-```bash
-# Piper日本語TTS設定
-export ESPEAK_DATA_PATH="$HOME/piper-japanese/piper/share/espeak-ng-data"
-export OPENJTALK_DICTIONARY_DIR="$HOME/piper-japanese/open_jtalk_dic_utf_8-1.11"
-export OPENJTALK_VOICE="$HOME/piper-japanese/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice"
 ```
 
 ### 基本的な使い方
@@ -141,6 +156,36 @@ echo "おはようございます" | ./piper/bin/piper --model path/to/model.onn
 ```
 
 ### 完全な手順例（ゼロから始める場合）
+
+#### 最新版（自動ダウンロード対応）の場合：
+
+```bash
+# 1. 作業ディレクトリを作成
+mkdir -p ~/piper-japanese-setup
+cd ~/piper-japanese-setup
+
+# 2. Piperバイナリをダウンロード（Apple Silicon Macの例）
+curl -L https://github.com/ayutaz/piper-plus/releases/latest/download/piper_macos_aarch64.tar.gz -o piper.tar.gz
+tar -xzf piper.tar.gz
+
+# 3. 日本語モデルをダウンロード
+mkdir -p models
+cd models
+curl -L -o ja_JP-test-medium.onnx https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx
+curl -L -o ja_JP-test-medium.onnx.json https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx.json
+cd ..
+
+# 4. 環境変数を設定（espeak-ngのパスのみ必要）
+export ESPEAK_DATA_PATH="$(pwd)/piper/share/espeak-ng-data"
+
+# 5. 日本語音声を生成（辞書とボイスモデルは自動でダウンロードされます）
+echo "こんにちは、音声合成のテストです" | ./piper/bin/piper --model models/ja_JP-test-medium.onnx --output_file test.wav
+
+# 6. 生成された音声を再生（macOSの場合）
+afplay test.wav
+```
+
+#### 従来版（手動セットアップ）の場合：
 
 ```bash
 # 1. 作業ディレクトリを作成
@@ -162,11 +207,8 @@ tar -xzf hts_voice.tar.gz
 # 5. 日本語モデルをダウンロード
 mkdir -p models
 cd models
-
-# テスト用モデルをGitHubからダウンロード
 curl -L -o ja_JP-test-medium.onnx https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx
 curl -L -o ja_JP-test-medium.onnx.json https://github.com/ayutaz/piper-plus/raw/master/test/models/ja_JP-test-medium.onnx.json
-
 cd ..
 
 # 6. 環境変数を設定
