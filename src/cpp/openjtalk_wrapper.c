@@ -1,4 +1,5 @@
 #include "openjtalk_wrapper.h"
+#include "openjtalk_dictionary_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,15 +25,10 @@ OpenJTalk* openjtalk_initialize() {
     struct OpenJTalk_impl* oj = (struct OpenJTalk_impl*)calloc(1, sizeof(struct OpenJTalk_impl));
     if (!oj) return NULL;
     
-    // Check if dictionary exists - prefer environment variable
-    const char* dic_path = getenv("OPENJTALK_DICTIONARY_DIR");
-    if (!dic_path) {
-        dic_path = OPENJTALK_DIC_PATH;
-    }
-    
-    if (access(dic_path, R_OK) != 0) {
-        fprintf(stderr, "OpenJTalk dictionary not found at: %s\n", dic_path);
-        fprintf(stderr, "Please set OPENJTALK_DICTIONARY_DIR environment variable or install dictionary at the default location\n");
+    // Ensure dictionary is available (will download if necessary)
+    const char* dic_path = NULL;
+    if (openjtalk_ensure_dictionary(&dic_path) != 0) {
+        fprintf(stderr, "Failed to ensure OpenJTalk dictionary is available\n");
         free(oj);
         return NULL;
     }
@@ -181,10 +177,10 @@ HTS_Label_Wrapper* openjtalk_extract_fullcontext(OpenJTalk* oj, const char* text
     pid_t pid = fork();
     if (pid == 0) {
         // Child process
-        // Check if HTS voice is provided via environment variable
-        const char* voice_path = getenv("OPENJTALK_VOICE");
-        if (voice_path) {
-            // Use provided voice model
+        // Try to ensure HTS voice is available
+        const char* voice_path = NULL;
+        if (openjtalk_ensure_hts_voice(&voice_path) == 0 && voice_path) {
+            // Use provided or auto-downloaded voice model
             execl(impl->openjtalk_bin, "open_jtalk",
                   "-x", impl->dic_path,
                   "-m", voice_path,

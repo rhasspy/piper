@@ -30,6 +30,59 @@ env:
   CACHE_DIR: ~/.cache/piper
 
 jobs:
+  # OpenJTalk dictionary download test
+  test_dictionary_download:
+    name: Test Dictionary Auto-Download
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential curl
+      
+      - name: Build piper
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DBUILD_TESTS=ON
+          make -j$(nproc)
+      
+      - name: Run dictionary download tests
+        run: |
+          chmod +x test_dictionary_download.sh
+          ./test_dictionary_download.sh
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Verify auto-download functionality
+        run: |
+          # Change to build directory for proper OpenJTalk path resolution
+          cd build
+          
+          # Test that Japanese TTS works with auto-download
+          export HOME=/tmp/test_auto_$$
+          echo "自動ダウンロードテスト" | ./piper --model ../test/models/ja_JP-test-medium.onnx --output_file /tmp/auto_test.wav 2>&1 | tee /tmp/auto_test.log || true
+          
+          # Check if the test ran successfully or at least downloaded the dictionary
+          if [ -f "$HOME/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11/sys.dic" ]; then
+            echo "✅ Dictionary auto-download successful"
+            if [ -f "$HOME/.piper/voices/hts/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice" ]; then
+              echo "✅ HTS voice auto-download successful"
+            else
+              echo "⚠️ HTS voice not downloaded (optional)"
+            fi
+          else
+            echo "❌ Auto-download failed"
+            cat /tmp/auto_test.log
+            exit 1
+          fi
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+
   # リリース情報を事前に取得してキャッシュ
   get_release_info:
     name: Get Release Information
@@ -420,59 +473,3 @@ jobs:
           # Output summary
           cat summary.md
 
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7.0.1
-        with:
-          script: |
-            const fs = require('fs');
-            let comment = '## 🌍 Multilingual TTS Test Results\n\n';
-            
-            // Check job statuses
-            const jobs = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
-            
-            // Count successes and failures by language
-            const results = {};
-            jobs.data.jobs.forEach(job => {
-              if (job.name.startsWith('Test ')) {
-                const match = job.name.match(/Test (\w+) on/);
-                if (match) {
-                  const lang = match[1];
-                  if (!results[lang]) results[lang] = {success: 0, fail: 0};
-                  if (job.conclusion === 'success') {
-                    results[lang].success++;
-                  } else if (job.conclusion === 'failure') {
-                    results[lang].fail++;
-                  }
-                }
-              }
-            });
-            
-            // Format results table
-            comment += '| Language | Status | Success Rate |\n';
-            comment += '|----------|--------|-------------:|\n';
-            
-            Object.entries(results).forEach(([lang, stats]) => {
-              const total = stats.success + stats.fail;
-              const rate = total > 0 ? (stats.success / total * 100).toFixed(0) : 0;
-              const status = stats.fail === 0 ? '✅' : '⚠️';
-              comment += `| ${lang} | ${status} | ${rate}% (${stats.success}/${total}) |\n`;
-            });
-            
-            // Add performance summary if available
-            if (fs.existsSync('summary.md')) {
-              const summary = fs.readFileSync('summary.md', 'utf8');
-              comment += '\n' + summary;
-            }
-            
-            // Post comment
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });

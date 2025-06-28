@@ -53,6 +53,7 @@ xattr -cr piper/bin/open_jtalk  # 日本語TTSを使用する場合
 * `piper_train` に `--save-top-k` を追加し、チェックポイント保存個数をコマンドラインから指定可能に
 * PyPI パッケージ `piper-tts-plus` として公開し、`pip install` で簡単インストール可能に
 * 多言語TTSテストインフラストラクチャーを追加し、CI/CDで自動テスト実行 - [詳細](docs/MULTILINGUAL_TESTING.md)
+* OpenJTalk辞書とHTSボイスモデルの自動ダウンロード機能を追加し、日本語TTSのセットアップを簡略化
 
 ## 関連記事
 * [LJSpeechを使って英語のpiperの事前学習モデルを作成する](https://ayousanz.hatenadiary.jp/entry/2025/05/26/230341)
