@@ -538,4 +538,12 @@ if(WIN32)
   set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION bin)
   include(InstallRequiredSystemLibraries)
+  
+  # Also copy espeak-ng data for test
+  add_custom_command(TARGET test_piper POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/share/espeak-ng-data"
+      "$<TARGET_FILE_DIR:test_piper>/espeak-ng-data"
+    COMMENT "Copying espeak-ng data for tests..."
+  )
 endif()

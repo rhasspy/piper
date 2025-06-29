@@ -93,9 +93,11 @@ jobs:
           cd build
           # Set PATH to include Release directory for DLL lookup
           $env:PATH = "$PWD\Release;$env:PATH"
+          # Set espeak-ng data path
+          $env:ESPEAK_DATA_PATH = "$PWD\Release\espeak-ng-data"
           # Also try running test directly to see exact error
           echo "=== Running test_piper directly ==="
-          ./Release/test_piper.exe ../etc/test_voice.onnx auto ./test.wav || echo "Direct test run failed"
+          ./Release/test_piper.exe ../etc/test_voice.onnx "$PWD\Release\espeak-ng-data" ./test.wav || echo "Direct test run failed"
           echo ""
           echo "=== Running via CTest ==="
           ctest -C ${{ matrix.build_type }} --output-on-failure -V || echo "Tests failed but continuing"
