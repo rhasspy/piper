@@ -1,6 +1,6 @@
 # Find or download ONNX Runtime for Windows
 if(WIN32)
-  set(ONNXRUNTIME_VERSION "1.15.1")
+  set(ONNXRUNTIME_VERSION "1.14.1")
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ONNX_ARCH "x64")
   else()
