@@ -1,4 +1,12 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.15)
+
+# Set runtime library BEFORE project() to ensure it's applied globally
+if(MSVC)
+  # Force all projects to use static runtime library
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library" FORCE)
+  # Ensure new CMake policy for MSVC runtime library selection
+  cmake_policy(SET CMP0091 NEW)
+endif()
 
 project(piper C CXX)
 
@@ -12,9 +20,6 @@ if(MSVC)
   # Force compiler to use UTF-8 for IPA constants
   add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
   add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-  
-  # Use static runtime library to avoid DLL dependencies
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   
   # Additional Windows-specific flags
   add_compile_options(/EHsc)  # Enable C++ exceptions
@@ -102,6 +107,14 @@ if(NOT DEFINED FMT_DIR)
   else()
     set(EXTERNAL_CMAKE_ARGS "")
   endif()
+  
+  # Ensure MSVC runtime library is propagated to all external projects
+  if(MSVC)
+    list(APPEND EXTERNAL_CMAKE_ARGS
+      -DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}
+      -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+    )
+  endif()
 
   ExternalProject_Add(
     fmt_external
@@ -111,7 +124,6 @@ if(NOT DEFINED FMT_DIR)
     CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
     CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=OFF  # Build static libraries
     CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
-    CMAKE_ARGS $<$<BOOL:${MSVC}>:-DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}>
   )
   add_dependencies(piper fmt_external)
   add_dependencies(test_piper fmt_external)
@@ -130,6 +142,7 @@ if(NOT DEFINED SPDLOG_DIR)
     CMAKE_ARGS -DSPDLOG_BUILD_SHARED:BOOL=OFF  # Build static libraries
     CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
     CMAKE_ARGS $<$<BOOL:${MSVC}>:-DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}>
+    CMAKE_ARGS $<$<BOOL:${MSVC}>:-DCMAKE_POLICY_DEFAULT_CMP0091=NEW>
   )
   add_dependencies(piper spdlog_external)
   add_dependencies(test_piper spdlog_external)
@@ -146,10 +159,15 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
     CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=OFF  # Build static libraries
     CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
-    CMAKE_ARGS $<$<BOOL:${MSVC}>:-DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}>
   )
   add_dependencies(piper piper_phonemize_external)
   add_dependencies(test_piper piper_phonemize_external)
+endif()
+
+# Set runtime library for targets
+if(MSVC)
+  set_property(TARGET piper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set_property(TARGET test_piper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 # ---- ONNX Runtime for Windows ---
