@@ -63,10 +63,42 @@ jobs:
             exit 1
           }
 
+      - name: Check test dependencies
+        run: |
+          cd build
+          echo "=== Checking test_piper.exe dependencies ==="
+          if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
+            dumpbin /dependents Release/test_piper.exe
+          }
+          echo ""
+          echo "=== Files in Release directory ==="
+          Get-ChildItem -Path Release -Filter *.dll
+          echo ""
+          echo "=== Files in test directory (if different) ==="
+          if (Test-Path "test/Release") {
+            Get-ChildItem -Path test/Release -Filter *.dll
+          }
+
+      - name: Copy test voice model
+        run: |
+          cd build
+          # Ensure test voice model is available
+          if (Test-Path "../etc/test_voice.onnx") {
+            Copy-Item "../etc/test_voice.onnx" -Destination "Release/" -Force
+            Copy-Item "../etc/test_voice.onnx.json" -Destination "Release/" -Force -ErrorAction SilentlyContinue
+          }
+
       - name: Run tests
         run: |
           cd build
-          ctest -C ${{ matrix.build_type }} --output-on-failure || echo "Tests failed but continuing"
+          # Set PATH to include Release directory for DLL lookup
+          $env:PATH = "$PWD\Release;$env:PATH"
+          # Also try running test directly to see exact error
+          echo "=== Running test_piper directly ==="
+          ./Release/test_piper.exe ../etc/test_voice.onnx auto ./test.wav || echo "Direct test run failed"
+          echo ""
+          echo "=== Running via CTest ==="
+          ctest -C ${{ matrix.build_type }} --output-on-failure -V || echo "Tests failed but continuing"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

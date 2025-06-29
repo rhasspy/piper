@@ -150,12 +150,20 @@ endif()
 
 if(NOT DEFINED PIPER_PHONEMIZE_DIR)
   set(PIPER_PHONEMIZE_DIR "${CMAKE_CURRENT_BINARY_DIR}/pi")
+  # On Windows, we need espeak-ng as a shared library for proper functioning
+  if(WIN32)
+    set(PIPER_PHONEMIZE_SHARED_LIBS ON)
+  else()
+    set(PIPER_PHONEMIZE_SHARED_LIBS OFF)
+  endif()
+  
   ExternalProject_Add(
     piper_phonemize_external
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/p"
     URL "https://github.com/rhasspy/piper-phonemize/archive/refs/heads/master.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
-    CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=OFF  # Build static libraries
+    CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=${PIPER_PHONEMIZE_SHARED_LIBS}
+    CMAKE_ARGS -DESPEAK_NG_BUILD_SHARED:BOOL=${PIPER_PHONEMIZE_SHARED_LIBS}
     CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
   )
   add_dependencies(piper piper_phonemize_external)
@@ -477,4 +485,57 @@ if(WIN32)
     # Install ONNX Runtime DLL
     install(FILES ${ONNXRUNTIME_DLL} DESTINATION bin)
   endif()
+  
+  # Copy all DLLs from piper-phonemize to output directories
+  add_custom_command(TARGET piper POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/bin"
+      "$<TARGET_FILE_DIR:piper>"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/lib"
+      "$<TARGET_FILE_DIR:piper>"
+    COMMENT "Copying piper-phonemize DLLs..."
+  )
+  
+  add_custom_command(TARGET test_piper POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/bin"
+      "$<TARGET_FILE_DIR:test_piper>"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/lib"
+      "$<TARGET_FILE_DIR:test_piper>"
+    COMMENT "Copying piper-phonemize DLLs for tests..."
+  )
+  
+  # Find and copy espeak-ng DLL if it exists
+  find_file(ESPEAK_NG_DLL
+    NAMES espeak-ng.dll libespeak-ng.dll
+    PATHS
+      "${PIPER_PHONEMIZE_DIR}/bin"
+      "${PIPER_PHONEMIZE_DIR}/lib"
+      "${CMAKE_CURRENT_BINARY_DIR}/p/src/piper_phonemize_external-build/_deps/espeak_ng-build"
+      "${CMAKE_CURRENT_BINARY_DIR}/p/src/piper_phonemize_external-build/_deps/espeak_ng-build/src"
+    NO_DEFAULT_PATH
+  )
+  
+  if(ESPEAK_NG_DLL)
+    add_custom_command(TARGET piper POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${ESPEAK_NG_DLL}"
+        "$<TARGET_FILE_DIR:piper>/"
+      COMMENT "Copying espeak-ng DLL..."
+    )
+    add_custom_command(TARGET test_piper POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${ESPEAK_NG_DLL}"
+        "$<TARGET_FILE_DIR:test_piper>/"
+      COMMENT "Copying espeak-ng DLL for tests..."
+    )
+  endif()
+  
+  # Copy Microsoft C++ runtime redistributables if needed
+  # These are sometimes required when using static runtime linking
+  set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION bin)
+  include(InstallRequiredSystemLibraries)
 endif()
