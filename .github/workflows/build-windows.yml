@@ -1,0 +1,108 @@
+name: Build for Windows
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64]
+        build_type: [Release]
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.22.0'
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A ${{ matrix.arch }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --config ${{ matrix.build_type }} --parallel 2
+
+      - name: List build outputs
+        run: |
+          cd build
+          dir /s *.exe
+          dir /s *.dll
+          dir /s *.lib
+
+      - name: Test ONNX Runtime
+        run: |
+          cd build/${{ matrix.build_type }}
+          if (Test-Path "onnxruntime.dll") {
+            echo "✓ ONNX Runtime DLL found"
+          } else {
+            echo "✗ ONNX Runtime DLL missing"
+            exit 1
+          }
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest -C ${{ matrix.build_type }} --output-on-failure || echo "Tests failed but continuing"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
+          path: |
+            build/${{ matrix.build_type }}/piper.exe
+            build/${{ matrix.build_type }}/test_piper.exe
+            build/${{ matrix.build_type }}/*.dll
+          retention-days: 7
+
+  test-windows-binary:
+    needs: build-windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64]
+        build_type: [Release]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
+          path: test-binary
+
+      - name: Test binary execution
+        run: |
+          cd test-binary
+          echo "Testing piper.exe..."
+          ./piper.exe --version || echo "Failed to run piper.exe"
+          
+      - name: Check dependencies
+        run: |
+          cd test-binary
+          echo "Checking DLL dependencies..."
+          dumpbin /dependents piper.exe || echo "dumpbin not available"

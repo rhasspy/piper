@@ -24,3 +24,5 @@ lightning_logs/
 # Test artifacts
 test_japanese_tts.sh
 test_piper/
+test_build/
+build_log.zip
