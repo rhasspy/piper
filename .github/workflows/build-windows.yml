@@ -49,14 +49,14 @@ jobs:
       - name: List build outputs
         run: |
           cd build
-          dir /s *.exe
-          dir /s *.dll
-          dir /s *.lib
+          Get-ChildItem -Path . -Filter *.exe -Recurse
+          Get-ChildItem -Path . -Filter *.dll -Recurse
+          Get-ChildItem -Path . -Filter *.lib -Recurse
 
       - name: Test ONNX Runtime
         run: |
-          cd build/${{ matrix.build_type }}
-          if (Test-Path "onnxruntime.dll") {
+          cd build
+          if (Test-Path "Release/onnxruntime.dll") {
             echo "✓ ONNX Runtime DLL found"
           } else {
             echo "✗ ONNX Runtime DLL missing"
@@ -73,9 +73,9 @@ jobs:
         with:
           name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
           path: |
-            build/${{ matrix.build_type }}/piper.exe
-            build/${{ matrix.build_type }}/test_piper.exe
-            build/${{ matrix.build_type }}/*.dll
+            build/Release/piper.exe
+            build/Release/test_piper.exe
+            build/Release/*.dll
           retention-days: 7
 
   test-windows-binary:
