@@ -139,4 +139,8 @@ jobs:
         run: |
           cd test-binary
           echo "Checking DLL dependencies..."
-          dumpbin /dependents piper.exe || echo "dumpbin not available"
+          if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
+            dumpbin /dependents piper.exe
+          } else {
+            echo "dumpbin not available (this is OK)"
+          }
