@@ -128,6 +128,8 @@ int main(int argc, char *argv[]) {
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
+  spdlog::debug("Model path: {}", runConfig.modelPath.string());
+  spdlog::debug("Model config path: {}", runConfig.modelConfigPath.string());
   spdlog::debug("Loading voice from {} (config={})",
                 runConfig.modelPath.string(),
                 runConfig.modelConfigPath.string());

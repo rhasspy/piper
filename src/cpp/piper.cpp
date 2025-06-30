@@ -413,10 +413,16 @@ void terminate(PiperConfig &config) {
 }
 
 void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
-  spdlog::debug("Loading onnx model from {}", modelPath);
-  session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
-                         instanceName.c_str());
-  session.env.DisableTelemetryEvents();
+  spdlog::debug("loadModel called with path: {}", modelPath);
+  spdlog::debug("Creating ONNX Runtime environment");
+  try {
+    session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
+                           instanceName.c_str());
+    session.env.DisableTelemetryEvents();
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to create ONNX Runtime environment: {}", e.what());
+    throw;
+  }
 
   if (useCuda) {
     // Use CUDA provider
@@ -462,8 +468,12 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,
                std::optional<SpeakerId> &speakerId, bool useCuda) {
+  spdlog::debug("loadVoice called with modelPath={}, configPath={}", modelPath, modelConfigPath);
   spdlog::debug("Parsing voice config at {}", modelConfigPath);
   std::ifstream modelConfigFile(modelConfigPath);
+  if (!modelConfigFile.is_open()) {
+    throw std::runtime_error("Failed to open model config file: " + modelConfigPath);
+  }
   voice.configRoot = json::parse(modelConfigFile);
 
   parsePhonemizeConfig(voice.configRoot, voice.phonemizeConfig);
