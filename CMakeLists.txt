@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.15)
 
 # Set runtime library BEFORE project() to ensure it's applied globally
 if(MSVC)
-  # Force all projects to use static runtime library
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library" FORCE)
+  # Use dynamic runtime library to match ONNX Runtime
+  # This is required for compatibility with pre-built ONNX Runtime binaries
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library" FORCE)
   # Ensure new CMake policy for MSVC runtime library selection
   cmake_policy(SET CMP0091 NEW)
 endif()
@@ -164,17 +165,15 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
     CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=${PIPER_PHONEMIZE_SHARED_LIBS}
     CMAKE_ARGS -DESPEAK_NG_BUILD_SHARED:BOOL=${PIPER_PHONEMIZE_SHARED_LIBS}
+    CMAKE_ARGS -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=${CMAKE_MSVC_RUNTIME_LIBRARY}
     CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
   )
   add_dependencies(piper piper_phonemize_external)
   add_dependencies(test_piper piper_phonemize_external)
 endif()
 
-# Set runtime library for targets
-if(MSVC)
-  set_property(TARGET piper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-  set_property(TARGET test_piper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
+# Runtime library is already set globally via CMAKE_MSVC_RUNTIME_LIBRARY
+# No need to set per-target properties
 
 # ---- ONNX Runtime for Windows ---
 if(WIN32)

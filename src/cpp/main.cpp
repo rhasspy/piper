@@ -101,23 +101,10 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 // ----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
-#ifdef _WIN32
-  // Output to stderr immediately to debug Windows crash
-  std::fprintf(stderr, "[DEBUG] piper.exe main() entry point\n");
-  std::fflush(stderr);
-#endif
 
-  try {
-    spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
-    spdlog::debug("piper main() started");
-  } catch (const std::exception& e) {
-    std::cerr << "Failed to initialize logger: " << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
+  spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
 
 #ifdef _WIN32
-  spdlog::debug("Windows initialization starting");
-  
   // Initialize Windows subsystems early
   SetConsoleOutputCP(CP_UTF8);
   
@@ -125,102 +112,22 @@ int main(int argc, char *argv[]) {
   wchar_t exePathW[MAX_PATH];
   GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
   std::filesystem::path exeDir = std::filesystem::path(exePathW).parent_path();
-  spdlog::debug("Executable directory: {}", exeDir.string());
   
   // First try ../lib relative to exe
   std::filesystem::path libDir = exeDir.parent_path() / "lib";
   if (std::filesystem::exists(libDir)) {
-    spdlog::debug("Setting DLL directory to: {}", libDir.string());
     SetDllDirectoryW(libDir.c_str());
   } else {
     // Fall back to exe directory
-    spdlog::debug("Setting DLL directory to exe dir: {}", exeDir.string());
     SetDllDirectoryW(exeDir.c_str());
   }
-  spdlog::debug("Windows initialization complete");
 #endif
 
   RunConfig runConfig;
-#ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] Before parseArgs\n");
-  std::fflush(stderr);
-#endif
   parseArgs(argc, argv, runConfig);
-#ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] After parseArgs\n");
-  std::fflush(stderr);
-#endif
 
-  spdlog::debug("Arguments parsed successfully");
-
-#ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] Creating PiperConfig\n");
-  std::fflush(stderr);
-#endif
   piper::PiperConfig piperConfig;
-
-#ifdef _WIN32
-  // Try to explicitly load ONNX Runtime DLL
-  std::fprintf(stderr, "[DEBUG] Loading ONNX Runtime DLL\n");
-  std::fflush(stderr);
-  
-  // Get the path to onnxruntime.dll
-  std::filesystem::path exePathForDll = std::filesystem::path(argv[0]).parent_path();
-  std::filesystem::path onnxDllPath = exePathForDll.parent_path() / "lib" / "onnxruntime.dll";
-  
-  if (!std::filesystem::exists(onnxDllPath)) {
-    // Try exe directory
-    onnxDllPath = exePathForDll / "onnxruntime.dll";
-  }
-  
-  if (std::filesystem::exists(onnxDllPath)) {
-    std::fprintf(stderr, "[DEBUG] Found onnxruntime.dll at: %s\n", onnxDllPath.string().c_str());
-    std::fflush(stderr);
-    
-    HMODULE hModule = LoadLibraryW(onnxDllPath.wstring().c_str());
-    if (hModule) {
-      std::fprintf(stderr, "[DEBUG] LoadLibrary succeeded for onnxruntime.dll\n");
-      std::fflush(stderr);
-    } else {
-      DWORD error = GetLastError();
-      std::fprintf(stderr, "[DEBUG] LoadLibrary failed with error: %lu\n", error);
-      std::fflush(stderr);
-    }
-  } else {
-    std::fprintf(stderr, "[DEBUG] onnxruntime.dll not found at expected paths\n");
-    std::fflush(stderr);
-  }
-  
-  std::fprintf(stderr, "[DEBUG] Creating Voice\n");
-  std::fflush(stderr);
-  
-  // Try creating Voice dynamically to see if stack allocation is the issue
-  std::fprintf(stderr, "[DEBUG] Attempting dynamic Voice allocation\n");
-  std::fflush(stderr);
-#endif
-  
-  // Use dynamic allocation on Windows to avoid potential stack issues
-#ifdef _WIN32
-  std::unique_ptr<piper::Voice> voicePtr;
-  try {
-    voicePtr = std::make_unique<piper::Voice>();
-    std::fprintf(stderr, "[DEBUG] Dynamic Voice allocation succeeded\n");
-    std::fflush(stderr);
-  } catch (const std::exception& e) {
-    std::fprintf(stderr, "[DEBUG] Dynamic Voice allocation failed: %s\n", e.what());
-    std::fflush(stderr);
-    return EXIT_FAILURE;
-  }
-  piper::Voice& voice = *voicePtr;
-#else
   piper::Voice voice;
-#endif
-
-#ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] Model path: %s\n", runConfig.modelPath.string().c_str());
-  std::fprintf(stderr, "[DEBUG] Model config path: %s\n", runConfig.modelConfigPath.string().c_str());
-  std::fflush(stderr);
-#endif
 
   spdlog::debug("Model path: {}", runConfig.modelPath.string());
   spdlog::debug("Model config path: {}", runConfig.modelConfigPath.string());
@@ -229,27 +136,9 @@ int main(int argc, char *argv[]) {
                 runConfig.modelConfigPath.string());
 
   auto startTime = chrono::steady_clock::now();
-#ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] Before loadVoice\n");
-  std::fflush(stderr);
-#endif
-  try {
-    // Note: loadVoice also loads the model which can take time
-    loadVoice(piperConfig, runConfig.modelPath.string(),
-              runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
-              runConfig.useCuda);
-  } catch (const std::exception& e) {
-    spdlog::error("Failed to load voice: {}", e.what());
-#ifdef _WIN32
-    std::fprintf(stderr, "[DEBUG] loadVoice exception: %s\n", e.what());
-    std::fflush(stderr);
-#endif
-    return EXIT_FAILURE;
-  }
-#ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] After loadVoice\n");
-  std::fflush(stderr);
-#endif
+  loadVoice(piperConfig, runConfig.modelPath.string(),
+            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
+            runConfig.useCuda);
   auto endTime = chrono::steady_clock::now();
   spdlog::info("Loaded voice in {} second(s)",
                chrono::duration<double>(endTime - startTime).count());
