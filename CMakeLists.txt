@@ -461,46 +461,73 @@ endif()
 
 # ---- Windows-specific DLL handling ----
 if(WIN32)
-  # Copy ONNX Runtime DLL to output directory after build
+  # Helper function to copy DLLs
+  function(copy_dlls_to_target target_name)
+    # Create bin and lib subdirectories for better organization
+    add_custom_command(TARGET ${target_name} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${target_name}>/lib"
+      COMMENT "Creating lib directory for ${target_name}..."
+    )
+    
+    # Copy ONNX Runtime DLLs
+    if(ONNXRUNTIME_DLL)
+      add_custom_command(TARGET ${target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${ONNXRUNTIME_DLL}"
+          "$<TARGET_FILE_DIR:${target_name}>/onnxruntime.dll"
+        COMMENT "Copying ONNX Runtime DLL..."
+      )
+      
+      # Also copy ONNX Runtime providers DLL if it exists
+      get_filename_component(ONNX_DIR "${ONNXRUNTIME_DLL}" DIRECTORY)
+      file(GLOB ONNX_PROVIDER_DLLS "${ONNX_DIR}/onnxruntime_providers*.dll")
+      foreach(dll ${ONNX_PROVIDER_DLLS})
+        add_custom_command(TARGET ${target_name} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${dll}"
+            "$<TARGET_FILE_DIR:${target_name}>/"
+          COMMENT "Copying ONNX Runtime provider DLL: ${dll}..."
+        )
+      endforeach()
+    endif()
+  endfunction()
+  
+  # Apply DLL copying to both targets
+  copy_dlls_to_target(piper)
+  copy_dlls_to_target(test_piper)
+  
+  # Install ONNX Runtime DLL
   if(ONNXRUNTIME_DLL)
-    add_custom_command(TARGET piper POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ONNXRUNTIME_DLL}"
-        "$<TARGET_FILE_DIR:piper>/onnxruntime.dll"
-      COMMENT "Copying ONNX Runtime DLL..."
-    )
-    
-    add_custom_command(TARGET test_piper POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ONNXRUNTIME_DLL}"
-        "$<TARGET_FILE_DIR:test_piper>/onnxruntime.dll"
-      COMMENT "Copying ONNX Runtime DLL for tests..."
-    )
-    
-    # Install ONNX Runtime DLL
     install(FILES ${ONNXRUNTIME_DLL} DESTINATION bin)
+    get_filename_component(ONNX_DIR "${ONNXRUNTIME_DLL}" DIRECTORY)
+    file(GLOB ONNX_PROVIDER_DLLS "${ONNX_DIR}/onnxruntime_providers*.dll")
+    if(ONNX_PROVIDER_DLLS)
+      install(FILES ${ONNX_PROVIDER_DLLS} DESTINATION bin)
+    endif()
   endif()
   
   # Copy all DLLs from piper-phonemize to output directories
-  add_custom_command(TARGET piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${PIPER_PHONEMIZE_DIR}/bin"
-      "$<TARGET_FILE_DIR:piper>"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${PIPER_PHONEMIZE_DIR}/lib"
-      "$<TARGET_FILE_DIR:piper>"
-    COMMENT "Copying piper-phonemize DLLs..."
+  # Use a more selective approach to avoid overwriting files
+  file(GLOB PIPER_PHONEMIZE_DLLS
+    "${PIPER_PHONEMIZE_DIR}/bin/*.dll"
+    "${PIPER_PHONEMIZE_DIR}/lib/*.dll"
   )
   
-  add_custom_command(TARGET test_piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${PIPER_PHONEMIZE_DIR}/bin"
-      "$<TARGET_FILE_DIR:test_piper>"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "${PIPER_PHONEMIZE_DIR}/lib"
-      "$<TARGET_FILE_DIR:test_piper>"
-    COMMENT "Copying piper-phonemize DLLs for tests..."
-  )
+  foreach(dll ${PIPER_PHONEMIZE_DLLS})
+    get_filename_component(dll_name ${dll} NAME)
+    add_custom_command(TARGET piper POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${dll}"
+        "$<TARGET_FILE_DIR:piper>/${dll_name}"
+      COMMENT "Copying ${dll_name}..."
+    )
+    add_custom_command(TARGET test_piper POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${dll}"
+        "$<TARGET_FILE_DIR:test_piper>/${dll_name}"
+      COMMENT "Copying ${dll_name} for tests..."
+    )
+  endforeach()
   
   # Find and copy espeak-ng DLL if it exists
   find_file(ESPEAK_NG_DLL

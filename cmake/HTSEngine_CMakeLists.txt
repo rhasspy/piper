@@ -1,0 +1,98 @@
+cmake_minimum_required(VERSION 3.13)
+project(HTSEngine C)
+
+# HTSEngine API 1.10 - CMake build configuration for Windows
+# Based on the original autotools configuration
+
+set(CMAKE_C_STANDARD 99)
+
+# Configuration options
+option(HTS_EMBEDDED "Build for embedded devices" OFF)
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
+# Version information
+set(HTS_ENGINE_VERSION "1.10")
+set(HTS_ENGINE_VERSION_MAJOR 1)
+set(HTS_ENGINE_VERSION_MINOR 10)
+
+# Source files
+set(HTS_ENGINE_SOURCES
+  lib/HTS_audio.c
+  lib/HTS_engine.c
+  lib/HTS_gstream.c
+  lib/HTS_label.c
+  lib/HTS_misc.c
+  lib/HTS_model.c
+  lib/HTS_pstream.c
+  lib/HTS_sstream.c
+  lib/HTS_vocoder.c
+)
+
+# Header files  
+set(HTS_ENGINE_HEADERS
+  include/HTS_engine.h
+  include/HTS_hidden.h
+)
+
+# Create library
+add_library(HTSEngine ${HTS_ENGINE_SOURCES})
+
+# Include directories
+target_include_directories(HTSEngine
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+)
+
+# Platform-specific settings
+if(WIN32)
+  target_compile_definitions(HTSEngine PRIVATE
+    AUDIO_PLAY_WIN32
+    _CRT_SECURE_NO_WARNINGS
+  )
+  
+  # Link Windows audio libraries
+  target_link_libraries(HTSEngine PRIVATE winmm)
+  
+  # Use same runtime library as parent project
+  if(MSVC)
+    set_property(TARGET HTSEngine PROPERTY MSVC_RUNTIME_LIBRARY ${CMAKE_MSVC_RUNTIME_LIBRARY})
+  endif()
+else()
+  # Unix/Linux settings
+  target_compile_definitions(HTSEngine PRIVATE AUDIO_PLAY_NONE)
+endif()
+
+# Embedded device settings
+if(HTS_EMBEDDED)
+  target_compile_definitions(HTSEngine PRIVATE HTS_EMBEDDED)
+endif()
+
+# Install configuration
+install(TARGETS HTSEngine
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(FILES ${HTS_ENGINE_HEADERS}
+  DESTINATION include
+)
+
+# Build executable if requested
+option(BUILD_HTS_ENGINE_EXECUTABLE "Build hts_engine executable" ON)
+if(BUILD_HTS_ENGINE_EXECUTABLE)
+  add_executable(hts_engine bin/hts_engine.c)
+  target_link_libraries(hts_engine PRIVATE HTSEngine)
+  if(WIN32)
+    target_link_libraries(hts_engine PRIVATE winmm)
+  else()
+    target_link_libraries(hts_engine PRIVATE m)
+  endif()
+  
+  install(TARGETS hts_engine
+    RUNTIME DESTINATION bin
+  )
+endif()

@@ -251,30 +251,55 @@ jobs:
           # Copy main binary
           Copy-Item build/Release/piper.exe -Destination dist/piper/bin/
           
-          # Copy all DLLs from Release directory (includes ONNX Runtime)
+          # Copy all DLLs from Release directory to BIN directory for Windows
+          # On Windows, DLLs need to be in the same directory as the executable
           if (Test-Path "build/Release/*.dll") {
-            Copy-Item build/Release/*.dll -Destination dist/piper/lib/
+            Copy-Item build/Release/*.dll -Destination dist/piper/bin/
+            Write-Host "Copied DLLs from build/Release to dist/piper/bin"
           }
           
-          # Copy MSVC runtime DLLs if they exist in Release directory
+          # Copy MSVC runtime DLLs to bin directory
           $runtimeDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
           foreach ($dll in $runtimeDlls) {
             if (Test-Path "build/Release/$dll") {
-              Copy-Item "build/Release/$dll" -Destination dist/piper/lib/ -Force
+              Copy-Item "build/Release/$dll" -Destination dist/piper/bin/ -Force
+              Write-Host "Copied runtime DLL: $dll"
             }
           }
           
-          # Copy ONNX Runtime DLL if it was downloaded separately
-          if (Test-Path "build/onnxruntime/onnxruntime-win-x64-*/lib/onnxruntime.dll") {
-            Copy-Item build/onnxruntime/onnxruntime-win-x64-*/lib/onnxruntime.dll -Destination dist/piper/lib/ -Force
+          # Copy ONNX Runtime DLLs to bin directory
+          $onnxPath = Get-ChildItem -Path "build/onnxruntime" -Filter "onnxruntime-win-x64-*" -Directory | Select-Object -First 1
+          if ($onnxPath) {
+            $onnxDlls = Get-ChildItem -Path "$($onnxPath.FullName)/lib" -Filter "*.dll"
+            foreach ($dll in $onnxDlls) {
+              Copy-Item $dll.FullName -Destination dist/piper/bin/ -Force
+              Write-Host "Copied ONNX Runtime DLL: $($dll.Name)"
+            }
           }
           
-          # Copy libraries from piper-phonemize
-          if (Test-Path "build/pi/lib") {
-            Copy-Item build/pi/lib/* -Destination dist/piper/lib/ -Recurse -Force -ErrorAction SilentlyContinue
+          # Copy libraries from piper-phonemize to bin directory
+          if (Test-Path "build/pi/lib/*.dll") {
+            Copy-Item build/pi/lib/*.dll -Destination dist/piper/bin/ -Force -ErrorAction SilentlyContinue
+            Write-Host "Copied DLLs from build/pi/lib"
           }
-          if (Test-Path "build/pi/bin") {
-            Copy-Item build/pi/bin/*.dll -Destination dist/piper/lib/ -ErrorAction SilentlyContinue
+          if (Test-Path "build/pi/bin/*.dll") {
+            Copy-Item build/pi/bin/*.dll -Destination dist/piper/bin/ -Force -ErrorAction SilentlyContinue
+            Write-Host "Copied DLLs from build/pi/bin"
+          }
+          
+          # Copy espeak-ng DLL specifically
+          $espeakPaths = @(
+            "build/pi/lib/espeak-ng.dll",
+            "build/pi/bin/espeak-ng.dll",
+            "build/p/src/piper_phonemize_external-build/_deps/espeak_ng-build/espeak-ng.dll",
+            "build/p/src/piper_phonemize_external-build/_deps/espeak_ng-build/src/espeak-ng.dll"
+          )
+          foreach ($path in $espeakPaths) {
+            if (Test-Path $path) {
+              Copy-Item $path -Destination dist/piper/bin/ -Force
+              Write-Host "Copied espeak-ng.dll from $path"
+              break
+            }
           }
           
           # Copy data files
@@ -478,8 +503,21 @@ jobs:
       - name: Run TTS test (Windows)
         if: runner.os == 'Windows'
         run: |
-          # Copy DLLs to bin directory for Windows (DLLs must be in same directory as exe)
-          Copy-Item piper/lib/*.dll -Destination piper/bin/ -Force
+          # Copy all DLLs to bin directory for Windows
+          # First check if lib directory exists and has DLLs
+          if (Test-Path "piper/lib") {
+            Write-Host "Copying DLLs from piper/lib to piper/bin"
+            Get-ChildItem -Path piper/lib -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+              Copy-Item $_.FullName -Destination piper/bin/ -Force
+              Write-Host "Copied: $($_.Name)"
+            }
+          }
+          
+          # Also check for DLLs directly in piper directory
+          if (Test-Path "piper/*.dll") {
+            Write-Host "Copying DLLs from piper/ to piper/bin"
+            Copy-Item piper/*.dll -Destination piper/bin/ -Force -ErrorAction SilentlyContinue
+          }
           
           # Set up environment
           $env:PATH = "$PWD\piper\bin;$env:PATH"
@@ -500,8 +538,23 @@ jobs:
           # Check DLLs and dependencies
           Write-Host ""
           Write-Host "=== Checking DLLs ==="
+          Write-Host "In piper/bin:"
+          Get-ChildItem -Path piper/bin -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  Found DLL: $($_.Name) ($(Get-Item $_).Length bytes)"
+          }
+          Write-Host "In piper/lib:"
           Get-ChildItem -Path piper/lib -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host "Found DLL: $($_.Name) ($(Get-Item $_).Length bytes)"
+            Write-Host "  Found DLL: $($_.Name) ($(Get-Item $_).Length bytes)"
+          }
+          
+          # Check for critical DLLs
+          $criticalDlls = @("onnxruntime.dll", "espeak-ng.dll", "piper_phonemize.dll")
+          foreach ($dll in $criticalDlls) {
+            if (Test-Path "piper/bin/$dll") {
+              Write-Host "✓ Critical DLL found: $dll"
+            } else {
+              Write-Host "✗ Critical DLL missing: $dll"
+            }
           }
           
           # Check if we can load piper.exe
