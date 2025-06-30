@@ -151,8 +151,22 @@ int main(int argc, char *argv[]) {
 
   spdlog::debug("Arguments parsed successfully");
 
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] Creating PiperConfig\n");
+  std::fflush(stderr);
+#endif
   piper::PiperConfig piperConfig;
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] Creating Voice\n");
+  std::fflush(stderr);
+#endif
   piper::Voice voice;
+
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] Model path: %s\n", runConfig.modelPath.string().c_str());
+  std::fprintf(stderr, "[DEBUG] Model config path: %s\n", runConfig.modelConfigPath.string().c_str());
+  std::fflush(stderr);
+#endif
 
   spdlog::debug("Model path: {}", runConfig.modelPath.string());
   spdlog::debug("Model config path: {}", runConfig.modelConfigPath.string());
@@ -161,6 +175,10 @@ int main(int argc, char *argv[]) {
                 runConfig.modelConfigPath.string());
 
   auto startTime = chrono::steady_clock::now();
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] Before loadVoice\n");
+  std::fflush(stderr);
+#endif
   try {
     // Note: loadVoice also loads the model which can take time
     loadVoice(piperConfig, runConfig.modelPath.string(),
@@ -168,8 +186,16 @@ int main(int argc, char *argv[]) {
               runConfig.useCuda);
   } catch (const std::exception& e) {
     spdlog::error("Failed to load voice: {}", e.what());
+#ifdef _WIN32
+    std::fprintf(stderr, "[DEBUG] loadVoice exception: %s\n", e.what());
+    std::fflush(stderr);
+#endif
     return EXIT_FAILURE;
   }
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] After loadVoice\n");
+  std::fflush(stderr);
+#endif
   auto endTime = chrono::steady_clock::now();
   spdlog::info("Loaded voice in {} second(s)",
                chrono::duration<double>(endTime - startTime).count());
