@@ -149,16 +149,24 @@ Once you have a `config.json`, `dataset.jsonl`, and audio files (`.pt`) from pre
 
 For most cases, you should fine-tune from [an existing model](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main). The model must have the sample audio quality and sample rate, but does not necessarily need to be in the same language.
 
-It is **highly recommended** to train with the following `Dockerfile`:
+It is **highly recommended** to train using a [PyTorch NGC Container](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch). [Release 22.10](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-22-10.html#rel-22-10) is tested working and supports Nvidia GPU architectures from Volta through Lovelace/Hopper. You can use the following `Dockerfile`:
 
 ``` dockerfile
-FROM nvcr.io/nvidia/pytorch:22.03-py3
+FROM nvcr.io/nvidia/pytorch:22.10-py3
 
 RUN pip3 install \
-    'pytorch-lightning'
+    'pytorch-lightning==1.8.6'
 
 ENV NUMBA_CACHE_DIR=.numba_cache
 ```
+
+In order to launch this container with your piper working directory mounted, you can run a command of the following form, substituting the path to your piper working directory and the name of the image you created:
+
+``` sh
+docker run --gpus all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -it -v <host path to piper working directory>:/workspace/piper <image name>
+```
+
+You will likely need to adjust the pathnames in the `dataset.jsonl` file in your training directory to account for the new training directory name inside the container.
 
 As an example, we will fine-tune the [medium quality lessac voice](https://huggingface.co/datasets/rhasspy/piper-checkpoints/tree/main/en/en_US/lessac/medium). Download the `.ckpt` file and run the following command in your training environment:
 
