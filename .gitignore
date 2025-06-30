@@ -22,7 +22,17 @@ htmlcov
 lightning_logs/
 
 # Test artifacts
-test_japanese_tts.sh
 test_piper/
 test_build/
 build_log.zip
+# Root test files (should be in src/cpp/tests or src/python/tests)
+/test_*.cpp
+/test_*.c
+/test_*.py
+/test_*
+!test_multilingual_tts.py
+!test_dictionary_download.sh
+!test_dictionary_download_comprehensive.sh
+!test_japanese_tts.sh
+# Test logs
+*.log
