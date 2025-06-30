@@ -1,16 +1,24 @@
-name: Build for Windows
+name: Windows Debug Build
+
+# This workflow is for development and debugging purposes.
+# For production builds and releases, use dev-daily-release.yml
 
 on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: false
+        default: 'Debug'
+        type: choice
+        options:
+          - Debug
+          - Release
+  # Only run on push to specific debugging branches
   push:
     branches:
-      - main
-      - dev
-      - 'fix/**'
-  pull_request:
-    branches:
-      - main
-      - dev
-  workflow_dispatch:
+      - 'debug/**'
+      - 'test/**'
 
 jobs:
   build-windows:
@@ -18,7 +26,6 @@ jobs:
     strategy:
       matrix:
         arch: [x64]
-        build_type: [Release, Debug]
     
     steps:
       - uses: actions/checkout@v4
@@ -39,12 +46,12 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -G "Visual Studio 17 2022" -A ${{ matrix.arch }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake .. -G "Visual Studio 17 2022" -A ${{ matrix.arch }} -DCMAKE_BUILD_TYPE=${{ github.event.inputs.build_type || 'Debug' }}
 
       - name: Build
         run: |
           cd build
-          cmake --build . --config ${{ matrix.build_type }} --parallel 2
+          cmake --build . --config ${{ github.event.inputs.build_type || 'Debug' }} --parallel 2
 
       - name: List build outputs
         run: |
@@ -71,7 +78,7 @@ jobs:
       - name: Check test dependencies
         run: |
           cd build
-          $buildDir = "${{ matrix.build_type }}"
+          $buildDir = "${{ github.event.inputs.build_type || 'Debug' }}"
           echo "=== Checking test_piper.exe dependencies ==="
           if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
             dumpbin /dependents "$buildDir/test_piper.exe"
@@ -88,7 +95,7 @@ jobs:
       - name: Copy test voice model
         run: |
           cd build
-          $buildDir = "${{ matrix.build_type }}"
+          $buildDir = "${{ github.event.inputs.build_type || 'Debug' }}"
           # Ensure test voice model is available
           if (Test-Path "../etc/test_voice.onnx") {
             Copy-Item "../etc/test_voice.onnx" -Destination "$buildDir/" -Force
@@ -98,7 +105,7 @@ jobs:
       - name: Run tests with debugging
         run: |
           cd build
-          $buildDir = "${{ matrix.build_type }}"
+          $buildDir = "${{ github.event.inputs.build_type || 'Debug' }}"
           # Set PATH to include build directory for DLL lookup
           $env:PATH = "$PWD\$buildDir;$env:PATH"
           # Set espeak-ng data path
@@ -139,16 +146,16 @@ jobs:
           
           echo ""
           echo "=== Running via CTest with verbose output ==="
-          ctest -C ${{ matrix.build_type }} --output-on-failure -VV --debug
+          ctest -C ${{ github.event.inputs.build_type || 'Debug' }} --output-on-failure -VV --debug
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
+          name: piper-windows-${{ matrix.arch }}-${{ github.event.inputs.build_type || 'Debug' }}
           path: |
-            build/Release/piper.exe
-            build/Release/test_piper.exe
-            build/Release/*.dll
+            build/${{ github.event.inputs.build_type || 'Debug' }}/piper.exe
+            build/${{ github.event.inputs.build_type || 'Debug' }}/test_piper.exe
+            build/${{ github.event.inputs.build_type || 'Debug' }}/*.dll
           retention-days: 7
 
   test-windows-binary:
@@ -157,7 +164,6 @@ jobs:
     strategy:
       matrix:
         arch: [x64]
-        build_type: [Release]
     
     steps:
       - uses: actions/checkout@v4
@@ -165,7 +171,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
+          name: piper-windows-${{ matrix.arch }}-${{ github.event.inputs.build_type || 'Debug' }}
           path: test-binary
 
       - name: Test binary execution
