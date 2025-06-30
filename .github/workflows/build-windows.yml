@@ -71,35 +71,38 @@ jobs:
       - name: Check test dependencies
         run: |
           cd build
+          $buildDir = "${{ matrix.build_type }}"
           echo "=== Checking test_piper.exe dependencies ==="
           if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
-            dumpbin /dependents Release/test_piper.exe
+            dumpbin /dependents "$buildDir/test_piper.exe"
           }
           echo ""
-          echo "=== Files in Release directory ==="
-          Get-ChildItem -Path Release -Filter *.dll
+          echo "=== Files in $buildDir directory ==="
+          Get-ChildItem -Path $buildDir -Filter *.dll
           echo ""
           echo "=== Files in test directory (if different) ==="
-          if (Test-Path "test/Release") {
-            Get-ChildItem -Path test/Release -Filter *.dll
+          if (Test-Path "test/$buildDir") {
+            Get-ChildItem -Path "test/$buildDir" -Filter *.dll
           }
 
       - name: Copy test voice model
         run: |
           cd build
+          $buildDir = "${{ matrix.build_type }}"
           # Ensure test voice model is available
           if (Test-Path "../etc/test_voice.onnx") {
-            Copy-Item "../etc/test_voice.onnx" -Destination "Release/" -Force
-            Copy-Item "../etc/test_voice.onnx.json" -Destination "Release/" -Force -ErrorAction SilentlyContinue
+            Copy-Item "../etc/test_voice.onnx" -Destination "$buildDir/" -Force
+            Copy-Item "../etc/test_voice.onnx.json" -Destination "$buildDir/" -Force -ErrorAction SilentlyContinue
           }
 
       - name: Run tests with debugging
         run: |
           cd build
-          # Set PATH to include Release directory for DLL lookup
-          $env:PATH = "$PWD\Release;$env:PATH"
+          $buildDir = "${{ matrix.build_type }}"
+          # Set PATH to include build directory for DLL lookup
+          $env:PATH = "$PWD\$buildDir;$env:PATH"
           # Set espeak-ng data path
-          $env:ESPEAK_DATA_PATH = "$PWD\Release\espeak-ng-data"
+          $env:ESPEAK_DATA_PATH = "$PWD\$buildDir\espeak-ng-data"
           
           # Enable Windows error reporting
           $env:_NT_SYMBOL_PATH = "srv*c:\symbols*http://msdl.microsoft.com/download/symbols"
@@ -108,7 +111,7 @@ jobs:
           echo "=== Checking DLL dependencies ==="
           $requiredDlls = @("onnxruntime.dll", "espeak-ng.dll", "piper_phonemize.dll")
           foreach ($dll in $requiredDlls) {
-            if (Test-Path "Release/$dll") {
+            if (Test-Path "$buildDir/$dll") {
               echo "✓ Found: $dll"
             } else {
               echo "✗ Missing: $dll"
@@ -119,8 +122,8 @@ jobs:
           echo ""
           echo "=== Running test_piper with error capture ==="
           try {
-            $proc = Start-Process -FilePath "./Release/test_piper.exe" `
-              -ArgumentList "../etc/test_voice.onnx", "$PWD\Release\espeak-ng-data", "./test.wav" `
+            $proc = Start-Process -FilePath "./$buildDir/test_piper.exe" `
+              -ArgumentList "../etc/test_voice.onnx", "$PWD\$buildDir\espeak-ng-data", "./test.wav" `
               -Wait -PassThru -NoNewWindow
             echo "Exit code: $($proc.ExitCode)"
             if ($proc.ExitCode -eq -1073741819) {
