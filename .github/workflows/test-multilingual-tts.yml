@@ -389,8 +389,11 @@ jobs:
       - name: Run TTS test (Windows)
         if: runner.os == 'Windows'
         run: |
+          # Copy DLLs to bin directory for Windows (DLLs must be in same directory as exe)
+          Copy-Item piper/lib/*.dll -Destination piper/bin/ -Force
+          
           # Set up environment
-          $env:PATH = "$PWD\piper\lib;$PWD\piper\bin;$env:PATH"
+          $env:PATH = "$PWD\piper\bin;$env:PATH"
           $env:ESPEAK_DATA_PATH = "$PWD\piper\share\espeak-ng-data"
           
           # Debug: Check if files exist
