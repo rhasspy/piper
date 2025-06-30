@@ -7,14 +7,14 @@ on:
       - 'src/**'
       - 'test/**'
       - '.github/workflows/test-multilingual-tts.yml'
-      - 'test_dictionary_download*.sh'
+      - 'test/test_dictionary_download*.sh'
   push:
     branches: [dev, feat/*, fix/*]
     paths:
       - 'src/**'
       - 'test/**'
       - '.github/workflows/test-multilingual-tts.yml'
-      - 'test_dictionary_download*.sh'
+      - 'test/test_dictionary_download*.sh'
   workflow_dispatch:
     inputs:
       languages:
@@ -76,16 +76,16 @@ jobs:
       
       - name: Run basic dictionary download tests
         run: |
-          chmod +x test_dictionary_download.sh
-          ./test_dictionary_download.sh
+          chmod +x test/test_dictionary_download.sh
+          ./test/test_dictionary_download.sh
         env:
           CI: true
           ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
       
       - name: Run comprehensive dictionary tests
         run: |
-          chmod +x test_dictionary_download_comprehensive.sh
-          ./test_dictionary_download_comprehensive.sh
+          chmod +x test/test_dictionary_download_comprehensive.sh
+          ./test/test_dictionary_download_comprehensive.sh
         env:
           CI: true
           ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
