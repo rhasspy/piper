@@ -192,7 +192,7 @@ jobs:
           cmake -Bbuild `
             -G "Ninja" `
             -DCMAKE_INSTALL_PREFIX=_install/piper `
-            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
+            -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreadedDLL" `
             -DESPEAK_NG_ROOT=$ESPEAK_ROOT
           if ($LASTEXITCODE -ne 0) {
@@ -202,14 +202,14 @@ jobs:
       - name: Build package
         run: |
           # ビルドの実行
-          cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+          cmake --build build
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Build failed"
             exit 1
           }
           
-          # ビルド成果物の確認
-          $exePath = if (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } elseif (Test-Path "build\piper.exe") { "build\piper.exe" } else { $null }
+          # ビルド成果物の確認（Ninjaではbuild直下に出力される）
+          $exePath = if (Test-Path "build\piper.exe") { "build\piper.exe" } elseif (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } else { $null }
           if (-not $exePath) {
             Write-Error "piper.exe not found"
             exit 1
@@ -232,7 +232,7 @@ jobs:
       - name: Verify Windows package
         run: |
           # バイナリの存在確認
-          $exePath = if (Test-Path "_install\piper\bin\piper.exe") { "_install\piper\bin\piper.exe" } elseif (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } elseif (Test-Path "build\piper.exe") { "build\piper.exe" } else { $null }
+          $exePath = if (Test-Path "_install\piper\bin\piper.exe") { "_install\piper\bin\piper.exe" } elseif (Test-Path "build\piper.exe") { "build\piper.exe" } elseif (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } else { $null }
           if (-not $exePath) {
             Write-Error "piper.exe not found"
             exit 1
@@ -247,7 +247,7 @@ jobs:
           exit 0
       - name: Create archive
         run: |
-          $srcDir = if (Test-Path "_install\piper") { "_install\piper" } elseif (Test-Path "build\_install\piper") { "build\_install\piper" } elseif (Test-Path "build\Release") { "build\Release" } else { $null }
+          $srcDir = if (Test-Path "_install\piper") { "_install\piper" } elseif (Test-Path "build\_install\piper") { "build\_install\piper" } elseif (Test-Path "build") { "build" } else { $null }
           if (-not $srcDir) { Write-Error "No directory to archive"; exit 1 }
           $dest = "_install\piper_windows_amd64.zip"
           try {
