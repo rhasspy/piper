@@ -535,7 +535,8 @@ if(WIN32)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP FALSE)
   include(InstallRequiredSystemLibraries)
   
-  # Also copy runtime DLLs to build directory for testing
+  # Copy runtime DLLs only for piper target to avoid conflicts
+  # test_piper will use the same directory structure in CI
   if(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
     foreach(lib ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
       add_custom_command(TARGET piper POST_BUILD
@@ -543,12 +544,6 @@ if(WIN32)
           "${lib}"
           "$<TARGET_FILE_DIR:piper>/"
         COMMENT "Copying runtime library ${lib}..."
-      )
-      add_custom_command(TARGET test_piper POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${lib}"
-          "$<TARGET_FILE_DIR:test_piper>/"
-        COMMENT "Copying runtime library ${lib} for tests..."
       )
     endforeach()
   endif()
