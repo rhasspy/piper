@@ -108,18 +108,65 @@ int main(int argc, char *argv[]) {
   // Initialize Windows subsystems early
   SetConsoleOutputCP(CP_UTF8);
   
-  // Set DLL search path using SetDllDirectory (compatible with older Windows)
+  // Enhanced DLL loading for Windows
   wchar_t exePathW[MAX_PATH];
   GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
   std::filesystem::path exeDir = std::filesystem::path(exePathW).parent_path();
   
-  // First try ../lib relative to exe
-  std::filesystem::path libDir = exeDir.parent_path() / "lib";
-  if (std::filesystem::exists(libDir)) {
-    SetDllDirectoryW(libDir.c_str());
+  // Try multiple DLL search paths
+  std::vector<std::filesystem::path> dllPaths = {
+    exeDir,                          // Same directory as exe
+    exeDir / "lib",                  // lib subdirectory
+    exeDir.parent_path() / "lib",    // ../lib relative to exe
+    exeDir / "bin"                   // bin subdirectory (for CI/CD)
+  };
+  
+  // Use AddDllDirectory for Windows 7+ if available
+  typedef DLL_DIRECTORY_COOKIE (WINAPI *AddDllDirectoryFunc)(PCWSTR);
+  typedef BOOL (WINAPI *SetDefaultDllDirectoriesFunc)(DWORD);
+  
+  HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+  auto pAddDllDirectory = (AddDllDirectoryFunc)GetProcAddress(kernel32, "AddDllDirectory");
+  auto pSetDefaultDllDirectories = (SetDefaultDllDirectoriesFunc)GetProcAddress(kernel32, "SetDefaultDllDirectories");
+  
+  if (pAddDllDirectory && pSetDefaultDllDirectories) {
+    // Windows 7+ approach: Use AddDllDirectory for multiple paths
+    pSetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
+    
+    for (const auto& path : dllPaths) {
+      if (std::filesystem::exists(path)) {
+        pAddDllDirectory(path.c_str());
+        spdlog::debug("Added DLL directory: {}", path.string());
+      }
+    }
   } else {
-    // Fall back to exe directory
-    SetDllDirectoryW(exeDir.c_str());
+    // Windows XP/Vista fallback: Use SetDllDirectory
+    for (const auto& path : dllPaths) {
+      if (std::filesystem::exists(path)) {
+        SetDllDirectoryW(path.c_str());
+        spdlog::debug("Set DLL directory: {}", path.string());
+        break;  // SetDllDirectory only supports one path
+      }
+    }
+  }
+  
+  // Pre-load critical DLLs to ensure proper loading order
+  std::vector<std::wstring> criticalDlls = {
+    L"onnxruntime.dll",
+    L"onnxruntime_providers_shared.dll",
+    L"espeak-ng.dll",
+    L"piper_phonemize.dll"
+  };
+  
+  for (const auto& dllName : criticalDlls) {
+    HMODULE hDll = LoadLibraryW(dllName.c_str());
+    if (hDll) {
+      spdlog::debug("Pre-loaded DLL: {}", std::string(dllName.begin(), dllName.end()));
+    } else {
+      DWORD error = GetLastError();
+      spdlog::warn("Failed to pre-load DLL: {} (error: {})", 
+                   std::string(dllName.begin(), dllName.end()), error);
+    }
   }
 #endif
 
