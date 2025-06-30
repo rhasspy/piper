@@ -160,15 +160,34 @@ int main(int argc, char *argv[]) {
   piper::PiperConfig piperConfig;
 
 #ifdef _WIN32
-  std::fprintf(stderr, "[DEBUG] Testing ONNX Runtime environment\n");
+  // Try to explicitly load ONNX Runtime DLL
+  std::fprintf(stderr, "[DEBUG] Loading ONNX Runtime DLL\n");
   std::fflush(stderr);
-  try {
-    // Test creating ONNX Runtime environment separately
-    Ort::Env testEnv(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "test");
-    std::fprintf(stderr, "[DEBUG] ONNX Runtime environment test succeeded\n");
+  
+  // Get the path to onnxruntime.dll
+  std::filesystem::path exePath = std::filesystem::path(argv[0]).parent_path();
+  std::filesystem::path onnxDllPath = exePath.parent_path() / "lib" / "onnxruntime.dll";
+  
+  if (!std::filesystem::exists(onnxDllPath)) {
+    // Try exe directory
+    onnxDllPath = exePath / "onnxruntime.dll";
+  }
+  
+  if (std::filesystem::exists(onnxDllPath)) {
+    std::fprintf(stderr, "[DEBUG] Found onnxruntime.dll at: %s\n", onnxDllPath.string().c_str());
     std::fflush(stderr);
-  } catch (const std::exception& e) {
-    std::fprintf(stderr, "[DEBUG] ONNX Runtime environment test failed: %s\n", e.what());
+    
+    HMODULE hModule = LoadLibraryW(onnxDllPath.wstring().c_str());
+    if (hModule) {
+      std::fprintf(stderr, "[DEBUG] LoadLibrary succeeded for onnxruntime.dll\n");
+      std::fflush(stderr);
+    } else {
+      DWORD error = GetLastError();
+      std::fprintf(stderr, "[DEBUG] LoadLibrary failed with error: %lu\n", error);
+      std::fflush(stderr);
+    }
+  } else {
+    std::fprintf(stderr, "[DEBUG] onnxruntime.dll not found at expected paths\n");
     std::fflush(stderr);
   }
   
