@@ -18,6 +18,8 @@
 #include "openjtalk_phonemize.hpp"
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #include <io.h>
 #define access _access
@@ -278,7 +280,7 @@ std::string findEspeakDataPath() {
     char exe_path[4096] = {0};
     
 #ifdef _WIN32
-    DWORD size = GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
+    DWORD size = ::GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
     if (size == 0 || size >= sizeof(exe_path)) {
         exe_path[0] = '\0';
     }
@@ -350,9 +352,9 @@ void initialize(PiperConfig &config) {
     // On Windows, add extra debugging for DLL loading issues
     spdlog::debug("Current DLL directory: {}", 
                   []() -> std::string {
-                      wchar_t buffer[MAX_PATH];
-                      DWORD result = GetDllDirectoryW(buffer, MAX_PATH);
-                      if (result > 0) {
+                      wchar_t buffer[MAX_PATH] = {0};
+                      DWORD result = ::GetDllDirectoryW(buffer, MAX_PATH);
+                      if (result > 0 && result < MAX_PATH) {
                           return std::filesystem::path(buffer).string();
                       }
                       return "(not set)";
@@ -366,7 +368,7 @@ void initialize(PiperConfig &config) {
     if (result < 0) {
       spdlog::error("espeak_Initialize failed with code: {}", result);
 #ifdef _WIN32
-      DWORD lastError = GetLastError();
+      DWORD lastError = ::GetLastError();
       spdlog::error("Windows last error code: {} (0x{:X})", lastError, lastError);
 #endif
       throw std::runtime_error("Failed to initialize eSpeak-ng");
