@@ -159,9 +159,18 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist/piper/lib  
           New-Item -ItemType Directory -Force -Path dist/piper/share
           
-          # Copy main binary and DLLs
+          # Copy main binary
           Copy-Item build/Release/piper.exe -Destination dist/piper/bin/
-          Copy-Item build/Release/*.dll -Destination dist/piper/lib/ -ErrorAction SilentlyContinue
+          
+          # Copy all DLLs from Release directory (includes ONNX Runtime)
+          if (Test-Path "build/Release/*.dll") {
+            Copy-Item build/Release/*.dll -Destination dist/piper/lib/
+          }
+          
+          # Copy ONNX Runtime DLL if it was downloaded separately
+          if (Test-Path "build/onnxruntime/onnxruntime-win-x64-*/lib/onnxruntime.dll") {
+            Copy-Item build/onnxruntime/onnxruntime-win-x64-*/lib/onnxruntime.dll -Destination dist/piper/lib/ -Force
+          }
           
           # Copy libraries from piper-phonemize
           if (Test-Path "build/pi/lib") {
@@ -175,6 +184,12 @@ jobs:
           if (Test-Path "build/pi/share/espeak-ng-data") {
             Copy-Item build/pi/share/espeak-ng-data -Destination dist/piper/share/ -Recurse -Force
           }
+          
+          # Debug: List what we're packaging
+          Write-Host "=== Contents of dist/piper/bin ==="
+          Get-ChildItem -Path dist/piper/bin
+          Write-Host "=== Contents of dist/piper/lib ==="
+          Get-ChildItem -Path dist/piper/lib
           
           # Create archive
           Compress-Archive -Path dist/piper -DestinationPath piper-${{ runner.os }}.zip
