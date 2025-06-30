@@ -101,13 +101,28 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 int main(int argc, char *argv[]) {
   spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
 
+#ifdef _WIN32
+  // Initialize Windows subsystems early
+  SetConsoleOutputCP(CP_UTF8);
+  
+  // Ensure DLLs are loaded from the correct directory
+  SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+  
+  // Add the executable's directory to DLL search path
+  wchar_t exePathW[MAX_PATH];
+  GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+  std::filesystem::path exeDir = std::filesystem::path(exePathW).parent_path();
+  AddDllDirectory(exeDir.c_str());
+  
+  // Also add ../lib relative to exe
+  std::filesystem::path libDir = exeDir.parent_path() / "lib";
+  if (std::filesystem::exists(libDir)) {
+    AddDllDirectory(libDir.c_str());
+  }
+#endif
+
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
-
-#ifdef _WIN32
-  // Required on Windows to show IPA symbols
-  SetConsoleOutputCP(CP_UTF8);
-#endif
 
   piper::PiperConfig piperConfig;
   piper::Voice voice;

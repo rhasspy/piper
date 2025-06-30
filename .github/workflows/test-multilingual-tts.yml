@@ -382,11 +382,21 @@ jobs:
             exit 1
           }
           
-          # Check DLLs
+          # Check DLLs and dependencies
           Write-Host ""
           Write-Host "=== Checking DLLs ==="
           Get-ChildItem -Path piper/lib -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host "Found DLL: $($_.Name)"
+            Write-Host "Found DLL: $($_.Name) ($(Get-Item $_).Length bytes)"
+          }
+          
+          # Check if we can load piper.exe
+          Write-Host ""
+          Write-Host "=== Checking piper.exe dependencies ==="
+          try {
+            # Try to get version info
+            & piper/bin/piper.exe --version 2>&1 | Out-String | Write-Host
+          } catch {
+            Write-Host "Failed to run --version: $_"
           }
           
           # Create test input

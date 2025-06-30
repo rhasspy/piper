@@ -335,11 +335,15 @@ void initialize(PiperConfig &config) {
     
     const char* espeak_path = config.eSpeakDataPath.empty() ? nullptr : config.eSpeakDataPath.c_str();
     
+    spdlog::debug("Calling espeak_Initialize with path: {}", 
+                  espeak_path ? espeak_path : "(null)");
+    
     int result = espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS,
                                    /*buflength*/ 0,
                                    /*path*/ espeak_path,
                                    /*options*/ 0);
     if (result < 0) {
+      spdlog::error("espeak_Initialize failed with code: {}", result);
       throw std::runtime_error("Failed to initialize eSpeak-ng");
     }
 
