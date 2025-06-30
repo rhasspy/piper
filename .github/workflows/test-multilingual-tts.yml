@@ -104,14 +104,28 @@ jobs:
         run: |
           brew install cmake
       
-      - name: Build piper
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      
+      - name: Build piper (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
       
-      - name: Create distribution package
+      - name: Build piper (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release --parallel 2
+      
+      - name: Create distribution package (Unix)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p dist/piper/bin
           mkdir -p dist/piper/lib
@@ -138,11 +152,40 @@ jobs:
           # Create archive
           tar -czf piper-${{ runner.os }}.tar.gz -C dist piper
       
+      - name: Create distribution package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/piper/bin
+          New-Item -ItemType Directory -Force -Path dist/piper/lib  
+          New-Item -ItemType Directory -Force -Path dist/piper/share
+          
+          # Copy main binary and DLLs
+          Copy-Item build/Release/piper.exe -Destination dist/piper/bin/
+          Copy-Item build/Release/*.dll -Destination dist/piper/lib/ -ErrorAction SilentlyContinue
+          
+          # Copy libraries from piper-phonemize
+          if (Test-Path "build/pi/lib") {
+            Copy-Item build/pi/lib/* -Destination dist/piper/lib/ -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          if (Test-Path "build/pi/bin") {
+            Copy-Item build/pi/bin/*.dll -Destination dist/piper/lib/ -ErrorAction SilentlyContinue
+          }
+          
+          # Copy data files
+          if (Test-Path "build/pi/share/espeak-ng-data") {
+            Copy-Item build/pi/share/espeak-ng-data -Destination dist/piper/share/ -Recurse -Force
+          }
+          
+          # Create archive
+          Compress-Archive -Path dist/piper -DestinationPath piper-${{ runner.os }}.zip
+      
       - name: Upload build artifact
         uses: actions/upload-artifact@v4.6.0
         with:
           name: piper-${{ runner.os }}
-          path: piper-${{ runner.os }}.tar.gz
+          path: |
+            piper-${{ runner.os }}.tar.gz
+            piper-${{ runner.os }}.zip
           retention-days: 1
 
   test_multilingual:
@@ -152,7 +195,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]  # Windows一時的に無効化（アクセス違反エラーのため）
+        os: [ubuntu-latest, macos-latest, windows-latest]  # Windowsサポートを再有効化
         language:
           - en_US  # English (US)
           - en_GB  # English (UK)
@@ -220,7 +263,8 @@ jobs:
         with:
           name: piper-${{ runner.os }}
           
-      - name: Extract piper binary
+      - name: Extract piper binary (Unix)
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           # Create test directory
@@ -236,6 +280,20 @@ jobs:
           ls -la piper/bin/
           ls -la piper/lib/ || echo "No lib directory found"
           ls -la piper/share/ || echo "No share directory found"
+          
+      - name: Extract piper binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Create test directory
+          New-Item -ItemType Directory -Force -Path test/models
+          
+          # Extract the downloaded artifact
+          Expand-Archive -Path piper-Windows.zip -DestinationPath . -Force
+          
+          # Verify binary and libraries
+          Get-ChildItem -Path piper/bin
+          Get-ChildItem -Path piper/lib -ErrorAction SilentlyContinue
+          Get-ChildItem -Path piper/share -ErrorAction SilentlyContinue
 
       - name: Cache voice models
         uses: actions/cache@v4.2.0
@@ -305,6 +363,39 @@ jobs:
           # Verify downloads
           ls -la test/models/
 
+      - name: Run TTS test (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Set up environment
+          $env:PATH = "$PWD\piper\lib;$PWD\piper\bin;$env:PATH"
+          $env:ESPEAK_DATA_PATH = "$PWD\piper\share\espeak-ng-data"
+          
+          # Create test input
+          "${{ matrix.test_text }}" | Out-File -FilePath test_input.txt -Encoding utf8
+          
+          # Run basic TTS test
+          Write-Host "Running TTS for ${{ matrix.language }}..."
+          Get-Content test_input.txt | ./piper/bin/piper.exe `
+            --model "test/models/${{ matrix.model }}.onnx" `
+            --output_file "test_output_${{ matrix.language }}.wav"
+          
+          # Verify output
+          if (Test-Path "test_output_${{ matrix.language }}.wav") {
+            $fileInfo = Get-Item "test_output_${{ matrix.language }}.wav"
+            $size = $fileInfo.Length
+            Write-Host "Generated audio file size: $size bytes"
+            
+            if ($size -gt 10000) {
+              Write-Host "✅ TTS test passed for ${{ matrix.language }}!"
+            } else {
+              Write-Host "❌ Output file too small for ${{ matrix.language }} ($size bytes)"
+              exit 1
+            }
+          } else {
+            Write-Host "❌ No output file generated for ${{ matrix.language }}"
+            exit 1
+          }
+      
       - name: Run TTS test (Linux/macOS)
         if: runner.os != 'Windows'
         shell: bash

@@ -3,8 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef _WIN32
 #include <unistd.h>
 #include <sys/wait.h>
+#endif
 
 #ifndef _WIN32
 
@@ -127,10 +130,19 @@ HTS_Label_Wrapper* openjtalk_extract_fullcontext(OpenJTalk* oj, const char* text
     struct OpenJTalk_impl* impl = (struct OpenJTalk_impl*)oj;
     if (!impl->initialized) return NULL;
     
-    // Create temporary files
-    char input_file[] = "/tmp/openjtalk_input_XXXXXX";
-    char output_file[] = "/tmp/openjtalk_output_XXXXXX";
-    char trace_file[] = "/tmp/openjtalk_trace_XXXXXX";
+    // Create temporary files in platform-appropriate directory
+    const char* temp_dir = getenv("TMPDIR");
+    if (!temp_dir) temp_dir = getenv("TMP");
+    if (!temp_dir) temp_dir = getenv("TEMP");
+    if (!temp_dir) temp_dir = "/tmp";
+    
+    char input_file[512];
+    char output_file[512];
+    char trace_file[512];
+    
+    snprintf(input_file, sizeof(input_file), "%s/openjtalk_input_XXXXXX", temp_dir);
+    snprintf(output_file, sizeof(output_file), "%s/openjtalk_output_XXXXXX", temp_dir);
+    snprintf(trace_file, sizeof(trace_file), "%s/openjtalk_trace_XXXXXX", temp_dir);
     
     int input_fd = mkstemp(input_file);
     if (input_fd < 0) return NULL;
