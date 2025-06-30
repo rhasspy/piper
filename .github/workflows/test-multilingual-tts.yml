@@ -83,38 +83,71 @@ jobs:
           CI: true
           ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
 
-  # リリース情報を事前に取得してキャッシュ
-  get_release_info:
-    name: Get Release Information
-    runs-on: ubuntu-latest
-    outputs:
-      linux_asset_url: ${{ steps.get_urls.outputs.linux_url }}
-      macos_x64_asset_url: ${{ steps.get_urls.outputs.macos_x64_url }}
-      macos_aarch64_asset_url: ${{ steps.get_urls.outputs.macos_aarch64_url }}
+  # Build piper binaries for testing
+  build_piper:
+    name: Build piper on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
-      - name: Get release asset URLs
-        id: get_urls
+      - uses: actions/checkout@v4.2.2
+      
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
         run: |
-          # Get release information once
-          RELEASES_JSON=$(curl -s -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/releases)
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+      
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake
+      
+      - name: Build piper
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+      
+      - name: Create distribution package
+        run: |
+          mkdir -p dist/piper/bin
+          mkdir -p dist/piper/lib
+          mkdir -p dist/piper/share
           
-          # Extract URLs
-          LINUX_URL=$(echo "$RELEASES_JSON" | jq -r '.[0].assets[] | select(.name | contains("piper_linux_amd64")) | .browser_download_url' | head -1)
-          MACOS_X64_URL=$(echo "$RELEASES_JSON" | jq -r '.[0].assets[] | select(.name | contains("piper_macos_x64")) | .browser_download_url' | head -1)
-          MACOS_AARCH64_URL=$(echo "$RELEASES_JSON" | jq -r '.[0].assets[] | select(.name | contains("piper_macos_aarch64")) | .browser_download_url' | head -1)
+          # Copy main binary
+          cp build/piper dist/piper/bin/
           
-          echo "linux_url=$LINUX_URL" >> $GITHUB_OUTPUT
-          echo "macos_x64_url=$MACOS_X64_URL" >> $GITHUB_OUTPUT
-          echo "macos_aarch64_url=$MACOS_AARCH64_URL" >> $GITHUB_OUTPUT
+          # Copy libraries
+          if [ -d "build/p/src/piper_phonemize_external-build/install/lib" ]; then
+            cp -r build/p/src/piper_phonemize_external-build/install/lib/* dist/piper/lib/ || true
+          fi
+          if [ -d "build/pi/lib" ]; then
+            cp -r build/pi/lib/* dist/piper/lib/ || true
+          fi
           
-          echo "Linux URL: $LINUX_URL"
-          echo "macOS x64 URL: $MACOS_X64_URL"
-          echo "macOS aarch64 URL: $MACOS_AARCH64_URL"
+          # Copy data files
+          if [ -d "build/p/src/piper_phonemize_external-build/install/share/espeak-ng-data" ]; then
+            cp -r build/p/src/piper_phonemize_external-build/install/share/espeak-ng-data dist/piper/share/
+          elif [ -d "build/pi/share/espeak-ng-data" ]; then
+            cp -r build/pi/share/espeak-ng-data dist/piper/share/
+          fi
+          
+          # Create archive
+          tar -czf piper-${{ runner.os }}.tar.gz -C dist piper
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: piper-${{ runner.os }}
+          path: piper-${{ runner.os }}.tar.gz
+          retention-days: 1
 
   test_multilingual:
     name: Test ${{ matrix.language }} on ${{ matrix.os }}
-    needs: get_release_info
+    needs: build_piper
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -182,52 +215,19 @@ jobs:
           echo "MATRIX_LANGUAGE=${{ matrix.language }}" >> $GITHUB_ENV
           echo "MATRIX_MODEL=${{ matrix.model }}" >> $GITHUB_ENV
 
-      - name: Download latest release binaries
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.0
+        with:
+          name: piper-${{ runner.os }}
+          
+      - name: Extract piper binary
         shell: bash
         run: |
-          # Create directories
-          mkdir -p piper test/models
+          # Create test directory
+          mkdir -p test/models
           
-          # Download the appropriate binary based on OS
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            # Use pre-fetched URL
-            ASSET_URL="${{ needs.get_release_info.outputs.linux_asset_url }}"
-            
-            if [ -z "$ASSET_URL" ]; then
-              echo "No Linux binary found in releases"
-              exit 1
-            fi
-            
-            echo "Downloading Linux binary from: $ASSET_URL"
-            curl -L -o piper.tar.gz "$ASSET_URL"
-            tar -xzf piper.tar.gz
-            rm piper.tar.gz
-            
-          elif [ "${{ runner.os }}" = "macOS" ]; then
-            # Determine architecture
-            ARCH="x64"
-            if [[ "$(uname -m)" == "arm64" ]]; then
-              ARCH="aarch64"
-            fi
-            
-            # Use pre-fetched URL based on architecture
-            if [ "$ARCH" = "x64" ]; then
-              ASSET_URL="${{ needs.get_release_info.outputs.macos_x64_asset_url }}"
-            else
-              ASSET_URL="${{ needs.get_release_info.outputs.macos_aarch64_asset_url }}"
-            fi
-            
-            if [ -z "$ASSET_URL" ]; then
-              echo "No macOS binary found for architecture: $ARCH"
-              exit 1
-            fi
-            
-            echo "Downloading macOS binary from: $ASSET_URL"
-            curl -L -o piper.tar.gz "$ASSET_URL"
-            tar -xzf piper.tar.gz
-            rm piper.tar.gz
-            
-          fi
+          # Extract the downloaded artifact
+          tar -xzf piper-${{ runner.os }}.tar.gz
           
           # Make binary executable
           chmod +x piper/bin/piper
@@ -235,6 +235,7 @@ jobs:
           # Verify binary and libraries
           ls -la piper/bin/
           ls -la piper/lib/ || echo "No lib directory found"
+          ls -la piper/share/ || echo "No share directory found"
 
       - name: Cache voice models
         uses: actions/cache@v4.2.0
@@ -316,6 +317,9 @@ jobs:
             export DYLD_LIBRARY_PATH=$PWD/piper/lib:$DYLD_LIBRARY_PATH
             PIPER_CMD="./piper/bin/piper"
           fi
+          
+          # Set espeak-ng data path
+          export ESPEAK_DATA_PATH=$PWD/piper/share/espeak-ng-data
           
           # Create test input
           echo "${{ matrix.test_text }}" > test_input.txt
@@ -437,7 +441,7 @@ jobs:
 
   summarize_results:
     name: Summarize Test Results
-    needs: [get_release_info, test_multilingual]
+    needs: [build_piper, test_multilingual]
     runs-on: ubuntu-latest
     if: always()
     steps:

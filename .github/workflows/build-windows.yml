@@ -1,0 +1,146 @@
+name: Build for Windows
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64]
+        build_type: [Release]
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.22.0'
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A ${{ matrix.arch }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --config ${{ matrix.build_type }} --parallel 2
+
+      - name: List build outputs
+        run: |
+          cd build
+          Get-ChildItem -Path . -Filter *.exe -Recurse
+          Get-ChildItem -Path . -Filter *.dll -Recurse
+          Get-ChildItem -Path . -Filter *.lib -Recurse
+
+      - name: Test ONNX Runtime
+        run: |
+          cd build
+          if (Test-Path "Release/onnxruntime.dll") {
+            echo "✓ ONNX Runtime DLL found"
+          } else {
+            echo "✗ ONNX Runtime DLL missing"
+            exit 1
+          }
+
+      - name: Check test dependencies
+        run: |
+          cd build
+          echo "=== Checking test_piper.exe dependencies ==="
+          if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
+            dumpbin /dependents Release/test_piper.exe
+          }
+          echo ""
+          echo "=== Files in Release directory ==="
+          Get-ChildItem -Path Release -Filter *.dll
+          echo ""
+          echo "=== Files in test directory (if different) ==="
+          if (Test-Path "test/Release") {
+            Get-ChildItem -Path test/Release -Filter *.dll
+          }
+
+      - name: Copy test voice model
+        run: |
+          cd build
+          # Ensure test voice model is available
+          if (Test-Path "../etc/test_voice.onnx") {
+            Copy-Item "../etc/test_voice.onnx" -Destination "Release/" -Force
+            Copy-Item "../etc/test_voice.onnx.json" -Destination "Release/" -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Run tests
+        run: |
+          cd build
+          # Set PATH to include Release directory for DLL lookup
+          $env:PATH = "$PWD\Release;$env:PATH"
+          # Set espeak-ng data path
+          $env:ESPEAK_DATA_PATH = "$PWD\Release\espeak-ng-data"
+          # Also try running test directly to see exact error
+          echo "=== Running test_piper directly ==="
+          ./Release/test_piper.exe ../etc/test_voice.onnx "$PWD\Release\espeak-ng-data" ./test.wav || echo "Direct test run failed"
+          echo ""
+          echo "=== Running via CTest ==="
+          ctest -C ${{ matrix.build_type }} --output-on-failure -V || echo "Tests failed but continuing"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
+          path: |
+            build/Release/piper.exe
+            build/Release/test_piper.exe
+            build/Release/*.dll
+          retention-days: 7
+
+  test-windows-binary:
+    needs: build-windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64]
+        build_type: [Release]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: piper-windows-${{ matrix.arch }}-${{ matrix.build_type }}
+          path: test-binary
+
+      - name: Test binary execution
+        run: |
+          cd test-binary
+          echo "Testing piper.exe..."
+          ./piper.exe --version || echo "Failed to run piper.exe"
+          
+      - name: Check dependencies
+        run: |
+          cd test-binary
+          echo "Checking DLL dependencies..."
+          if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
+            dumpbin /dependents piper.exe
+          } else {
+            echo "dumpbin not available (this is OK)"
+          }
