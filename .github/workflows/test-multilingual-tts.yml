@@ -370,14 +370,62 @@ jobs:
           $env:PATH = "$PWD\piper\lib;$PWD\piper\bin;$env:PATH"
           $env:ESPEAK_DATA_PATH = "$PWD\piper\share\espeak-ng-data"
           
+          # Debug: Check if files exist
+          Write-Host "=== Checking piper installation ==="
+          if (Test-Path "piper/bin/piper.exe") {
+            Write-Host "✓ piper.exe found"
+            Write-Host "Size: $(Get-Item piper/bin/piper.exe).Length bytes"
+          } else {
+            Write-Host "✗ piper.exe not found!"
+            Write-Host "Contents of piper/bin:"
+            Get-ChildItem -Path piper/bin -ErrorAction SilentlyContinue
+            exit 1
+          }
+          
+          # Check DLLs
+          Write-Host ""
+          Write-Host "=== Checking DLLs ==="
+          Get-ChildItem -Path piper/lib -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "Found DLL: $($_.Name)"
+          }
+          
           # Create test input
           "${{ matrix.test_text }}" | Out-File -FilePath test_input.txt -Encoding utf8
           
-          # Run basic TTS test
-          Write-Host "Running TTS for ${{ matrix.language }}..."
-          Get-Content test_input.txt | ./piper/bin/piper.exe `
-            --model "test/models/${{ matrix.model }}.onnx" `
-            --output_file "test_output_${{ matrix.language }}.wav"
+          # Run basic TTS test with error capture
+          Write-Host ""
+          Write-Host "=== Running TTS for ${{ matrix.language }} ==="
+          try {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = "$PWD\piper\bin\piper.exe"
+            $psi.Arguments = "--model `"test/models/${{ matrix.model }}.onnx`" --output_file `"test_output_${{ matrix.language }}.wav`""
+            $psi.RedirectStandardInput = $true
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            
+            $process = [System.Diagnostics.Process]::Start($psi)
+            $stdin = $process.StandardInput
+            $stdin.WriteLine("${{ matrix.test_text }}")
+            $stdin.Close()
+            
+            $stdout = $process.StandardOutput.ReadToEnd()
+            $stderr = $process.StandardError.ReadToEnd()
+            $process.WaitForExit()
+            
+            Write-Host "Exit code: $($process.ExitCode)"
+            if ($stdout) { Write-Host "STDOUT: $stdout" }
+            if ($stderr) { Write-Host "STDERR: $stderr" }
+            
+            if ($process.ExitCode -ne 0) {
+              Write-Host "❌ piper.exe failed with exit code $($process.ExitCode)"
+              exit 1
+            }
+          } catch {
+            Write-Host "❌ Exception running piper.exe: $_"
+            exit 1
+          }
           
           # Verify output
           if (Test-Path "test_output_${{ matrix.language }}.wav") {
