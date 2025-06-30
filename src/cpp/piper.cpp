@@ -18,8 +18,12 @@
 #include "openjtalk_phonemize.hpp"
 
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <windows.h>
 #include <io.h>
 #define access _access
@@ -353,7 +357,7 @@ void initialize(PiperConfig &config) {
     spdlog::debug("Current DLL directory: {}", 
                   []() -> std::string {
                       wchar_t buffer[MAX_PATH] = {0};
-                      DWORD result = ::GetDllDirectoryW(buffer, MAX_PATH);
+                      DWORD result = ::GetDllDirectoryW(MAX_PATH, buffer);
                       if (result > 0 && result < MAX_PATH) {
                           return std::filesystem::path(buffer).string();
                       }
