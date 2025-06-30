@@ -529,10 +529,29 @@ if(WIN32)
   endif()
   
   # Copy Microsoft C++ runtime redistributables if needed
-  # These are sometimes required when using static runtime linking
+  # Required for dynamic runtime linking (/MD)
   set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION bin)
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP FALSE)
   include(InstallRequiredSystemLibraries)
+  
+  # Also copy runtime DLLs to build directory for testing
+  if(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+    foreach(lib ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
+      add_custom_command(TARGET piper POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${lib}"
+          "$<TARGET_FILE_DIR:piper>/"
+        COMMENT "Copying runtime library ${lib}..."
+      )
+      add_custom_command(TARGET test_piper POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${lib}"
+          "$<TARGET_FILE_DIR:test_piper>/"
+        COMMENT "Copying runtime library ${lib} for tests..."
+      )
+    endforeach()
+  endif()
   
   # Also copy espeak-ng data for test
   add_custom_command(TARGET test_piper POST_BUILD

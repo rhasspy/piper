@@ -167,6 +167,14 @@ jobs:
             Copy-Item build/Release/*.dll -Destination dist/piper/lib/
           }
           
+          # Copy MSVC runtime DLLs if they exist in Release directory
+          $runtimeDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+          foreach ($dll in $runtimeDlls) {
+            if (Test-Path "build/Release/$dll") {
+              Copy-Item "build/Release/$dll" -Destination dist/piper/lib/ -Force
+            }
+          }
+          
           # Copy ONNX Runtime DLL if it was downloaded separately
           if (Test-Path "build/onnxruntime/onnxruntime-win-x64-*/lib/onnxruntime.dll") {
             Copy-Item build/onnxruntime/onnxruntime-win-x64-*/lib/onnxruntime.dll -Destination dist/piper/lib/ -Force
