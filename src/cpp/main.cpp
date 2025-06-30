@@ -31,6 +31,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <onnxruntime_cxx_api.h>
+
 #include "json.hpp"
 #include "piper.hpp"
 
@@ -156,7 +158,20 @@ int main(int argc, char *argv[]) {
   std::fflush(stderr);
 #endif
   piper::PiperConfig piperConfig;
+
 #ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] Testing ONNX Runtime environment\n");
+  std::fflush(stderr);
+  try {
+    // Test creating ONNX Runtime environment separately
+    Ort::Env testEnv(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "test");
+    std::fprintf(stderr, "[DEBUG] ONNX Runtime environment test succeeded\n");
+    std::fflush(stderr);
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "[DEBUG] ONNX Runtime environment test failed: %s\n", e.what());
+    std::fflush(stderr);
+  }
+  
   std::fprintf(stderr, "[DEBUG] Creating Voice\n");
   std::fflush(stderr);
 #endif
