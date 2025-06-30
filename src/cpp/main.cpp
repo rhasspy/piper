@@ -31,6 +31,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <onnxruntime_cxx_api.h>
+
 #include "json.hpp"
 #include "piper.hpp"
 
@@ -99,19 +101,36 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 // ----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
+
   spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
+
+#ifdef _WIN32
+  // Initialize Windows subsystems early
+  SetConsoleOutputCP(CP_UTF8);
+  
+  // Set DLL search path using SetDllDirectory (compatible with older Windows)
+  wchar_t exePathW[MAX_PATH];
+  GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
+  std::filesystem::path exeDir = std::filesystem::path(exePathW).parent_path();
+  
+  // First try ../lib relative to exe
+  std::filesystem::path libDir = exeDir.parent_path() / "lib";
+  if (std::filesystem::exists(libDir)) {
+    SetDllDirectoryW(libDir.c_str());
+  } else {
+    // Fall back to exe directory
+    SetDllDirectoryW(exeDir.c_str());
+  }
+#endif
 
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
-#ifdef _WIN32
-  // Required on Windows to show IPA symbols
-  SetConsoleOutputCP(CP_UTF8);
-#endif
-
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
+  spdlog::debug("Model path: {}", runConfig.modelPath.string());
+  spdlog::debug("Model config path: {}", runConfig.modelConfigPath.string());
   spdlog::debug("Loading voice from {} (config={})",
                 runConfig.modelPath.string(),
                 runConfig.modelConfigPath.string());
@@ -183,7 +202,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  piper::initialize(piperConfig);
+  try {
+    piper::initialize(piperConfig);
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to initialize piper: {}", e.what());
+    return EXIT_FAILURE;
+  }
 
   // Scales
   if (runConfig.noiseScale) {

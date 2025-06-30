@@ -18,6 +18,12 @@
 #include "openjtalk_phonemize.hpp"
 
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #include <io.h>
 #define access _access
@@ -278,7 +284,7 @@ std::string findEspeakDataPath() {
     char exe_path[4096] = {0};
     
 #ifdef _WIN32
-    DWORD size = GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
+    DWORD size = ::GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
     if (size == 0 || size >= sizeof(exe_path)) {
         exe_path[0] = '\0';
     }
@@ -305,7 +311,15 @@ std::string findEspeakDataPath() {
             exeDir / "espeak-ng-data",                    // Same directory as exe
             exeDir / ".." / "share" / "espeak-ng-data",   // Installed location
             exeDir / ".." / "espeak-ng-data",             // Alternative location
-            exeDir / ".." / "lib" / "espeak-ng-data"      // Another alternative
+#ifdef _WIN32
+            // Additional Windows-specific search paths
+            exeDir / ".." / "lib" / "espeak-ng-data",     // lib directory (for distribution)
+            exeDir / "share" / "espeak-ng-data",          // share subdirectory
+            "C:\\espeak-ng-data",                          // Common installation path
+            "C:\\Program Files\\eSpeak NG\\espeak-ng-data" // Default eSpeak NG path
+#else
+            exeDir / ".." / "lib" / "espeak-ng-data"      // Another alternative for Unix
+#endif
         };
         
         for (const auto& candidate : candidates) {
@@ -335,11 +349,32 @@ void initialize(PiperConfig &config) {
     
     const char* espeak_path = config.eSpeakDataPath.empty() ? nullptr : config.eSpeakDataPath.c_str();
     
+    spdlog::debug("Calling espeak_Initialize with path: {}", 
+                  espeak_path ? espeak_path : "(null)");
+    
+#ifdef _WIN32
+    // On Windows, add extra debugging for DLL loading issues
+    spdlog::debug("Current DLL directory: {}", 
+                  []() -> std::string {
+                      wchar_t buffer[MAX_PATH] = {0};
+                      DWORD result = ::GetDllDirectoryW(MAX_PATH, buffer);
+                      if (result > 0 && result < MAX_PATH) {
+                          return std::filesystem::path(buffer).string();
+                      }
+                      return "(not set)";
+                  }());
+#endif
+    
     int result = espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS,
                                    /*buflength*/ 0,
                                    /*path*/ espeak_path,
                                    /*options*/ 0);
     if (result < 0) {
+      spdlog::error("espeak_Initialize failed with code: {}", result);
+#ifdef _WIN32
+      DWORD lastError = ::GetLastError();
+      spdlog::error("Windows last error code: {} (0x{:X})", lastError, lastError);
+#endif
       throw std::runtime_error("Failed to initialize eSpeak-ng");
     }
 
@@ -378,10 +413,16 @@ void terminate(PiperConfig &config) {
 }
 
 void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
-  spdlog::debug("Loading onnx model from {}", modelPath);
-  session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
-                         instanceName.c_str());
-  session.env.DisableTelemetryEvents();
+  spdlog::debug("loadModel called with path: {}", modelPath);
+  spdlog::debug("Creating ONNX Runtime environment");
+  try {
+    session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
+                           instanceName.c_str());
+    session.env.DisableTelemetryEvents();
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to create ONNX Runtime environment: {}", e.what());
+    throw;
+  }
 
   if (useCuda) {
     // Use CUDA provider
@@ -427,8 +468,12 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,
                std::optional<SpeakerId> &speakerId, bool useCuda) {
+  spdlog::debug("loadVoice called with modelPath={}, configPath={}", modelPath, modelConfigPath);
   spdlog::debug("Parsing voice config at {}", modelConfigPath);
   std::ifstream modelConfigFile(modelConfigPath);
+  if (!modelConfigFile.is_open()) {
+    throw std::runtime_error("Failed to open model config file: " + modelConfigPath);
+  }
   voice.configRoot = json::parse(modelConfigFile);
 
   parsePhonemizeConfig(voice.configRoot, voice.phonemizeConfig);

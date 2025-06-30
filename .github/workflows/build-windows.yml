@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         arch: [x64]
-        build_type: [Release]
+        build_type: [Release, Debug]
     
     steps:
       - uses: actions/checkout@v4
@@ -56,51 +56,90 @@ jobs:
       - name: Test ONNX Runtime
         run: |
           cd build
-          if (Test-Path "Release/onnxruntime.dll") {
-            echo "✓ ONNX Runtime DLL found"
+          # Check if ONNX Runtime was downloaded
+          if (Test-Path "onnxruntime/onnxruntime-win-x64-1.14.1/lib/onnxruntime.dll") {
+            echo "✓ ONNX Runtime DLL downloaded successfully"
           } else {
-            echo "✗ ONNX Runtime DLL missing"
-            exit 1
+            echo "⚠ ONNX Runtime DLL not in expected location"
+            echo "Checking ONNX Runtime directory structure:"
+            if (Test-Path "onnxruntime") {
+              Get-ChildItem -Path onnxruntime -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | Select-Object -First 10
+            }
           }
+          # The DLL will be copied to Release/ during the build process
 
       - name: Check test dependencies
         run: |
           cd build
+          $buildDir = "${{ matrix.build_type }}"
           echo "=== Checking test_piper.exe dependencies ==="
           if (Get-Command dumpbin -ErrorAction SilentlyContinue) {
-            dumpbin /dependents Release/test_piper.exe
+            dumpbin /dependents "$buildDir/test_piper.exe"
           }
           echo ""
-          echo "=== Files in Release directory ==="
-          Get-ChildItem -Path Release -Filter *.dll
+          echo "=== Files in $buildDir directory ==="
+          Get-ChildItem -Path $buildDir -Filter *.dll
           echo ""
           echo "=== Files in test directory (if different) ==="
-          if (Test-Path "test/Release") {
-            Get-ChildItem -Path test/Release -Filter *.dll
+          if (Test-Path "test/$buildDir") {
+            Get-ChildItem -Path "test/$buildDir" -Filter *.dll
           }
 
       - name: Copy test voice model
         run: |
           cd build
+          $buildDir = "${{ matrix.build_type }}"
           # Ensure test voice model is available
           if (Test-Path "../etc/test_voice.onnx") {
-            Copy-Item "../etc/test_voice.onnx" -Destination "Release/" -Force
-            Copy-Item "../etc/test_voice.onnx.json" -Destination "Release/" -Force -ErrorAction SilentlyContinue
+            Copy-Item "../etc/test_voice.onnx" -Destination "$buildDir/" -Force
+            Copy-Item "../etc/test_voice.onnx.json" -Destination "$buildDir/" -Force -ErrorAction SilentlyContinue
           }
 
-      - name: Run tests
+      - name: Run tests with debugging
         run: |
           cd build
-          # Set PATH to include Release directory for DLL lookup
-          $env:PATH = "$PWD\Release;$env:PATH"
+          $buildDir = "${{ matrix.build_type }}"
+          # Set PATH to include build directory for DLL lookup
+          $env:PATH = "$PWD\$buildDir;$env:PATH"
           # Set espeak-ng data path
-          $env:ESPEAK_DATA_PATH = "$PWD\Release\espeak-ng-data"
-          # Also try running test directly to see exact error
-          echo "=== Running test_piper directly ==="
-          ./Release/test_piper.exe ../etc/test_voice.onnx "$PWD\Release\espeak-ng-data" ./test.wav || echo "Direct test run failed"
+          $env:ESPEAK_DATA_PATH = "$PWD\$buildDir\espeak-ng-data"
+          
+          # Enable Windows error reporting
+          $env:_NT_SYMBOL_PATH = "srv*c:\symbols*http://msdl.microsoft.com/download/symbols"
+          
+          # Check if all required DLLs are present
+          echo "=== Checking DLL dependencies ==="
+          $requiredDlls = @("onnxruntime.dll", "espeak-ng.dll", "piper_phonemize.dll")
+          foreach ($dll in $requiredDlls) {
+            if (Test-Path "$buildDir/$dll") {
+              echo "✓ Found: $dll"
+            } else {
+              echo "✗ Missing: $dll"
+            }
+          }
+          
+          # Run test with detailed error capture
           echo ""
-          echo "=== Running via CTest ==="
-          ctest -C ${{ matrix.build_type }} --output-on-failure -V || echo "Tests failed but continuing"
+          echo "=== Running test_piper with error capture ==="
+          try {
+            $proc = Start-Process -FilePath "./$buildDir/test_piper.exe" `
+              -ArgumentList "../etc/test_voice.onnx", "$PWD\$buildDir\espeak-ng-data", "./test.wav" `
+              -Wait -PassThru -NoNewWindow
+            echo "Exit code: $($proc.ExitCode)"
+            if ($proc.ExitCode -eq -1073741819) {
+              echo "ERROR: Access violation (0xC0000005)"
+            } elseif ($proc.ExitCode -eq -1073741515) {
+              echo "ERROR: DLL not found (0xC0000135)"
+            } elseif ($proc.ExitCode -ne 0) {
+              echo "ERROR: Unknown error code: $($proc.ExitCode)"
+            }
+          } catch {
+            echo "ERROR: Exception during test execution: $_"
+          }
+          
+          echo ""
+          echo "=== Running via CTest with verbose output ==="
+          ctest -C ${{ matrix.build_type }} --output-on-failure -VV --debug
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

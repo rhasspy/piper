@@ -188,11 +188,13 @@ jobs:
             [Environment]::SetEnvironmentVariable("PATH", $env:PATH, "Process")
             [Environment]::SetEnvironmentVariable("ESPEAK_DATA_PATH", $env:ESPEAK_DATA_PATH, "Process")
           }
-          # CMake設定
+          # CMake設定（Visual Studio generatorを使用）
           cmake -Bbuild `
-            -G "Ninja" `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
             -DCMAKE_INSTALL_PREFIX=_install/piper `
-            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreadedDLL" `
             -DESPEAK_NG_ROOT=$ESPEAK_ROOT
           if ($LASTEXITCODE -ne 0) {
             Write-Error "CMake configuration failed"
@@ -200,14 +202,14 @@ jobs:
           }
       - name: Build package
         run: |
-          # ビルドの実行
-          cmake --build build --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+          # ビルドの実行（Visual Studio generatorでは--configが必要）
+          cmake --build build --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Build failed"
             exit 1
           }
           
-          # ビルド成果物の確認
+          # ビルド成果物の確認（Visual Studioではbuild\Release\に出力される）
           $exePath = if (Test-Path "build\Release\piper.exe") { "build\Release\piper.exe" } elseif (Test-Path "build\piper.exe") { "build\piper.exe" } else { $null }
           if (-not $exePath) {
             Write-Error "piper.exe not found"

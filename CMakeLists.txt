@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.15)
 
 # Set runtime library BEFORE project() to ensure it's applied globally
 if(MSVC)
-  # Force all projects to use static runtime library
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library" FORCE)
+  # Use dynamic runtime library to match ONNX Runtime
+  # This is required for compatibility with pre-built ONNX Runtime binaries
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library" FORCE)
   # Ensure new CMake policy for MSVC runtime library selection
   cmake_policy(SET CMP0091 NEW)
 endif()
@@ -113,6 +114,10 @@ if(NOT DEFINED FMT_DIR)
     list(APPEND EXTERNAL_CMAKE_ARGS
       -DCMAKE_MSVC_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}
       -DCMAKE_POLICY_DEFAULT_CMP0091=NEW
+      -DCMAKE_CXX_FLAGS_RELEASE=/MD
+      -DCMAKE_CXX_FLAGS_DEBUG=/MDd
+      -DCMAKE_C_FLAGS_RELEASE=/MD
+      -DCMAKE_C_FLAGS_DEBUG=/MDd
     )
   endif()
 
@@ -121,9 +126,9 @@ if(NOT DEFINED FMT_DIR)
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/f"
     URL "https://github.com/fmtlib/fmt/archive/refs/tags/${FMT_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${FMT_DIR}
-    CMAKE_ARGS -DFMT_TEST:BOOL=OFF  # Don't build all the tests
-    CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=OFF  # Build static libraries
-    CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
+               -DFMT_TEST:BOOL=OFF  # Don't build all the tests
+               -DBUILD_SHARED_LIBS:BOOL=OFF  # Build static libraries
+               ${EXTERNAL_CMAKE_ARGS}
   )
   add_dependencies(piper fmt_external)
   add_dependencies(test_piper fmt_external)
@@ -139,8 +144,8 @@ if(NOT DEFINED SPDLOG_DIR)
     PREFIX "${CMAKE_CURRENT_BINARY_DIR}/s"
     URL "https://github.com/gabime/spdlog/archive/refs/tags/v${SPDLOG_VERSION}.zip"
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${SPDLOG_DIR}
-    CMAKE_ARGS -DSPDLOG_BUILD_SHARED:BOOL=OFF  # Build static libraries
-    CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
+               -DSPDLOG_BUILD_SHARED:BOOL=OFF  # Build static libraries
+               ${EXTERNAL_CMAKE_ARGS}
   )
   add_dependencies(piper spdlog_external)
   add_dependencies(test_piper spdlog_external)
@@ -164,17 +169,15 @@ if(NOT DEFINED PIPER_PHONEMIZE_DIR)
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PIPER_PHONEMIZE_DIR}
     CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=${PIPER_PHONEMIZE_SHARED_LIBS}
     CMAKE_ARGS -DESPEAK_NG_BUILD_SHARED:BOOL=${PIPER_PHONEMIZE_SHARED_LIBS}
+    CMAKE_ARGS -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=${CMAKE_MSVC_RUNTIME_LIBRARY}
     CMAKE_ARGS ${EXTERNAL_CMAKE_ARGS}
   )
   add_dependencies(piper piper_phonemize_external)
   add_dependencies(test_piper piper_phonemize_external)
 endif()
 
-# Set runtime library for targets
-if(MSVC)
-  set_property(TARGET piper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-  set_property(TARGET test_piper PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
+# Runtime library is already set globally via CMAKE_MSVC_RUNTIME_LIBRARY
+# No need to set per-target properties
 
 # ---- ONNX Runtime for Windows ---
 if(WIN32)
@@ -264,26 +267,15 @@ endif()
 
 # Platform-specific library linking
 if(WIN32)
-  # Windows: Use conditional linking for libraries
-  find_library(FMT_LIB NAMES fmt 
-    PATHS ${FMT_DIR}/lib 
-    NO_DEFAULT_PATH)
-  find_library(SPDLOG_LIB NAMES spdlog 
-    PATHS ${SPDLOG_DIR}/lib 
-    NO_DEFAULT_PATH)
-  find_library(PIPER_PHONEMIZE_LIB NAMES piper_phonemize 
-    PATHS ${PIPER_PHONEMIZE_DIR}/lib 
-    NO_DEFAULT_PATH)
-  find_library(ESPEAK_NG_LIB NAMES espeak-ng 
-    PATHS ${PIPER_PHONEMIZE_DIR}/lib 
-    NO_DEFAULT_PATH)
-  
+  # Windows: Link libraries directly with generator expressions for debug/release
   target_link_libraries(piper
-    $<IF:$<BOOL:${FMT_LIB}>,${FMT_LIB},fmt>
-    $<IF:$<BOOL:${SPDLOG_LIB}>,${SPDLOG_LIB},spdlog>
-    $<IF:$<BOOL:${PIPER_PHONEMIZE_LIB}>,${PIPER_PHONEMIZE_LIB},piper_phonemize>
-    $<IF:$<BOOL:${ESPEAK_NG_LIB}>,${ESPEAK_NG_LIB},espeak-ng>
-    $<IF:$<BOOL:${ONNXRUNTIME_LIB}>,${ONNXRUNTIME_LIB},onnxruntime>
+    optimized ${FMT_DIR}/lib/fmt.lib
+    debug ${FMT_DIR}/lib/fmtd.lib
+    optimized ${SPDLOG_DIR}/lib/spdlog.lib
+    debug ${SPDLOG_DIR}/lib/spdlogd.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.lib
+    ${ONNXRUNTIME_LIB}
     ${PIPER_EXTRA_LIBRARIES}
   )
 else()
@@ -384,12 +376,15 @@ target_link_directories(
 
 # Platform-specific library linking for test_piper
 if(WIN32)
+  # Windows: Link libraries directly with generator expressions for debug/release
   target_link_libraries(test_piper
-    $<IF:$<BOOL:${FMT_LIB}>,${FMT_LIB},fmt>
-    $<IF:$<BOOL:${SPDLOG_LIB}>,${SPDLOG_LIB},spdlog>
-    $<IF:$<BOOL:${PIPER_PHONEMIZE_LIB}>,${PIPER_PHONEMIZE_LIB},piper_phonemize>
-    $<IF:$<BOOL:${ESPEAK_NG_LIB}>,${ESPEAK_NG_LIB},espeak-ng>
-    $<IF:$<BOOL:${ONNXRUNTIME_LIB}>,${ONNXRUNTIME_LIB},onnxruntime>
+    optimized ${FMT_DIR}/lib/fmt.lib
+    debug ${FMT_DIR}/lib/fmtd.lib
+    optimized ${SPDLOG_DIR}/lib/spdlog.lib
+    debug ${SPDLOG_DIR}/lib/spdlogd.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.lib
+    ${ONNXRUNTIME_LIB}
     ${PIPER_EXTRA_LIBRARIES}
   )
 else()
@@ -534,10 +529,24 @@ if(WIN32)
   endif()
   
   # Copy Microsoft C++ runtime redistributables if needed
-  # These are sometimes required when using static runtime linking
+  # Required for dynamic runtime linking (/MD)
   set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION bin)
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP FALSE)
   include(InstallRequiredSystemLibraries)
+  
+  # Copy runtime DLLs only for piper target to avoid conflicts
+  # test_piper will use the same directory structure in CI
+  if(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+    foreach(lib ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
+      add_custom_command(TARGET piper POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${lib}"
+          "$<TARGET_FILE_DIR:piper>/"
+        COMMENT "Copying runtime library ${lib}..."
+      )
+    endforeach()
+  endif()
   
   # Also copy espeak-ng data for test
   add_custom_command(TARGET test_piper POST_BUILD
