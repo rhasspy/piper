@@ -193,7 +193,7 @@ jobs:
             -G "Ninja" `
             -DCMAKE_INSTALL_PREFIX=_install/piper `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
-            -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreadedDLL$<$<CONFIG:Debug>:Debug>" `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreadedDLL" `
             -DESPEAK_NG_ROOT=$ESPEAK_ROOT
           if ($LASTEXITCODE -ne 0) {
             Write-Error "CMake configuration failed"
