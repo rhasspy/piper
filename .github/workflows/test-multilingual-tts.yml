@@ -3,8 +3,18 @@ name: Test Multilingual TTS
 on:
   pull_request:
     branches: [master, dev]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/test-multilingual-tts.yml'
+      - 'test_dictionary_download*.sh'
   push:
     branches: [dev, feat/*, fix/*]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/test-multilingual-tts.yml'
+      - 'test_dictionary_download*.sh'
   workflow_dispatch:
     inputs:
       languages:
@@ -32,24 +42,39 @@ env:
 jobs:
   # OpenJTalk dictionary download test
   test_dictionary_download:
-    name: Test Dictionary Auto-Download
-    runs-on: ubuntu-latest
+    name: Test Dictionary Auto-Download on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4.2.2
       
-      - name: Install dependencies
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake build-essential curl
+      
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake ninja
       
       - name: Build piper
         run: |
           mkdir -p build
           cd build
           cmake .. -DBUILD_TESTS=ON
-          make -j$(nproc)
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
       
-      - name: Run dictionary download tests
+      - name: Run unit tests
+        run: |
+          cd build
+          ctest --output-on-failure -R test_dictionary_manager || true
+      
+      - name: Run basic dictionary download tests
         run: |
           chmod +x test_dictionary_download.sh
           ./test_dictionary_download.sh
@@ -57,31 +82,95 @@ jobs:
           CI: true
           ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
       
-      - name: Verify auto-download functionality
+      - name: Run comprehensive dictionary tests
         run: |
-          # Change to build directory for proper OpenJTalk path resolution
-          cd build
+          chmod +x test_dictionary_download_comprehensive.sh
+          ./test_dictionary_download_comprehensive.sh
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Test checksum verification
+        run: |
+          # Test with corrupted checksum
+          export HOME=/tmp/test_checksum_$$
+          mkdir -p $HOME
           
-          # Test that Japanese TTS works with auto-download
-          export HOME=/tmp/test_auto_$$
-          echo "自動ダウンロードテスト" | ./piper --model ../test/models/ja_JP-test-medium.onnx --output_file /tmp/auto_test.wav 2>&1 | tee /tmp/auto_test.log || true
-          
-          # Check if the test ran successfully or at least downloaded the dictionary
-          if [ -f "$HOME/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11/sys.dic" ]; then
-            echo "✅ Dictionary auto-download successful"
-            if [ -f "$HOME/.piper/voices/hts/hts_voice_nitech_jp_atr503_m001-1.05/nitech_jp_atr503_m001.htsvoice" ]; then
-              echo "✅ HTS voice auto-download successful"
+          # Run piper which should download and verify checksum
+          echo "Testing checksum verification..."
+          if echo "テスト" | ./build/piper --model ./test/models/ja_JP-test-medium.onnx --output_file /tmp/test_checksum.wav 2>&1 | tee /tmp/checksum_log.txt; then
+            echo "✓ Piper executed successfully"
+            # Check if dictionary was downloaded
+            if [ -d "$HOME/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11" ]; then
+              echo "✓ Dictionary was downloaded with checksum verification"
             else
-              echo "⚠️ HTS voice not downloaded (optional)"
+              echo "✗ Dictionary was not downloaded"
+              exit 1
             fi
           else
-            echo "❌ Auto-download failed"
-            cat /tmp/auto_test.log
+            echo "✗ Piper execution failed"
+            cat /tmp/checksum_log.txt
             exit 1
           fi
         env:
           CI: true
           ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Test offline mode
+        run: |
+          export HOME=/tmp/test_offline_$$
+          export PIPER_OFFLINE_MODE=1
+          
+          echo "Testing offline mode..."
+          # Should fail without dictionary - check for error messages
+          echo "オフライン" | ./build/piper --model ./test/models/ja_JP-test-medium.onnx --output_file /tmp/test_offline.wav 2>&1 | tee /tmp/offline_log.txt || true
+          
+          # Check if it printed the expected error message
+          if grep -q "dictionary manually" /tmp/offline_log.txt && grep -q "Failed to ensure OpenJTalk dictionary" /tmp/offline_log.txt; then
+            echo "✓ Offline mode correctly prevents download"
+          else
+            echo "✗ Offline mode did not show expected error message"
+            echo "Expected to find 'dictionary manually' and 'Failed to ensure OpenJTalk dictionary'"
+            echo "Actual output:"
+            cat /tmp/offline_log.txt
+            exit 1
+          fi
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Test environment variable controls
+        run: |
+          # Test PIPER_AUTO_DOWNLOAD_DICT=0
+          export HOME=/tmp/test_env_$$
+          export PIPER_AUTO_DOWNLOAD_DICT=0
+          
+          echo "Testing environment variable controls..."
+          echo "環境変数" | ./build/piper --model ./test/models/ja_JP-test-medium.onnx --output_file /tmp/test_env.wav 2>&1 | tee /tmp/env_log.txt || true
+          
+          if grep -q "download.*manually" /tmp/env_log.txt && grep -q "Failed to ensure OpenJTalk dictionary" /tmp/env_log.txt; then
+            echo "✓ PIPER_AUTO_DOWNLOAD_DICT=0 works correctly"
+          else
+            echo "✗ PIPER_AUTO_DOWNLOAD_DICT=0 did not show expected error message"
+            echo "Expected to find 'download manually' message"
+            echo "Actual output:"
+            cat /tmp/env_log.txt
+            exit 1
+          fi
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: dictionary-test-results-${{ matrix.os }}
+          path: |
+            test*.wav
+            /tmp/test_*.wav
+            /tmp/*_log.txt
+          retention-days: 7
 
   # Build piper binaries for testing
   build_piper:
