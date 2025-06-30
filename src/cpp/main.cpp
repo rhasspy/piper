@@ -105,19 +105,18 @@ int main(int argc, char *argv[]) {
   // Initialize Windows subsystems early
   SetConsoleOutputCP(CP_UTF8);
   
-  // Ensure DLLs are loaded from the correct directory
-  SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-  
-  // Add the executable's directory to DLL search path
+  // Set DLL search path using SetDllDirectory (compatible with older Windows)
   wchar_t exePathW[MAX_PATH];
   GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
   std::filesystem::path exeDir = std::filesystem::path(exePathW).parent_path();
-  AddDllDirectory(exeDir.c_str());
   
-  // Also add ../lib relative to exe
+  // First try ../lib relative to exe
   std::filesystem::path libDir = exeDir.parent_path() / "lib";
   if (std::filesystem::exists(libDir)) {
-    AddDllDirectory(libDir.c_str());
+    SetDllDirectoryW(libDir.c_str());
+  } else {
+    // Fall back to exe directory
+    SetDllDirectoryW(exeDir.c_str());
   }
 #endif
 

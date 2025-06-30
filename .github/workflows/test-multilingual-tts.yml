@@ -402,38 +402,63 @@ jobs:
           # Create test input
           "${{ matrix.test_text }}" | Out-File -FilePath test_input.txt -Encoding utf8
           
+          # Test with debug output
+          Write-Host ""
+          Write-Host "=== Testing with debug output ==="
+          try {
+            # First try with --debug flag to get more info
+            $debugProc = Start-Process -FilePath "$PWD\piper\bin\piper.exe" `
+              -ArgumentList "--help" `
+              -Wait -PassThru -NoNewWindow -RedirectStandardOutput "help.txt" -RedirectStandardError "help_err.txt"
+            Write-Host "Help exit code: $($debugProc.ExitCode)"
+          } catch {
+            Write-Host "Failed to run help: $_"
+          }
+          
           # Run basic TTS test with error capture
           Write-Host ""
           Write-Host "=== Running TTS for ${{ matrix.language }} ==="
           try {
-            $psi = New-Object System.Diagnostics.ProcessStartInfo
-            $psi.FileName = "$PWD\piper\bin\piper.exe"
-            $psi.Arguments = "--model `"test/models/${{ matrix.model }}.onnx`" --output_file `"test_output_${{ matrix.language }}.wav`""
-            $psi.RedirectStandardInput = $true
-            $psi.RedirectStandardOutput = $true
-            $psi.RedirectStandardError = $true
-            $psi.UseShellExecute = $false
-            $psi.CreateNoWindow = $true
+            # Try simpler approach first
+            $testText = "${{ matrix.test_text }}"
+            $testText | Out-File -FilePath test_input.txt -Encoding utf8 -NoNewline
             
-            $process = [System.Diagnostics.Process]::Start($psi)
-            $stdin = $process.StandardInput
-            $stdin.WriteLine("${{ matrix.test_text }}")
-            $stdin.Close()
+            # Run with explicit paths and capture all output
+            $proc = Start-Process -FilePath "$PWD\piper\bin\piper.exe" `
+              -ArgumentList "--model", "test/models/${{ matrix.model }}.onnx", `
+                           "--output_file", "test_output_${{ matrix.language }}.wav", `
+                           "--debug" `
+              -Wait -PassThru -NoNewWindow `
+              -RedirectStandardInput "test_input.txt" `
+              -RedirectStandardOutput "stdout.txt" `
+              -RedirectStandardError "stderr.txt"
+              
+            Write-Host "Exit code: $($proc.ExitCode)"
             
-            $stdout = $process.StandardOutput.ReadToEnd()
-            $stderr = $process.StandardError.ReadToEnd()
-            $process.WaitForExit()
+            # Display output
+            if (Test-Path "stdout.txt") {
+              Write-Host "=== STDOUT ==="
+              Get-Content "stdout.txt" | Write-Host
+            }
+            if (Test-Path "stderr.txt") {
+              Write-Host "=== STDERR ==="
+              Get-Content "stderr.txt" | Write-Host
+            }
             
-            Write-Host "Exit code: $($process.ExitCode)"
-            if ($stdout) { Write-Host "STDOUT: $stdout" }
-            if ($stderr) { Write-Host "STDERR: $stderr" }
-            
-            if ($process.ExitCode -ne 0) {
-              Write-Host "❌ piper.exe failed with exit code $($process.ExitCode)"
+            if ($proc.ExitCode -ne 0) {
+              Write-Host "❌ piper.exe failed with exit code $($proc.ExitCode)"
+              
+              # Try to get Windows error info
+              if ($proc.ExitCode -eq -1073741819) {
+                Write-Host "This is an access violation (0xC0000005)"
+                Write-Host "Checking Event Log for crash info..."
+              }
+              
               exit 1
             }
           } catch {
             Write-Host "❌ Exception running piper.exe: $_"
+            Write-Host "Exception details: $($_.Exception.Message)"
             exit 1
           }
           
