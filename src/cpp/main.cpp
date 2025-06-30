@@ -165,12 +165,12 @@ int main(int argc, char *argv[]) {
   std::fflush(stderr);
   
   // Get the path to onnxruntime.dll
-  std::filesystem::path exePath = std::filesystem::path(argv[0]).parent_path();
-  std::filesystem::path onnxDllPath = exePath.parent_path() / "lib" / "onnxruntime.dll";
+  std::filesystem::path exePathForDll = std::filesystem::path(argv[0]).parent_path();
+  std::filesystem::path onnxDllPath = exePathForDll.parent_path() / "lib" / "onnxruntime.dll";
   
   if (!std::filesystem::exists(onnxDllPath)) {
     // Try exe directory
-    onnxDllPath = exePath / "onnxruntime.dll";
+    onnxDllPath = exePathForDll / "onnxruntime.dll";
   }
   
   if (std::filesystem::exists(onnxDllPath)) {
