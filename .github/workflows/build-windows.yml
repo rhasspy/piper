@@ -4,6 +4,7 @@ name: Windows Debug Build
 # For production builds and releases, use dev-daily-release.yml
 
 on:
+  # Manual execution only - for debugging Windows-specific issues
   workflow_dispatch:
     inputs:
       build_type:
@@ -14,11 +15,6 @@ on:
         options:
           - Debug
           - Release
-  # Only run on push to specific debugging branches
-  push:
-    branches:
-      - 'debug/**'
-      - 'test/**'
 
 jobs:
   build-windows:
