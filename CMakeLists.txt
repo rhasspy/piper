@@ -263,26 +263,15 @@ endif()
 
 # Platform-specific library linking
 if(WIN32)
-  # Windows: Use conditional linking for libraries
-  find_library(FMT_LIB NAMES fmt 
-    PATHS ${FMT_DIR}/lib 
-    NO_DEFAULT_PATH)
-  find_library(SPDLOG_LIB NAMES spdlog 
-    PATHS ${SPDLOG_DIR}/lib 
-    NO_DEFAULT_PATH)
-  find_library(PIPER_PHONEMIZE_LIB NAMES piper_phonemize 
-    PATHS ${PIPER_PHONEMIZE_DIR}/lib 
-    NO_DEFAULT_PATH)
-  find_library(ESPEAK_NG_LIB NAMES espeak-ng 
-    PATHS ${PIPER_PHONEMIZE_DIR}/lib 
-    NO_DEFAULT_PATH)
-  
+  # Windows: Link libraries directly with generator expressions for debug/release
   target_link_libraries(piper
-    $<IF:$<BOOL:${FMT_LIB}>,${FMT_LIB},fmt>
-    $<IF:$<BOOL:${SPDLOG_LIB}>,${SPDLOG_LIB},spdlog>
-    $<IF:$<BOOL:${PIPER_PHONEMIZE_LIB}>,${PIPER_PHONEMIZE_LIB},piper_phonemize>
-    $<IF:$<BOOL:${ESPEAK_NG_LIB}>,${ESPEAK_NG_LIB},espeak-ng>
-    $<IF:$<BOOL:${ONNXRUNTIME_LIB}>,${ONNXRUNTIME_LIB},onnxruntime>
+    optimized ${FMT_DIR}/lib/fmt.lib
+    debug ${FMT_DIR}/lib/fmtd.lib
+    optimized ${SPDLOG_DIR}/lib/spdlog.lib
+    debug ${SPDLOG_DIR}/lib/spdlogd.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.lib
+    ${ONNXRUNTIME_LIB}
     ${PIPER_EXTRA_LIBRARIES}
   )
 else()
@@ -383,12 +372,15 @@ target_link_directories(
 
 # Platform-specific library linking for test_piper
 if(WIN32)
+  # Windows: Link libraries directly with generator expressions for debug/release
   target_link_libraries(test_piper
-    $<IF:$<BOOL:${FMT_LIB}>,${FMT_LIB},fmt>
-    $<IF:$<BOOL:${SPDLOG_LIB}>,${SPDLOG_LIB},spdlog>
-    $<IF:$<BOOL:${PIPER_PHONEMIZE_LIB}>,${PIPER_PHONEMIZE_LIB},piper_phonemize>
-    $<IF:$<BOOL:${ESPEAK_NG_LIB}>,${ESPEAK_NG_LIB},espeak-ng>
-    $<IF:$<BOOL:${ONNXRUNTIME_LIB}>,${ONNXRUNTIME_LIB},onnxruntime>
+    optimized ${FMT_DIR}/lib/fmt.lib
+    debug ${FMT_DIR}/lib/fmtd.lib
+    optimized ${SPDLOG_DIR}/lib/spdlog.lib
+    debug ${SPDLOG_DIR}/lib/spdlogd.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.lib
+    ${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.lib
+    ${ONNXRUNTIME_LIB}
     ${PIPER_EXTRA_LIBRARIES}
   )
 else()
