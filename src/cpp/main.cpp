@@ -99,9 +99,17 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 // ----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
-  spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
+  try {
+    spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
+    spdlog::debug("piper main() started");
+  } catch (const std::exception& e) {
+    std::cerr << "Failed to initialize logger: " << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
 
 #ifdef _WIN32
+  spdlog::debug("Windows initialization starting");
+  
   // Initialize Windows subsystems early
   SetConsoleOutputCP(CP_UTF8);
   
@@ -109,15 +117,19 @@ int main(int argc, char *argv[]) {
   wchar_t exePathW[MAX_PATH];
   GetModuleFileNameW(nullptr, exePathW, MAX_PATH);
   std::filesystem::path exeDir = std::filesystem::path(exePathW).parent_path();
+  spdlog::debug("Executable directory: {}", exeDir.string());
   
   // First try ../lib relative to exe
   std::filesystem::path libDir = exeDir.parent_path() / "lib";
   if (std::filesystem::exists(libDir)) {
+    spdlog::debug("Setting DLL directory to: {}", libDir.string());
     SetDllDirectoryW(libDir.c_str());
   } else {
     // Fall back to exe directory
+    spdlog::debug("Setting DLL directory to exe dir: {}", exeDir.string());
     SetDllDirectoryW(exeDir.c_str());
   }
+  spdlog::debug("Windows initialization complete");
 #endif
 
   RunConfig runConfig;
