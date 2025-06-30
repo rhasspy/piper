@@ -7,13 +7,14 @@ echo "=== Comprehensive OpenJTalk Dictionary Auto-Download Test ==="
 echo
 
 # Set up paths
-PIPER_DIR="$(cd "$(dirname "$0")" && pwd)"
-export ESPEAK_DATA_PATH="$PIPER_DIR/build/ei/share/espeak-ng-data"
-export DYLD_LIBRARY_PATH="$PIPER_DIR/build:$PIPER_DIR/build/pi/lib:$DYLD_LIBRARY_PATH"
-export LD_LIBRARY_PATH="$PIPER_DIR/build:$PIPER_DIR/build/pi/lib:$LD_LIBRARY_PATH"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+export ESPEAK_DATA_PATH="$PROJECT_ROOT/build/ei/share/espeak-ng-data"
+export DYLD_LIBRARY_PATH="$PROJECT_ROOT/build:$PROJECT_ROOT/build/pi/lib:$DYLD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$PROJECT_ROOT/build:$PROJECT_ROOT/build/pi/lib:$LD_LIBRARY_PATH"
 
 # Change to build directory for proper path resolution
-cd "$PIPER_DIR/build"
+cd "$PROJECT_ROOT/build"
 PIPER_BIN="./piper"
 
 # Clean up any existing test environment
@@ -66,7 +67,7 @@ export OPENJTALK_DICTIONARY_DIR="$TEST_DIR/nonexistent"
 export OPENJTALK_VOICE="$TEST_DIR/nonexistent.htsvoice"
 # Test that auto-download is disabled - the command should fail (non-zero exit code)
 run_test "Auto-download disabled" "fail" \
-    'echo "テスト" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test1.wav'
+    'echo "テスト" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test1.wav'
 
 # Test 2: Auto-download with checksum verification
 echo "=== Test 2: Auto-download with checksum verification ==="
@@ -117,11 +118,11 @@ rm -rf "$TEST_DIR/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11"
 
 # This should attempt to resume
 run_test "Resume download" "pass" \
-    'echo "再開テスト" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test3.wav 2>&1 | grep -q "Resuming download" || echo "再開テスト" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test3.wav'
+    'echo "再開テスト" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test3.wav 2>&1 | grep -q "Resuming download" || echo "再開テスト" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test3.wav'
 
 # Test 4: Use existing dictionary (no re-download)
 echo "=== Test 4: Use existing dictionary ==="
-OUTPUT=$(echo "ありがとう" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test4.wav 2>&1)
+OUTPUT=$(echo "ありがとう" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test4.wav 2>&1)
 if echo "$OUTPUT" | grep -q "Downloading"; then
     echo "✗ Should not re-download existing dictionary"
     ((FAILED++))
@@ -134,19 +135,19 @@ fi
 echo "=== Test 5: Offline mode ==="
 export PIPER_OFFLINE_MODE=1
 run_test "Offline mode with cached dictionary" "pass" \
-    'echo "オフライン" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test5.wav'
+    'echo "オフライン" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test5.wav'
 
 # Test 6: Offline mode without dictionary (should fail)
 echo "=== Test 6: Offline mode without dictionary ==="
 rm -rf "$TEST_DIR/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11"
 run_test "Offline mode without dictionary" "fail" \
-    'echo "失敗" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test6.wav 2>&1 | grep -q "dictionary manually"'
+    'echo "失敗" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test6.wav 2>&1 | grep -q "dictionary manually"'
 
 # Test 7: Custom dictionary path
 echo "=== Test 7: Custom dictionary path ==="
 unset PIPER_OFFLINE_MODE
 # First, ensure dictionary is downloaded
-echo "準備" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file prep.wav 2>&1 > /dev/null
+echo "準備" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file prep.wav 2>&1 > /dev/null
 
 # Copy dictionary to custom location
 CUSTOM_DICT="$TEST_DIR/custom_dict"
@@ -155,7 +156,7 @@ cp -r "$TEST_DIR/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11" "$CUST
 # Use custom path
 export OPENJTALK_DICTIONARY_DIR="$CUSTOM_DICT"
 run_test "Custom dictionary path" "pass" \
-    'echo "カスタム" | "$PIPER_BIN" --model "$PIPER_DIR/test/models/ja_JP-test-medium.onnx" --output_file test7.wav'
+    'echo "カスタム" | "$PIPER_BIN" --model "$PROJECT_ROOT/test/models/ja_JP-test-medium.onnx" --output_file test7.wav'
 
 # Test 8: Verify all downloaded files
 echo "=== Test 8: Verify downloaded files ==="

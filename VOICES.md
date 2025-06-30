@@ -1,5 +1,7 @@
 # Voices
 
+> **Note**: This file contains links to voice models hosted on HuggingFace. For the most up-to-date list, please visit the [official Piper voices repository](https://huggingface.co/rhasspy/piper-voices).
+
 * Arabic (`ar_JO`, العربية)
     * kareem
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ar/ar_JO/kareem/low/ar_JO-kareem-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ar/ar_JO/kareem/low/ar_JO-kareem-low.onnx.json?download=true.json)]
