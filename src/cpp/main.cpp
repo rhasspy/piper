@@ -193,8 +193,28 @@ int main(int argc, char *argv[]) {
   
   std::fprintf(stderr, "[DEBUG] Creating Voice\n");
   std::fflush(stderr);
+  
+  // Try creating Voice dynamically to see if stack allocation is the issue
+  std::fprintf(stderr, "[DEBUG] Attempting dynamic Voice allocation\n");
+  std::fflush(stderr);
 #endif
+  
+  // Use dynamic allocation on Windows to avoid potential stack issues
+#ifdef _WIN32
+  std::unique_ptr<piper::Voice> voicePtr;
+  try {
+    voicePtr = std::make_unique<piper::Voice>();
+    std::fprintf(stderr, "[DEBUG] Dynamic Voice allocation succeeded\n");
+    std::fflush(stderr);
+  } catch (const std::exception& e) {
+    std::fprintf(stderr, "[DEBUG] Dynamic Voice allocation failed: %s\n", e.what());
+    std::fflush(stderr);
+    return EXIT_FAILURE;
+  }
+  piper::Voice& voice = *voicePtr;
+#else
   piper::Voice voice;
+#endif
 
 #ifdef _WIN32
   std::fprintf(stderr, "[DEBUG] Model path: %s\n", runConfig.modelPath.string().c_str());
