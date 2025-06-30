@@ -1,33 +1,36 @@
 # Multilingual TTS Test Results
 
-## Current Status (2025-06-28)
+## Current Status (2025-06-30)
 
 ### Test Results Summary
 
 | Platform | Success Rate | Notes |
 |----------|--------------|-------|
 | Ubuntu (Linux) | 100% (12/12 languages) | ✅ All tests passing |
-| Windows | 0% (0/12 languages) | ❌ Access violation error (一時的に無効化) - Issue #47 |
+| Windows | 100% (12/12 languages) | ✅ Fixed in PR #57 (MSVC runtime library issue resolved) |
 | macOS | 100% (12/12 languages) | ✅ All tests passing (API rate limit resolved) |
 
 ### Language Test Status
 
 | Language | Ubuntu | Windows | macOS | Model Used |
 |----------|--------|---------|-------|------------|
-| English (US) | ✅ | ❌ | ✅ | en_US-lessac-medium |
-| English (UK) | ✅ | ❌ | ✅ | en_GB-alan-medium |
-| German | ✅ | ❌ | ✅ | de_DE-thorsten-medium |
-| French | ✅ | ❌ | ✅ | fr_FR-siwis-medium |
-| Spanish | ✅ | ❌ | ✅ | es_ES-mls_9972-low |
-| Italian | ✅ | ❌ | ✅ | it_IT-riccardo-x_low |
-| Portuguese (BR) | ✅ | ❌ | ✅ | pt_BR-faber-medium |
-| Russian | ✅ | ❌ | ✅ | ru_RU-dmitri-medium |
-| Chinese | ✅ | ❌ | ✅ | zh_CN-huayan-medium |
-| Dutch | ✅ | ❌ | ✅ | nl_NL-mls-medium |
-| Polish | ✅ | ❌ | ✅ | pl_PL-gosia-medium |
-| Swedish | ✅ | ❌ | ✅ | sv_SE-nst-medium |
+| English (US) | ✅ | ✅ | ✅ | en_US-lessac-medium |
+| English (UK) | ✅ | ✅ | ✅ | en_GB-alan-medium |
+| German | ✅ | ✅ | ✅ | de_DE-thorsten-medium |
+| French | ✅ | ✅ | ✅ | fr_FR-siwis-medium |
+| Spanish | ✅ | ✅ | ✅ | es_ES-mls_9972-low |
+| Italian | ✅ | ✅ | ✅ | it_IT-riccardo-x_low |
+| Portuguese (BR) | ✅ | ✅ | ✅ | pt_BR-faber-medium |
+| Russian | ✅ | ✅ | ✅ | ru_RU-dmitri-medium |
+| Chinese | ✅ | ✅ | ✅ | zh_CN-huayan-medium |
+| Dutch | ✅ | ✅ | ✅ | nl_NL-mls-medium |
+| Polish | ✅ | ✅ | ✅ | pl_PL-gosia-medium |
+| Swedish | ✅ | ✅ | ✅ | sv_SE-nst-medium |
 
-*Windows tests are temporarily disabled due to DLL dependency issues (tracked in Issue #47)
+### Recent Updates
+
+- **2025-06-30**: Windows support fully restored! Fixed MSVC runtime library mismatch issue that was causing access violations (PR #57)
+- **2025-06-28**: Initial Windows issue identified - ONNX Runtime DLL dependency problems (Issue #51)
 
 ## Issues Found and Resolved
 
