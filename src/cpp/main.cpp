@@ -99,6 +99,12 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 // ----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
+#ifdef _WIN32
+  // Output to stderr immediately to debug Windows crash
+  std::fprintf(stderr, "[DEBUG] piper.exe main() entry point\n");
+  std::fflush(stderr);
+#endif
+
   try {
     spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
     spdlog::debug("piper main() started");
@@ -133,7 +139,15 @@ int main(int argc, char *argv[]) {
 #endif
 
   RunConfig runConfig;
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] Before parseArgs\n");
+  std::fflush(stderr);
+#endif
   parseArgs(argc, argv, runConfig);
+#ifdef _WIN32
+  std::fprintf(stderr, "[DEBUG] After parseArgs\n");
+  std::fflush(stderr);
+#endif
 
   spdlog::debug("Arguments parsed successfully");
 
