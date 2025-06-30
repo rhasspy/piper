@@ -305,7 +305,15 @@ std::string findEspeakDataPath() {
             exeDir / "espeak-ng-data",                    // Same directory as exe
             exeDir / ".." / "share" / "espeak-ng-data",   // Installed location
             exeDir / ".." / "espeak-ng-data",             // Alternative location
-            exeDir / ".." / "lib" / "espeak-ng-data"      // Another alternative
+#ifdef _WIN32
+            // Additional Windows-specific search paths
+            exeDir / ".." / "lib" / "espeak-ng-data",     // lib directory (for distribution)
+            exeDir / "share" / "espeak-ng-data",          // share subdirectory
+            "C:\\espeak-ng-data",                          // Common installation path
+            "C:\\Program Files\\eSpeak NG\\espeak-ng-data" // Default eSpeak NG path
+#else
+            exeDir / ".." / "lib" / "espeak-ng-data"      // Another alternative for Unix
+#endif
         };
         
         for (const auto& candidate : candidates) {
@@ -338,12 +346,29 @@ void initialize(PiperConfig &config) {
     spdlog::debug("Calling espeak_Initialize with path: {}", 
                   espeak_path ? espeak_path : "(null)");
     
+#ifdef _WIN32
+    // On Windows, add extra debugging for DLL loading issues
+    spdlog::debug("Current DLL directory: {}", 
+                  []() -> std::string {
+                      wchar_t buffer[MAX_PATH];
+                      DWORD result = GetDllDirectoryW(buffer, MAX_PATH);
+                      if (result > 0) {
+                          return std::filesystem::path(buffer).string();
+                      }
+                      return "(not set)";
+                  }());
+#endif
+    
     int result = espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS,
                                    /*buflength*/ 0,
                                    /*path*/ espeak_path,
                                    /*options*/ 0);
     if (result < 0) {
       spdlog::error("espeak_Initialize failed with code: {}", result);
+#ifdef _WIN32
+      DWORD lastError = GetLastError();
+      spdlog::error("Windows last error code: {} (0x{:X})", lastError, lastError);
+#endif
       throw std::runtime_error("Failed to initialize eSpeak-ng");
     }
 

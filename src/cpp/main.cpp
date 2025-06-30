@@ -123,6 +123,8 @@ int main(int argc, char *argv[]) {
   RunConfig runConfig;
   parseArgs(argc, argv, runConfig);
 
+  spdlog::debug("Arguments parsed successfully");
+
   piper::PiperConfig piperConfig;
   piper::Voice voice;
 
@@ -131,9 +133,15 @@ int main(int argc, char *argv[]) {
                 runConfig.modelConfigPath.string());
 
   auto startTime = chrono::steady_clock::now();
-  loadVoice(piperConfig, runConfig.modelPath.string(),
-            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
-            runConfig.useCuda);
+  try {
+    // Note: loadVoice also loads the model which can take time
+    loadVoice(piperConfig, runConfig.modelPath.string(),
+              runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
+              runConfig.useCuda);
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to load voice: {}", e.what());
+    return EXIT_FAILURE;
+  }
   auto endTime = chrono::steady_clock::now();
   spdlog::info("Loaded voice in {} second(s)",
                chrono::duration<double>(endTime - startTime).count());
@@ -197,7 +205,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  piper::initialize(piperConfig);
+  try {
+    piper::initialize(piperConfig);
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to initialize piper: {}", e.what());
+    return EXIT_FAILURE;
+  }
 
   // Scales
   if (runConfig.noiseScale) {
