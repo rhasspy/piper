@@ -511,79 +511,74 @@ if(WIN32)
   # First, copy specific DLLs we know we need
   set(PIPER_PHONEMIZE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/p/src/piper_phonemize_external-build")
   
-  # Copy espeak-ng.dll
-  add_custom_command(TARGET piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Looking for espeak-ng.dll..."
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/$<CONFIG>/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/bin/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMENT "Copying espeak-ng.dll..."
-    COMMAND_EXPAND_LISTS
-  )
+  # Helper function to find and copy espeak-ng.dll
+  function(copy_espeak_ng_dll target_name)
+    # Create a script to find and copy the DLL
+    set(FIND_ESPEAK_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/find_espeak_${target_name}.cmake")
+    file(WRITE ${FIND_ESPEAK_SCRIPT} "
+# Try multiple possible locations
+set(ESPEAK_LOCATIONS
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/e/src/espeak_ng_external-build/src/Release/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/src/Release/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/Release/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/e/src/espeak_ng_external-build/src/Debug/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/src/Debug/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/Debug/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_DIR}/bin/espeak-ng.dll\"
+  \"${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.dll\"
+)
+
+foreach(DLL_PATH \${ESPEAK_LOCATIONS})
+  if(EXISTS \"\${DLL_PATH}\")
+    message(STATUS \"Found espeak-ng.dll at: \${DLL_PATH}\")
+    file(COPY \"\${DLL_PATH}\" DESTINATION \"$<TARGET_FILE_DIR:${target_name}>\")
+    break()
+  endif()
+endforeach()
+")
+    
+    add_custom_command(TARGET ${target_name} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -P ${FIND_ESPEAK_SCRIPT}
+      COMMENT "Finding and copying espeak-ng.dll for ${target_name}..."
+    )
+  endfunction()
   
-  add_custom_command(TARGET test_piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Looking for espeak-ng.dll for tests..."
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/$<CONFIG>/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/bin/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMENT "Copying espeak-ng.dll for tests..."
-    COMMAND_EXPAND_LISTS
-  )
+  # Copy espeak-ng.dll for both targets
+  copy_espeak_ng_dll(piper)
+  copy_espeak_ng_dll(test_piper)
   
-  # Copy piper_phonemize.dll
-  add_custom_command(TARGET piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Looking for piper_phonemize.dll..."
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/$<CONFIG>/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/bin/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:piper>/"
-    COMMENT "Copying piper_phonemize.dll..."
-    COMMAND_EXPAND_LISTS
-  )
+  # Helper function to find and copy piper_phonemize.dll
+  function(copy_piper_phonemize_dll target_name)
+    # Create a script to find and copy the DLL
+    set(FIND_PIPER_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/find_piper_phonemize_${target_name}.cmake")
+    file(WRITE ${FIND_PIPER_SCRIPT} "
+# Try multiple possible locations
+set(PIPER_LOCATIONS
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/Release/piper_phonemize.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/Debug/piper_phonemize.dll\"
+  \"${PIPER_PHONEMIZE_BUILD_DIR}/piper_phonemize.dll\"
+  \"${PIPER_PHONEMIZE_DIR}/bin/piper_phonemize.dll\"
+  \"${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.dll\"
+)
+
+foreach(DLL_PATH \${PIPER_LOCATIONS})
+  if(EXISTS \"\${DLL_PATH}\")
+    message(STATUS \"Found piper_phonemize.dll at: \${DLL_PATH}\")
+    file(COPY \"\${DLL_PATH}\" DESTINATION \"$<TARGET_FILE_DIR:${target_name}>\")
+    break()
+  endif()
+endforeach()
+")
+    
+    add_custom_command(TARGET ${target_name} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -P ${FIND_PIPER_SCRIPT}
+      COMMENT "Finding and copying piper_phonemize.dll for ${target_name}..."
+    )
+  endfunction()
   
-  add_custom_command(TARGET test_piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Looking for piper_phonemize.dll for tests..."
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/$<CONFIG>/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_BUILD_DIR}/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/bin/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.dll"
-      "$<TARGET_FILE_DIR:test_piper>/"
-    COMMENT "Copying piper_phonemize.dll for tests..."
-    COMMAND_EXPAND_LISTS
-  )
+  # Copy piper_phonemize.dll for both targets
+  copy_piper_phonemize_dll(piper)
+  copy_piper_phonemize_dll(test_piper)
   
   
   # Copy Microsoft C++ runtime redistributables if needed
