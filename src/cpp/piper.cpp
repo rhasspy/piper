@@ -15,9 +15,6 @@
 #include "piper.hpp"
 #include "utf8.h"
 #include "wavfile.hpp"
-#if !defined(_WIN32) && !defined(_MSC_VER)
-#include "openjtalk_phonemize.hpp"
-#endif
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -121,12 +118,10 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     auto phonemeTypeStr = configRoot["phoneme_type"].get<std::string>();
     if (phonemeTypeStr == "text") {
       phonemizeConfig.phonemeType = TextPhonemes;
-#if !defined(_WIN32) && !defined(_MSC_VER)
     } else if (phonemeTypeStr == "openjtalk") {
       phonemizeConfig.phonemeType = OpenJTalkPhonemes;
       // OpenJTalk models don't use padding between phonemes
       phonemizeConfig.interspersePad = false;
-#endif
     }
   }
 
