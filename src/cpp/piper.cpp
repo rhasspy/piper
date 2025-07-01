@@ -640,11 +640,10 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     // Japanese OpenJTalk phonemizer
     phonemize_openjtalk(text, phonemes);
     
-    // If OpenJTalk failed, fall back to codepoints to prevent crash
+    // If OpenJTalk failed, we cannot process Japanese text
     if (phonemes.empty()) {
-      spdlog::warn("OpenJTalk returned empty phonemes, falling back to codepoints");
-      CodepointsPhonemeConfig codepointsConfig;
-      phonemize_codepoints(text, codepointsConfig, phonemes);
+      throw std::runtime_error("OpenJTalk is not available or failed to process Japanese text. "
+                               "Cannot synthesize Japanese without OpenJTalk.");
     }
 #endif
   } else {
