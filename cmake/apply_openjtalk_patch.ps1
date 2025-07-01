@@ -15,7 +15,7 @@ if (Test-Path $filePath) {
             '$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$2`r`n#endif'
         
         Set-Content -Path $filePath -Value $content -NoNewline
-        Write-Host "Successfully applied C++17 compatibility patch"
+        Write-Host "Successfully applied C++17 compatibility patch to dictionary.cpp"
     } else {
         Write-Host "File already patched"
     }
