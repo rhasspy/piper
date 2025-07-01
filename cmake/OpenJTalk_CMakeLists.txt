@@ -151,6 +151,27 @@ if(WIN32)
   endif()
 endif()
 
+# Apply C++17 compatibility patch for MeCab
+if(WIN32 AND CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+  # Create patched dictionary.cpp if needed
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary_patched.cpp")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary.cpp" DICT_CONTENT)
+    # Replace std::binary_function usage
+    string(REPLACE 
+      "struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {"
+      "struct pair_1st_cmp {
+  typedef T1 first_argument_type;
+  typedef T2 second_argument_type;
+  typedef bool result_type;"
+      DICT_CONTENT "${DICT_CONTENT}")
+    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary_patched.cpp" "${DICT_CONTENT}")
+  endif()
+  
+  # Replace dictionary.cpp with patched version in MECAB_SOURCES
+  list(REMOVE_ITEM MECAB_SOURCES mecab/src/dictionary.cpp)
+  list(APPEND MECAB_SOURCES mecab/src/dictionary_patched.cpp)
+endif()
+
 # Build open_jtalk executable
 add_executable(open_jtalk bin/open_jtalk.c)
 target_link_libraries(open_jtalk PRIVATE

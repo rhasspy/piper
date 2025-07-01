@@ -185,7 +185,8 @@ endif()
 # ---- HTSEngine ---
 
 # Build HTSEngine on all platforms
-if(TRUE)
+# Note: Windows builds are currently disabled due to OpenJTalk build issues
+if(NOT WIN32)
   if(NOT DEFINED HTS_ENGINE_DIR)
     set(HTS_ENGINE_DIR "${CMAKE_CURRENT_BINARY_DIR}/he")
     set(HTS_ENGINE_VERSION "1.10")
@@ -335,7 +336,7 @@ else()
 endif()
 
 # Link OpenJTalk and HTS_Engine libraries
-if(TRUE)  # HTSEngine and OpenJTalk are built
+if(NOT WIN32)  # HTSEngine and OpenJTalk are built on Unix platforms only
   # Ensure libraries are built before linking
   add_dependencies(piper openjtalk_external hts_engine_external)
   add_dependencies(test_piper openjtalk_external hts_engine_external)
@@ -381,7 +382,7 @@ if(WIN32 AND ONNXRUNTIME_INCLUDE_DIR)
 endif()
 
 # Include OpenJTalk and HTSEngine headers
-if(TRUE)  # HTSEngine and OpenJTalk are built
+if(NOT WIN32)  # HTSEngine and OpenJTalk are built on Unix platforms only
   target_include_directories(piper PUBLIC
     ${OPENJTALK_DIR}/include
     ${HTS_ENGINE_DIR}/include
