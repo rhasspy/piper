@@ -36,10 +36,8 @@ struct PiperConfig {
 
 enum PhonemeType { 
   eSpeakPhonemes, 
-  TextPhonemes
-#if !defined(_WIN32) && !defined(_MSC_VER)
-  , OpenJTalkPhonemes
-#endif
+  TextPhonemes,
+  OpenJTalkPhonemes
 };
 
 struct PhonemizeConfig {
