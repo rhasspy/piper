@@ -307,6 +307,35 @@ jobs:
             Copy-Item build/pi/share/espeak-ng-data -Destination dist/piper/share/ -Recurse -Force
           }
           
+          # Copy OpenJTalk executable
+          if (Test-Path "build/oj/bin/open_jtalk.exe") {
+            Copy-Item build/oj/bin/open_jtalk.exe -Destination dist/piper/bin/ -Force
+            Write-Host "Copied open_jtalk.exe"
+          } else {
+            Write-Host "WARNING: open_jtalk.exe not found at build/oj/bin/open_jtalk.exe"
+          }
+          
+          # Download and copy OpenJTalk dictionary
+          $dictDir = "dist/piper/share/open_jtalk/dic"
+          New-Item -ItemType Directory -Force -Path $dictDir
+          
+          # Download dictionary
+          $dictUrl = "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
+          $dictTar = "open_jtalk_dic.tar.gz"
+          
+          Write-Host "Downloading OpenJTalk dictionary..."
+          Invoke-WebRequest -Uri $dictUrl -OutFile $dictTar
+          
+          # Extract dictionary (Windows doesn't have tar by default, use 7zip or built-in tar if available)
+          if (Get-Command tar -ErrorAction SilentlyContinue) {
+            tar -xzf $dictTar
+            Move-Item -Path "open_jtalk_dic_utf_8-1.11/*" -Destination $dictDir -Force
+            Remove-Item -Path "open_jtalk_dic_utf_8-1.11" -Recurse -Force
+          } else {
+            Write-Host "WARNING: tar command not found. Dictionary not extracted."
+          }
+          Remove-Item -Path $dictTar -Force
+          
           # Debug: List what we're packaging
           Write-Host "=== Contents of dist/piper/bin ==="
           Get-ChildItem -Path dist/piper/bin
@@ -384,6 +413,9 @@ jobs:
           - language: sv_SE
             model: "sv_SE-nst-medium"
             test_text: "Hej, detta är ett test av talsyntessystemet."
+          - language: ja_JP
+            model: "ja_JP-kokoro-medium"
+            test_text: "こんにちは、これは音声合成システムのテストです。"
 
     steps:
       - uses: actions/checkout@v4.2.2

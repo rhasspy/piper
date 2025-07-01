@@ -230,6 +230,32 @@ jobs:
             Get-ChildItem -Path "_install\piper\bin" -ErrorAction SilentlyContinue
             exit 1
           }
+          
+          # Copy OpenJTalk executable
+          if (Test-Path "build\oj\bin\open_jtalk.exe") {
+            Copy-Item "build\oj\bin\open_jtalk.exe" -Destination "_install\piper\bin\" -Force
+            Write-Host "Copied open_jtalk.exe"
+          } else {
+            Write-Host "WARNING: open_jtalk.exe not found"
+          }
+          
+          # Download and install OpenJTalk dictionary
+          $dictDir = "_install\piper\share\open_jtalk\dic"
+          New-Item -ItemType Directory -Force -Path $dictDir
+          
+          $dictUrl = "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
+          $dictTar = "open_jtalk_dic.tar.gz"
+          
+          Write-Host "Downloading OpenJTalk dictionary..."
+          Invoke-WebRequest -Uri $dictUrl -OutFile $dictTar
+          
+          # Extract dictionary using tar (available on Windows 10+)
+          tar -xzf $dictTar
+          Move-Item -Path "open_jtalk_dic_utf_8-1.11\*" -Destination $dictDir -Force
+          Remove-Item -Path "open_jtalk_dic_utf_8-1.11" -Recurse -Force
+          Remove-Item -Path $dictTar -Force
+          
+          Write-Host "OpenJTalk dictionary installed to $dictDir"
       - name: Verify Windows package
         run: |
           # バイナリの存在確認
@@ -915,9 +941,19 @@ jobs:
         run: |
           Write-Host "Testing Japanese TTS..."
           
-          # Create test input (Windows uses English only - no OpenJTalk support)
-          "Hello, this is a test of the text to speech system." | Out-File -FilePath test_input.txt -Encoding UTF8
-          "Testing the piper voice synthesis." | Add-Content -Path test_input.txt -Encoding UTF8
+          # Test if OpenJTalk is available
+          $openJTalkPath = "piper\bin\open_jtalk.exe"
+          if (Test-Path $openJTalkPath) {
+            Write-Host "OpenJTalk found at: $openJTalkPath"
+            
+            # Create Japanese test input
+            "こんにちは、音声合成のテストです。" | Out-File -FilePath test_input.txt -Encoding UTF8
+            "日本語の音声合成をテストしています。" | Add-Content -Path test_input.txt -Encoding UTF8
+          } else {
+            Write-Host "WARNING: OpenJTalk not found, using English text"
+            "Hello, this is a test of the text to speech system." | Out-File -FilePath test_input.txt -Encoding UTF8
+            "Testing the piper voice synthesis." | Add-Content -Path test_input.txt -Encoding UTF8
+          }
           
           # Test binary exists
           if (!(Test-Path "${{ matrix.binary_path }}")) {
