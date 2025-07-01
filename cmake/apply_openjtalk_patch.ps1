@@ -9,9 +9,9 @@ if (Test-Path $filePath) {
     if (-not ($content -match '__cplusplus.*201703L')) {
         Write-Host "Applying C++17 compatibility patch..."
         
-        # Apply the patch
+        # Apply the patch - the template is not inside a namespace
         $content = $content -replace `
-            '(namespace\s*\{[\r\n]+template\s*<typename\s+T1,\s*typename\s+T2>[\r\n]+)(struct\s+pair_1st_cmp:\s*public\s+std::binary_function<bool,\s*T1,\s*T2>\s*\{)', `
+            '(template\s*<typename\s+T1,\s*typename\s+T2>\s*[\r\n]+)(struct\s+pair_1st_cmp:\s*public\s+std::binary_function<bool,\s*T1,\s*T2>\s*\{)', `
             '$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$2`r`n#endif'
         
         Set-Content -Path $filePath -Value $content -NoNewline
