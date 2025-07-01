@@ -5,7 +5,8 @@ project(OpenJTalk C CXX)
 # Based on the original autotools configuration
 
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Configuration options
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
