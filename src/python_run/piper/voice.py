@@ -56,18 +56,53 @@ class PiperVoice:
 
     def phonemize(self, text: str) -> List[List[str]]:
         """Text to phonemes grouped by sentence."""
+        phonemes = []
+        next_phoneme_input = False
+        merge_phonemes = False
         if self.config.phoneme_type == PhonemeType.ESPEAK:
-            if self.config.espeak_voice == "ar":
-                # Arabic diacritization
-                # https://github.com/mush42/libtashkeel/
-                text = tashkeel_run(text)
-
-            return phonemize_espeak(text, self.config.espeak_voice)
-
-        if self.config.phoneme_type == PhonemeType.TEXT:
-            return phonemize_codepoints(text)
-
-        raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
+            import re
+            regex = re.compile(r"(\[\[|\]\])")
+            split_text = re.split(regex, text)
+            for text_part in split_text:
+                if text_part == "]]":
+                    merge_phonemes = True
+                    next_phoneme_input = False
+                if text_part == "[[":
+                    next_phoneme_input = True
+                if text_part == "[[" or text_part == "]]":
+                    # add pause
+                    phonemes[-1].append(" ")
+                    continue
+                if next_phoneme_input:
+                    # add raw phoneme input, always merged to last segment
+                    sentences = re.split("\n|\. ", text_part)
+                    phonemes[-1].extend(sentences[0])
+                    phonemes[-1].extend(" ")
+                    for p in sentences[1:]:
+                        phonemes.append(list(p))
+                else:
+                    if self.config.espeak_voice == "ar":
+                        # Arabic diacritization
+                        # https://github.com/mush42/libtashkeel/
+                        text = tashkeel_run(text_part)
+                    sentences = re.split("\n|\. ", text_part)
+                    for p in sentences:
+                        if (p.strip() == ''): continue
+                        ps = phonemize_espeak(p, self.config.espeak_voice)
+                        if merge_phonemes:
+                            # merge first list of token
+                            phonemes[-1].extend(ps[0])
+                            #add remaining list (more sentences)
+                            for p in ps[1:]:
+                                phonemes.append(p)
+                            merge_phonemes = False;
+                        else:
+                            phonemes.extend(ps)
+        elif self.config.phoneme_type == PhonemeType.TEXT:
+            phonemes.extend(phonemize_codepoints(text_part))
+        else:
+            raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
+        return phonemes
 
     def phonemes_to_ids(self, phonemes: List[str]) -> List[int]:
         """Phonemes to ids."""
@@ -100,7 +135,6 @@ class PiperVoice:
         wav_file.setframerate(self.config.sample_rate)
         wav_file.setsampwidth(2)  # 16-bit
         wav_file.setnchannels(1)  # mono
-
         for audio_bytes in self.synthesize_stream_raw(
             text,
             speaker_id=speaker_id,
@@ -122,12 +156,11 @@ class PiperVoice:
     ) -> Iterable[bytes]:
         """Synthesize raw audio per sentence from text."""
         sentence_phonemes = self.phonemize(text)
-
         # 16-bit mono
         num_silence_samples = int(sentence_silence * self.config.sample_rate)
         silence_bytes = bytes(num_silence_samples * 2)
 
-        for phonemes in sentence_phonemes:
+        for i, phonemes in enumerate(sentence_phonemes):
             phoneme_ids = self.phonemes_to_ids(phonemes)
             yield self.synthesize_ids_to_raw(
                 phoneme_ids,
@@ -135,7 +168,7 @@ class PiperVoice:
                 length_scale=length_scale,
                 noise_scale=noise_scale,
                 noise_w=noise_w,
-            ) + silence_bytes
+            ) + (silence_bytes if (i+1)!=len(sentence_phonemes) else bytes())
 
     def synthesize_ids_to_raw(
         self,
