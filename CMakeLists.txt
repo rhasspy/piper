@@ -61,19 +61,17 @@ if(BUILD_TESTS)
   add_subdirectory(src/cpp/tests)
 endif()
 
-# Add OpenJTalk support on Unix platforms (not Windows yet)
-if(NOT WIN32 AND NOT MSVC)
-  target_sources(piper PRIVATE
-    src/cpp/openjtalk_phonemize.cpp
-    src/cpp/openjtalk_wrapper.c
-    src/cpp/openjtalk_dictionary_manager.c
-  )
-  target_sources(test_piper PRIVATE
-    src/cpp/openjtalk_phonemize.cpp
-    src/cpp/openjtalk_wrapper.c
-    src/cpp/openjtalk_dictionary_manager.c
-  )
-endif()
+# Add OpenJTalk support on all platforms
+target_sources(piper PRIVATE
+  src/cpp/openjtalk_phonemize.cpp
+  src/cpp/openjtalk_wrapper.c
+  src/cpp/openjtalk_dictionary_manager.c
+)
+target_sources(test_piper PRIVATE
+  src/cpp/openjtalk_phonemize.cpp
+  src/cpp/openjtalk_wrapper.c
+  src/cpp/openjtalk_dictionary_manager.c
+)
 
 
 # Configure RPATH for macOS
@@ -186,36 +184,58 @@ endif()
 
 # ---- HTSEngine ---
 
-if(NOT WIN32 AND NOT MSVC)
+# Build HTSEngine on all platforms
+if(TRUE)
   if(NOT DEFINED HTS_ENGINE_DIR)
     set(HTS_ENGINE_DIR "${CMAKE_CURRENT_BINARY_DIR}/he")
     set(HTS_ENGINE_VERSION "1.10")
 
-    # Set architecture flags for configure scripts
-    if(APPLE AND CMAKE_OSX_ARCHITECTURES)
-      if(CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
-        set(CONFIGURE_HOST "--host=x86_64-apple-darwin")
-      elseif(CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
-        set(CONFIGURE_HOST "--host=aarch64-apple-darwin")
+    if(WIN32)
+      # Use CMake build for Windows
+      ExternalProject_Add(
+        hts_engine_external
+        PREFIX "${CMAKE_CURRENT_BINARY_DIR}/h"
+        URL "https://downloads.sourceforge.net/project/hts-engine/hts_engine%20API/hts_engine_API-${HTS_ENGINE_VERSION}/hts_engine_API-${HTS_ENGINE_VERSION}.tar.gz"
+        CMAKE_ARGS 
+          -DCMAKE_INSTALL_PREFIX:PATH=${HTS_ENGINE_DIR}
+          -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+          -DBUILD_SHARED_LIBS:BOOL=OFF
+          -DHTS_EMBEDDED:BOOL=OFF
+          -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=${CMAKE_MSVC_RUNTIME_LIBRARY}
+          ${EXTERNAL_CMAKE_ARGS}
+        PATCH_COMMAND ${CMAKE_COMMAND} -E copy 
+          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/HTSEngine_CMakeLists.txt 
+          <SOURCE_DIR>/CMakeLists.txt
+        BUILD_BYPRODUCTS ${HTS_ENGINE_DIR}/lib/HTSEngine.lib
+      )
+    else()
+      # Use autotools for Unix platforms
+      # Set architecture flags for configure scripts
+      if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+        if(CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+          set(CONFIGURE_HOST "--host=x86_64-apple-darwin")
+        elseif(CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
+          set(CONFIGURE_HOST "--host=aarch64-apple-darwin")
+        else()
+          set(CONFIGURE_HOST "")
+        endif()
+        set(CONFIGURE_ENV "CFLAGS=-arch ${CMAKE_OSX_ARCHITECTURES}" "CXXFLAGS=-arch ${CMAKE_OSX_ARCHITECTURES}" "LDFLAGS=-arch ${CMAKE_OSX_ARCHITECTURES}")
       else()
         set(CONFIGURE_HOST "")
+        set(CONFIGURE_ENV "")
       endif()
-      set(CONFIGURE_ENV "CFLAGS=-arch ${CMAKE_OSX_ARCHITECTURES}" "CXXFLAGS=-arch ${CMAKE_OSX_ARCHITECTURES}" "LDFLAGS=-arch ${CMAKE_OSX_ARCHITECTURES}")
-    else()
-      set(CONFIGURE_HOST "")
-      set(CONFIGURE_ENV "")
-    endif()
 
-    ExternalProject_Add(
-      hts_engine_external
-      PREFIX "${CMAKE_CURRENT_BINARY_DIR}/h"
-      URL "https://downloads.sourceforge.net/project/hts-engine/hts_engine%20API/hts_engine_API-${HTS_ENGINE_VERSION}/hts_engine_API-${HTS_ENGINE_VERSION}.tar.gz"
-      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${CONFIGURE_ENV} ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./configure --prefix=${HTS_ENGINE_DIR} ${CONFIGURE_HOST}
-      BUILD_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make
-      INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
-      BUILD_IN_SOURCE 1
-      BUILD_BYPRODUCTS ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
-    )
+      ExternalProject_Add(
+        hts_engine_external
+        PREFIX "${CMAKE_CURRENT_BINARY_DIR}/h"
+        URL "https://downloads.sourceforge.net/project/hts-engine/hts_engine%20API/hts_engine_API-${HTS_ENGINE_VERSION}/hts_engine_API-${HTS_ENGINE_VERSION}.tar.gz"
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${CONFIGURE_ENV} ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./configure --prefix=${HTS_ENGINE_DIR} ${CONFIGURE_HOST}
+        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
+        BUILD_IN_SOURCE 1
+        BUILD_BYPRODUCTS ${HTS_ENGINE_DIR}/lib/libHTSEngine.a
+      )
+    endif()
   endif()
 
   # ---- OpenJTalk ---
@@ -224,24 +244,48 @@ if(NOT WIN32 AND NOT MSVC)
     set(OPENJTALK_DIR "${CMAKE_CURRENT_BINARY_DIR}/oj")
     set(OPENJTALK_VERSION "1.11")
 
-    ExternalProject_Add(
-      openjtalk_external
-      PREFIX "${CMAKE_CURRENT_BINARY_DIR}/o"
-      URL "https://downloads.sourceforge.net/project/open-jtalk/Open%20JTalk/open_jtalk-${OPENJTALK_VERSION}/open_jtalk-${OPENJTALK_VERSION}.tar.gz"
-      PATCH_COMMAND ""
-      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${CONFIGURE_ENV} ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./configure
-        --prefix=${OPENJTALK_DIR}
-        --with-hts-engine-header-path=${HTS_ENGINE_DIR}/include
-        --with-hts-engine-library-path=${HTS_ENGINE_DIR}/lib
-        --with-charset=UTF-8
-        ${CONFIGURE_HOST}
-      BUILD_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make
-      INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
-      BUILD_IN_SOURCE 1
-      BUILD_BYPRODUCTS
-        ${OPENJTALK_DIR}/bin/open_jtalk
-      DEPENDS hts_engine_external
-    )
+    if(WIN32)
+      # Use CMake build for Windows
+      ExternalProject_Add(
+        openjtalk_external
+        PREFIX "${CMAKE_CURRENT_BINARY_DIR}/o"
+        URL "https://downloads.sourceforge.net/project/open-jtalk/Open%20JTalk/open_jtalk-${OPENJTALK_VERSION}/open_jtalk-${OPENJTALK_VERSION}.tar.gz"
+        CMAKE_ARGS 
+          -DCMAKE_INSTALL_PREFIX:PATH=${OPENJTALK_DIR}
+          -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+          -DBUILD_SHARED_LIBS:BOOL=OFF
+          -DHTS_ENGINE_INCLUDE_DIR:PATH=${HTS_ENGINE_DIR}/include
+          -DHTS_ENGINE_LIB:FILEPATH=${HTS_ENGINE_DIR}/lib/HTSEngine.lib
+          -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=${CMAKE_MSVC_RUNTIME_LIBRARY}
+          ${EXTERNAL_CMAKE_ARGS}
+        PATCH_COMMAND ${CMAKE_COMMAND} -E copy 
+          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenJTalk_CMakeLists.txt 
+          <SOURCE_DIR>/CMakeLists.txt
+        BUILD_BYPRODUCTS
+          ${OPENJTALK_DIR}/bin/open_jtalk.exe
+        DEPENDS hts_engine_external
+      )
+    else()
+      # Use autotools for Unix platforms
+      ExternalProject_Add(
+        openjtalk_external
+        PREFIX "${CMAKE_CURRENT_BINARY_DIR}/o"
+        URL "https://downloads.sourceforge.net/project/open-jtalk/Open%20JTalk/open_jtalk-${OPENJTALK_VERSION}/open_jtalk-${OPENJTALK_VERSION}.tar.gz"
+        PATCH_COMMAND ""
+        CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env ${CONFIGURE_ENV} ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> ./configure
+          --prefix=${OPENJTALK_DIR}
+          --with-hts-engine-header-path=${HTS_ENGINE_DIR}/include
+          --with-hts-engine-library-path=${HTS_ENGINE_DIR}/lib
+          --with-charset=UTF-8
+          ${CONFIGURE_HOST}
+        BUILD_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> make install
+        BUILD_IN_SOURCE 1
+        BUILD_BYPRODUCTS
+          ${OPENJTALK_DIR}/bin/open_jtalk
+        DEPENDS hts_engine_external
+      )
+    endif()
   endif()
 endif()
 
@@ -291,19 +335,28 @@ else()
 endif()
 
 # Link OpenJTalk and HTS_Engine libraries
-if(NOT WIN32 AND NOT MSVC)
+if(TRUE)  # HTSEngine and OpenJTalk are built
   # Ensure libraries are built before linking
   add_dependencies(piper openjtalk_external hts_engine_external)
   add_dependencies(test_piper openjtalk_external hts_engine_external)
 
   # Link libraries with absolute paths
   # Note: OpenJTalk doesn't create a single library, we need to link individual components
-  target_link_libraries(piper
-    ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
-  )
-  target_link_libraries(test_piper
-    ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
-  )
+  if(WIN32)
+    target_link_libraries(piper
+      ${CMAKE_CURRENT_BINARY_DIR}/he/lib/HTSEngine.lib
+    )
+    target_link_libraries(test_piper
+      ${CMAKE_CURRENT_BINARY_DIR}/he/lib/HTSEngine.lib
+    )
+  else()
+    target_link_libraries(piper
+      ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
+    )
+    target_link_libraries(test_piper
+      ${CMAKE_CURRENT_BINARY_DIR}/he/lib/libHTSEngine.a
+    )
+  endif()
 endif()
 
 target_link_directories(piper PUBLIC
@@ -328,7 +381,7 @@ if(WIN32 AND ONNXRUNTIME_INCLUDE_DIR)
 endif()
 
 # Include OpenJTalk and HTSEngine headers
-if(NOT WIN32 AND NOT MSVC)
+if(TRUE)  # HTSEngine and OpenJTalk are built
   target_include_directories(piper PUBLIC
     ${OPENJTALK_DIR}/include
     ${HTS_ENGINE_DIR}/include
@@ -344,11 +397,16 @@ endif()
 target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 
 # Add OpenJTalk dictionary path definition
-if(NOT WIN32 AND NOT MSVC)
+if(TRUE)  # HTSEngine and OpenJTalk are built
   # Dictionary will be downloaded by CI/CD or provided by user
   # Use relative path from binary location for better portability
-  target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="../share/open_jtalk/dic")
-  target_compile_definitions(test_piper PUBLIC OPENJTALK_DIC_PATH="${CMAKE_CURRENT_BINARY_DIR}/naist-jdic")
+  if(WIN32)
+    target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="..\\\\share\\\\open_jtalk\\\\dic")
+    target_compile_definitions(test_piper PUBLIC OPENJTALK_DIC_PATH="${CMAKE_CURRENT_BINARY_DIR}\\\\naist-jdic")
+  else()
+    target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="../share/open_jtalk/dic")
+    target_compile_definitions(test_piper PUBLIC OPENJTALK_DIC_PATH="${CMAKE_CURRENT_BINARY_DIR}/naist-jdic")
+  endif()
 endif()
 
 # ---- Declare test ----
@@ -438,13 +496,21 @@ install(
 )
 
 # Install OpenJTalk for Japanese TTS support
-if(NOT WIN32 AND NOT MSVC)
+if(TRUE)  # HTSEngine and OpenJTalk are built
   # Install OpenJTalk binary
-  install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/oj/bin/open_jtalk
-    DESTINATION bin
-    OPTIONAL  # Don't fail if not built
-  )
+  if(WIN32)
+    install(
+      PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/oj/bin/open_jtalk.exe
+      DESTINATION bin
+      OPTIONAL  # Don't fail if not built
+    )
+  else()
+    install(
+      PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/oj/bin/open_jtalk
+      DESTINATION bin
+      OPTIONAL  # Don't fail if not built
+    )
+  endif()
 
   # Install OpenJTalk dictionary
   install(

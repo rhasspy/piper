@@ -38,10 +38,8 @@
 #include <mach-o/dyld.h>
 #endif
 
-// Only include OpenJTalk on Unix platforms (not Windows)
-#if !defined(_WIN32) && !defined(_MSC_VER)
-// #include "openjtalk_phonemize.hpp" // Temporarily disabled for CI/CD
-#endif
+// Include OpenJTalk on all platforms
+#include "openjtalk_phonemize.hpp"
 
 namespace piper {
 
@@ -637,9 +635,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     eSpeakPhonemeConfig eSpeakConfig;
     eSpeakConfig.voice = voice.phonemizeConfig.eSpeak.voice;
     phonemize_eSpeak(text, eSpeakConfig, phonemes);
-#if !defined(_WIN32) && !defined(_MSC_VER)
   } else if (voice.phonemizeConfig.phonemeType == OpenJTalkPhonemes) {
-#if !defined(_WIN32) && !defined(_MSC_VER)
     // Japanese OpenJTalk phonemizer
     phonemize_openjtalk(text, phonemes);
     
@@ -648,10 +644,6 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       throw std::runtime_error("OpenJTalk is not available or failed to process Japanese text. "
                                "Cannot synthesize Japanese without OpenJTalk.");
     }
-#else
-    throw std::runtime_error("OpenJTalk is not yet supported on Windows.");
-#endif
-#endif
   } else {
     // Use UTF-8 codepoints as "phonemes"
     CodepointsPhonemeConfig codepointsConfig;
