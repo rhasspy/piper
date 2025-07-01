@@ -83,6 +83,10 @@ target_include_directories(mecab PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# Force C++14 for MeCab to avoid std::binary_function issues in C++17
+set_property(TARGET mecab PROPERTY CXX_STANDARD 14)
+set_property(TARGET mecab PROPERTY CXX_STANDARD_REQUIRED ON)
+
 # Windows-specific definitions for mecab
 if(WIN32)
   target_compile_definitions(mecab PRIVATE
