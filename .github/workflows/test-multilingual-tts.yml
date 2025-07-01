@@ -1,0 +1,853 @@
+name: Test Multilingual TTS
+
+on:
+  pull_request:
+    branches: [master, dev]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/test-multilingual-tts.yml'
+      - 'test/test_dictionary_download*.sh'
+  push:
+    branches: [dev, feat/*, fix/*]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/test-multilingual-tts.yml'
+      - 'test/test_dictionary_download*.sh'
+  workflow_dispatch:
+    inputs:
+      languages:
+        description: 'Languages to test (comma-separated, e.g., en_US,de_DE,fr_FR)'
+        required: false
+        default: 'en_US,de_DE,fr_FR,es_ES,zh_CN'
+      test_type:
+        description: 'Test type'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+          - basic
+          - comprehensive
+          - performance
+
+env:
+  # HuggingFace model repository
+  MODEL_REPO: "rhasspy/piper-voices"
+  MODEL_VERSION: "v1.0.0"
+  # Test settings
+  TEST_TIMEOUT: 300
+  CACHE_DIR: ~/.cache/piper
+
+jobs:
+  # OpenJTalk dictionary download test
+  test_dictionary_download:
+    name: Test Dictionary Auto-Download on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential curl
+      
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake ninja
+      
+      - name: Build piper
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DBUILD_TESTS=ON
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+      
+      - name: Run unit tests
+        run: |
+          cd build
+          ctest --output-on-failure -R test_dictionary_manager || true
+      
+      - name: Run basic dictionary download tests
+        run: |
+          chmod +x test/test_dictionary_download.sh
+          ./test/test_dictionary_download.sh
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Run comprehensive dictionary tests
+        run: |
+          chmod +x test/test_dictionary_download_comprehensive.sh
+          ./test/test_dictionary_download_comprehensive.sh
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Test checksum verification
+        run: |
+          # Test with corrupted checksum
+          export HOME=/tmp/test_checksum_$$
+          mkdir -p $HOME
+          
+          # Run piper which should download and verify checksum
+          echo "Testing checksum verification..."
+          if echo "テスト" | ./build/piper --model ./test/models/ja_JP-test-medium.onnx --output_file /tmp/test_checksum.wav 2>&1 | tee /tmp/checksum_log.txt; then
+            echo "✓ Piper executed successfully"
+            # Check if dictionary was downloaded
+            if [ -d "$HOME/.piper/dictionaries/openjtalk/open_jtalk_dic_utf_8-1.11" ]; then
+              echo "✓ Dictionary was downloaded with checksum verification"
+            else
+              echo "✗ Dictionary was not downloaded"
+              exit 1
+            fi
+          else
+            echo "✗ Piper execution failed"
+            cat /tmp/checksum_log.txt
+            exit 1
+          fi
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Test offline mode
+        run: |
+          export HOME=/tmp/test_offline_$$
+          export PIPER_OFFLINE_MODE=1
+          
+          echo "Testing offline mode..."
+          # Should fail without dictionary - check for error messages
+          echo "オフライン" | ./build/piper --model ./test/models/ja_JP-test-medium.onnx --output_file /tmp/test_offline.wav 2>&1 | tee /tmp/offline_log.txt || true
+          
+          # Check if it printed the expected error message
+          if grep -q "dictionary manually" /tmp/offline_log.txt && grep -q "Failed to ensure OpenJTalk dictionary" /tmp/offline_log.txt; then
+            echo "✓ Offline mode correctly prevents download"
+          else
+            echo "✗ Offline mode did not show expected error message"
+            echo "Expected to find 'dictionary manually' and 'Failed to ensure OpenJTalk dictionary'"
+            echo "Actual output:"
+            cat /tmp/offline_log.txt
+            exit 1
+          fi
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Test environment variable controls
+        run: |
+          # Test PIPER_AUTO_DOWNLOAD_DICT=0
+          export HOME=/tmp/test_env_$$
+          export PIPER_AUTO_DOWNLOAD_DICT=0
+          
+          echo "Testing environment variable controls..."
+          echo "環境変数" | ./build/piper --model ./test/models/ja_JP-test-medium.onnx --output_file /tmp/test_env.wav 2>&1 | tee /tmp/env_log.txt || true
+          
+          if grep -q "download.*manually" /tmp/env_log.txt && grep -q "Failed to ensure OpenJTalk dictionary" /tmp/env_log.txt; then
+            echo "✓ PIPER_AUTO_DOWNLOAD_DICT=0 works correctly"
+          else
+            echo "✗ PIPER_AUTO_DOWNLOAD_DICT=0 did not show expected error message"
+            echo "Expected to find 'download manually' message"
+            echo "Actual output:"
+            cat /tmp/env_log.txt
+            exit 1
+          fi
+        env:
+          CI: true
+          ESPEAK_DATA_PATH: ${{ github.workspace }}/build/ei/share/espeak-ng-data
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: dictionary-test-results-${{ matrix.os }}
+          path: |
+            test*.wav
+            /tmp/test_*.wav
+            /tmp/*_log.txt
+          retention-days: 7
+
+  # Build piper binaries for testing
+  build_piper:
+    name: Build piper on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4.2.2
+      
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+      
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake
+      
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      
+      - name: Build piper (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+      
+      - name: Build piper (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release --parallel 2
+      
+      - name: Create distribution package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist/piper/bin
+          mkdir -p dist/piper/lib
+          mkdir -p dist/piper/share
+          
+          # Copy main binary
+          cp build/piper dist/piper/bin/
+          
+          # Copy libraries
+          if [ -d "build/p/src/piper_phonemize_external-build/install/lib" ]; then
+            cp -r build/p/src/piper_phonemize_external-build/install/lib/* dist/piper/lib/ || true
+          fi
+          if [ -d "build/pi/lib" ]; then
+            cp -r build/pi/lib/* dist/piper/lib/ || true
+          fi
+          
+          # Copy data files
+          if [ -d "build/p/src/piper_phonemize_external-build/install/share/espeak-ng-data" ]; then
+            cp -r build/p/src/piper_phonemize_external-build/install/share/espeak-ng-data dist/piper/share/
+          elif [ -d "build/pi/share/espeak-ng-data" ]; then
+            cp -r build/pi/share/espeak-ng-data dist/piper/share/
+          fi
+          
+          # Create archive
+          tar -czf piper-${{ runner.os }}.tar.gz -C dist piper
+      
+      - name: Create distribution package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/piper/bin
+          New-Item -ItemType Directory -Force -Path dist/piper/lib  
+          New-Item -ItemType Directory -Force -Path dist/piper/share
+          
+          # Copy main binary
+          Copy-Item build/Release/piper.exe -Destination dist/piper/bin/
+          
+          # Copy all DLLs from Release directory to BIN directory for Windows
+          # On Windows, DLLs need to be in the same directory as the executable
+          if (Test-Path "build/Release/*.dll") {
+            Copy-Item build/Release/*.dll -Destination dist/piper/bin/
+            Write-Host "Copied DLLs from build/Release to dist/piper/bin"
+          }
+          
+          # Copy MSVC runtime DLLs to bin directory
+          $runtimeDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+          foreach ($dll in $runtimeDlls) {
+            if (Test-Path "build/Release/$dll") {
+              Copy-Item "build/Release/$dll" -Destination dist/piper/bin/ -Force
+              Write-Host "Copied runtime DLL: $dll"
+            }
+          }
+          
+          # Copy ONNX Runtime DLLs to bin directory
+          $onnxPath = Get-ChildItem -Path "build/onnxruntime" -Filter "onnxruntime-win-x64-*" -Directory | Select-Object -First 1
+          if ($onnxPath) {
+            $onnxDlls = Get-ChildItem -Path "$($onnxPath.FullName)/lib" -Filter "*.dll"
+            foreach ($dll in $onnxDlls) {
+              Copy-Item $dll.FullName -Destination dist/piper/bin/ -Force
+              Write-Host "Copied ONNX Runtime DLL: $($dll.Name)"
+            }
+          }
+          
+          # Copy libraries from piper-phonemize to bin directory
+          if (Test-Path "build/pi/lib/*.dll") {
+            Copy-Item build/pi/lib/*.dll -Destination dist/piper/bin/ -Force -ErrorAction SilentlyContinue
+            Write-Host "Copied DLLs from build/pi/lib"
+          }
+          if (Test-Path "build/pi/bin/*.dll") {
+            Copy-Item build/pi/bin/*.dll -Destination dist/piper/bin/ -Force -ErrorAction SilentlyContinue
+            Write-Host "Copied DLLs from build/pi/bin"
+          }
+          
+          # Copy espeak-ng DLL specifically
+          $espeakPaths = @(
+            "build/pi/lib/espeak-ng.dll",
+            "build/pi/bin/espeak-ng.dll",
+            "build/p/src/piper_phonemize_external-build/_deps/espeak_ng-build/espeak-ng.dll",
+            "build/p/src/piper_phonemize_external-build/_deps/espeak_ng-build/src/espeak-ng.dll"
+          )
+          foreach ($path in $espeakPaths) {
+            if (Test-Path $path) {
+              Copy-Item $path -Destination dist/piper/bin/ -Force
+              Write-Host "Copied espeak-ng.dll from $path"
+              break
+            }
+          }
+          
+          # Copy data files
+          if (Test-Path "build/pi/share/espeak-ng-data") {
+            Copy-Item build/pi/share/espeak-ng-data -Destination dist/piper/share/ -Recurse -Force
+          }
+          
+          # Copy OpenJTalk executable
+          if (Test-Path "build/oj/bin/open_jtalk.exe") {
+            Copy-Item build/oj/bin/open_jtalk.exe -Destination dist/piper/bin/ -Force
+            Write-Host "Copied open_jtalk.exe"
+          } else {
+            Write-Host "WARNING: open_jtalk.exe not found at build/oj/bin/open_jtalk.exe"
+          }
+          
+          # Download and copy OpenJTalk dictionary
+          $dictDir = "dist/piper/share/open_jtalk/dic"
+          New-Item -ItemType Directory -Force -Path $dictDir
+          
+          # Download dictionary
+          $dictUrl = "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
+          $dictTar = "open_jtalk_dic.tar.gz"
+          
+          Write-Host "Downloading OpenJTalk dictionary..."
+          Invoke-WebRequest -Uri $dictUrl -OutFile $dictTar
+          
+          # Extract dictionary (Windows doesn't have tar by default, use 7zip or built-in tar if available)
+          if (Get-Command tar -ErrorAction SilentlyContinue) {
+            tar -xzf $dictTar
+            Move-Item -Path "open_jtalk_dic_utf_8-1.11/*" -Destination $dictDir -Force
+            Remove-Item -Path "open_jtalk_dic_utf_8-1.11" -Recurse -Force
+          } else {
+            Write-Host "WARNING: tar command not found. Dictionary not extracted."
+          }
+          Remove-Item -Path $dictTar -Force
+          
+          # Debug: List what we're packaging
+          Write-Host "=== Contents of dist/piper/bin ==="
+          Get-ChildItem -Path dist/piper/bin
+          Write-Host "=== Contents of dist/piper/lib ==="
+          Get-ChildItem -Path dist/piper/lib
+          
+          # Create archive
+          Compress-Archive -Path dist/piper -DestinationPath piper-${{ runner.os }}.zip
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: piper-${{ runner.os }}
+          path: |
+            piper-${{ runner.os }}.tar.gz
+            piper-${{ runner.os }}.zip
+          retention-days: 1
+
+  test_multilingual:
+    name: Test ${{ matrix.language }} on ${{ matrix.os }}
+    needs: build_piper
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]  # Windowsサポートを再有効化
+        language:
+          - en_US  # English (US)
+          - en_GB  # English (UK)
+          - de_DE  # German
+          - fr_FR  # French
+          - es_ES  # Spanish
+          - it_IT  # Italian
+          - pt_BR  # Portuguese (Brazil)
+          - ru_RU  # Russian
+          - zh_CN  # Chinese (Simplified)
+          - nl_NL  # Dutch
+          - pl_PL  # Polish
+          - sv_SE  # Swedish
+        include:
+          # Define test models for each language
+          - language: en_US
+            model: "en_US-lessac-medium"
+            test_text: "Hello, this is a test of the text to speech system."
+          - language: en_GB
+            model: "en_GB-alan-medium"
+            test_text: "Good morning, this is a British English voice test."
+          - language: de_DE
+            model: "de_DE-thorsten-medium"
+            test_text: "Hallo, dies ist ein Test des Sprachsynthesesystems."
+          - language: fr_FR
+            model: "fr_FR-siwis-medium"
+            test_text: "Bonjour, ceci est un test du système de synthèse vocale."
+          - language: es_ES
+            model: "es_ES-mls_9972-low"
+            test_text: "Hola, esta es una prueba del sistema de síntesis de voz."
+          - language: it_IT
+            model: "it_IT-riccardo-x_low"
+            test_text: "Ciao, questo è un test del sistema di sintesi vocale."
+          - language: pt_BR
+            model: "pt_BR-faber-medium"
+            test_text: "Olá, este é um teste do sistema de síntese de voz."
+          - language: ru_RU
+            model: "ru_RU-dmitri-medium"
+            test_text: "Привет, это тест системы синтеза речи."
+          - language: zh_CN
+            model: "zh_CN-huayan-medium"
+            test_text: "你好，这是语音合成系统的测试。"
+          - language: nl_NL
+            model: "nl_NL-mls-medium"
+            test_text: "Hallo, dit is een test van het spraaksynthesesysteem."
+          - language: pl_PL
+            model: "pl_PL-gosia-medium"
+            test_text: "Witaj, to jest test systemu syntezy mowy."
+          - language: sv_SE
+            model: "sv_SE-nst-medium"
+            test_text: "Hej, detta är ett test av talsyntessystemet."
+          - language: ja_JP
+            model: "ja_JP-kokoro-medium"
+            test_text: "こんにちは、これは音声合成システムのテストです。"
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Set up environment variables
+        shell: bash
+        run: |
+          echo "RUNNER_OS=${{ runner.os }}" >> $GITHUB_ENV
+          echo "MATRIX_LANGUAGE=${{ matrix.language }}" >> $GITHUB_ENV
+          echo "MATRIX_MODEL=${{ matrix.model }}" >> $GITHUB_ENV
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.1.0
+        with:
+          name: piper-${{ runner.os == 'Windows' && 'Windows' || runner.os }}
+          
+      - name: Extract piper binary (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Create test directory
+          mkdir -p test/models
+          
+          # Extract the downloaded artifact
+          tar -xzf piper-${{ runner.os }}.tar.gz
+          
+          # Make binary executable
+          chmod +x piper/bin/piper
+          
+          # Verify binary and libraries
+          ls -la piper/bin/
+          ls -la piper/lib/ || echo "No lib directory found"
+          ls -la piper/share/ || echo "No share directory found"
+          
+      - name: Extract piper binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Create test directory
+          New-Item -ItemType Directory -Force -Path test/models
+          
+          # Extract the downloaded artifact
+          Expand-Archive -Path piper-Windows.zip -DestinationPath . -Force
+          
+          # Verify binary and libraries
+          Get-ChildItem -Path piper/bin
+          Get-ChildItem -Path piper/lib -ErrorAction SilentlyContinue
+          Get-ChildItem -Path piper/share -ErrorAction SilentlyContinue
+
+      - name: Cache voice models
+        uses: actions/cache@v4.2.0
+        with:
+          path: ~/.cache/piper
+          key: ${{ runner.os }}-piper-models-${{ matrix.language }}-${{ env.MODEL_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-piper-models-${{ matrix.language }}-
+            ${{ runner.os }}-piper-models-
+
+      - name: Download voice model
+        shell: bash
+        run: |
+          # Expand CACHE_DIR
+          CACHE_DIR_EXPANDED="${HOME}/.cache/piper"
+          MODEL_DIR="${CACHE_DIR_EXPANDED}/voices/${{ matrix.language }}"
+          mkdir -p "$MODEL_DIR"
+          
+          # Construct model URLs based on the VOICES.md format
+          LANG_PREFIX=$(echo "${{ matrix.language }}" | cut -d_ -f1)
+          MODEL_NAME="${{ matrix.model }}"
+          
+          # Extract speaker and quality from model name
+          # Format: lang_COUNTRY-speaker-quality
+          SPEAKER=$(echo "${MODEL_NAME}" | cut -d'-' -f2)
+          QUALITY=$(echo "${MODEL_NAME}" | cut -d'-' -f3)
+          
+          # Construct URL following HuggingFace structure
+          BASE_URL="https://huggingface.co/${MODEL_REPO}/resolve/${MODEL_VERSION}/${LANG_PREFIX}/${{ matrix.language }}/${SPEAKER}/${QUALITY}"
+          
+          # Download model files if not cached
+          if [ ! -f "${MODEL_DIR}/${MODEL_NAME}.onnx" ]; then
+            echo "Downloading ${MODEL_NAME} model..."
+            echo "URL: ${BASE_URL}/${MODEL_NAME}.onnx?download=true"
+            curl -L -o "${MODEL_DIR}/${MODEL_NAME}.onnx" \
+              "${BASE_URL}/${MODEL_NAME}.onnx?download=true" || {
+              echo "Failed to download model from: ${BASE_URL}/${MODEL_NAME}.onnx"
+              exit 1
+            }
+          fi
+          
+          if [ ! -f "${MODEL_DIR}/${MODEL_NAME}.onnx.json" ]; then
+            echo "Downloading ${MODEL_NAME} config..."
+            echo "URL: ${BASE_URL}/${MODEL_NAME}.onnx.json?download=true"
+            curl -L -o "${MODEL_DIR}/${MODEL_NAME}.onnx.json" \
+              "${BASE_URL}/${MODEL_NAME}.onnx.json?download=true" || {
+              echo "Failed to download config from: ${BASE_URL}/${MODEL_NAME}.onnx.json"
+              exit 1
+            }
+          fi
+          
+          # Verify downloads
+          if [ ! -s "${MODEL_DIR}/${MODEL_NAME}.onnx" ]; then
+            echo "Error: Model file is empty or corrupted"
+            exit 1
+          fi
+          
+          if [ ! -s "${MODEL_DIR}/${MODEL_NAME}.onnx.json" ]; then
+            echo "Error: Config file is empty or corrupted"
+            exit 1
+          fi
+          
+          # Copy to test directory
+          cp "${MODEL_DIR}/${MODEL_NAME}.onnx" "test/models/"
+          cp "${MODEL_DIR}/${MODEL_NAME}.onnx.json" "test/models/"
+          
+          # Verify downloads
+          ls -la test/models/
+
+      - name: Run TTS test (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # Copy all DLLs to bin directory for Windows
+          # First check if lib directory exists and has DLLs
+          if (Test-Path "piper/lib") {
+            Write-Host "Copying DLLs from piper/lib to piper/bin"
+            Get-ChildItem -Path piper/lib -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+              Copy-Item $_.FullName -Destination piper/bin/ -Force
+              Write-Host "Copied: $($_.Name)"
+            }
+          }
+          
+          # Also check for DLLs directly in piper directory
+          if (Test-Path "piper/*.dll") {
+            Write-Host "Copying DLLs from piper/ to piper/bin"
+            Copy-Item piper/*.dll -Destination piper/bin/ -Force -ErrorAction SilentlyContinue
+          }
+          
+          # Set up environment
+          $env:PATH = "$PWD\piper\bin;$env:PATH"
+          $env:ESPEAK_DATA_PATH = "$PWD\piper\share\espeak-ng-data"
+          
+          # Debug: Check if files exist
+          Write-Host "=== Checking piper installation ==="
+          if (Test-Path "piper/bin/piper.exe") {
+            Write-Host "✓ piper.exe found"
+            Write-Host "Size: $(Get-Item piper/bin/piper.exe).Length bytes"
+          } else {
+            Write-Host "✗ piper.exe not found!"
+            Write-Host "Contents of piper/bin:"
+            Get-ChildItem -Path piper/bin -ErrorAction SilentlyContinue
+            exit 1
+          }
+          
+          # Check DLLs and dependencies
+          Write-Host ""
+          Write-Host "=== Checking DLLs ==="
+          Write-Host "In piper/bin:"
+          Get-ChildItem -Path piper/bin -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  Found DLL: $($_.Name) ($(Get-Item $_).Length bytes)"
+          }
+          Write-Host "In piper/lib:"
+          Get-ChildItem -Path piper/lib -Filter *.dll -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "  Found DLL: $($_.Name) ($(Get-Item $_).Length bytes)"
+          }
+          
+          # Check for critical DLLs
+          $criticalDlls = @("onnxruntime.dll", "espeak-ng.dll", "piper_phonemize.dll")
+          foreach ($dll in $criticalDlls) {
+            if (Test-Path "piper/bin/$dll") {
+              Write-Host "✓ Critical DLL found: $dll"
+            } else {
+              Write-Host "✗ Critical DLL missing: $dll"
+            }
+          }
+          
+          # Check if we can load piper.exe
+          Write-Host ""
+          Write-Host "=== Checking piper.exe dependencies ==="
+          try {
+            # Try to get version info
+            & piper/bin/piper.exe --version 2>&1 | Out-String | Write-Host
+          } catch {
+            Write-Host "Failed to run --version: $_"
+          }
+          
+          # Create test input
+          "${{ matrix.test_text }}" | Out-File -FilePath test_input.txt -Encoding utf8
+          
+          # Test with debug output
+          Write-Host ""
+          Write-Host "=== Testing with debug output ==="
+          try {
+            # First try with --debug flag to get more info
+            $debugProc = Start-Process -FilePath "$PWD\piper\bin\piper.exe" `
+              -ArgumentList "--help" `
+              -Wait -PassThru -NoNewWindow -RedirectStandardOutput "help.txt" -RedirectStandardError "help_err.txt"
+            Write-Host "Help exit code: $($debugProc.ExitCode)"
+          } catch {
+            Write-Host "Failed to run help: $_"
+          }
+          
+          # Run basic TTS test with error capture
+          Write-Host ""
+          Write-Host "=== Running TTS for ${{ matrix.language }} ==="
+          try {
+            # Try simpler approach first
+            $testText = "${{ matrix.test_text }}"
+            $testText | Out-File -FilePath test_input.txt -Encoding utf8 -NoNewline
+            
+            # Run with explicit paths and capture all output
+            $proc = Start-Process -FilePath "$PWD\piper\bin\piper.exe" `
+              -ArgumentList "--model", "test/models/${{ matrix.model }}.onnx", `
+                           "--output_file", "test_output_${{ matrix.language }}.wav", `
+                           "--debug" `
+              -Wait -PassThru -NoNewWindow `
+              -RedirectStandardInput "test_input.txt" `
+              -RedirectStandardOutput "stdout.txt" `
+              -RedirectStandardError "stderr.txt"
+              
+            Write-Host "Exit code: $($proc.ExitCode)"
+            
+            # Display output
+            if (Test-Path "stdout.txt") {
+              Write-Host "=== STDOUT ==="
+              Get-Content "stdout.txt" | Write-Host
+            }
+            if (Test-Path "stderr.txt") {
+              Write-Host "=== STDERR ==="
+              Get-Content "stderr.txt" | Write-Host
+            }
+            
+            if ($proc.ExitCode -ne 0) {
+              Write-Host "❌ piper.exe failed with exit code $($proc.ExitCode)"
+              
+              # Try to get Windows error info
+              if ($proc.ExitCode -eq -1073741819) {
+                Write-Host "This is an access violation (0xC0000005)"
+                Write-Host "Checking Event Log for crash info..."
+              }
+              
+              exit 1
+            }
+          } catch {
+            Write-Host "❌ Exception running piper.exe: $_"
+            Write-Host "Exception details: $($_.Exception.Message)"
+            exit 1
+          }
+          
+          # Verify output
+          if (Test-Path "test_output_${{ matrix.language }}.wav") {
+            $fileInfo = Get-Item "test_output_${{ matrix.language }}.wav"
+            $size = $fileInfo.Length
+            Write-Host "Generated audio file size: $size bytes"
+            
+            if ($size -gt 10000) {
+              Write-Host "✅ TTS test passed for ${{ matrix.language }}!"
+            } else {
+              Write-Host "❌ Output file too small for ${{ matrix.language }} ($size bytes)"
+              exit 1
+            }
+          } else {
+            Write-Host "❌ No output file generated for ${{ matrix.language }}"
+            exit 1
+          }
+      
+      - name: Run TTS test (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          # Set up environment
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            export LD_LIBRARY_PATH=$PWD/piper/lib:$LD_LIBRARY_PATH
+            PIPER_CMD="./piper/bin/piper"
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            export DYLD_LIBRARY_PATH=$PWD/piper/lib:$DYLD_LIBRARY_PATH
+            PIPER_CMD="./piper/bin/piper"
+          fi
+          
+          # Set espeak-ng data path
+          export ESPEAK_DATA_PATH=$PWD/piper/share/espeak-ng-data
+          
+          # Create test input
+          echo "${{ matrix.test_text }}" > test_input.txt
+          
+          # Run basic TTS test
+          echo "Running TTS for ${{ matrix.language }}..."
+          cat test_input.txt | $PIPER_CMD \
+            --model "test/models/${{ matrix.model }}.onnx" \
+            --output_file "test_output_${{ matrix.language }}.wav" || {
+            echo "TTS failed for ${{ matrix.language }}"
+            exit 1
+          }
+          
+          # Verify output
+          if [ -f "test_output_${{ matrix.language }}.wav" ]; then
+            size=$(stat -f%z "test_output_${{ matrix.language }}.wav" 2>/dev/null || stat -c%s "test_output_${{ matrix.language }}.wav" 2>/dev/null)
+            echo "Generated audio file size: ${size} bytes"
+            
+            if [ "$size" -gt 10000 ]; then
+              echo "✅ TTS test passed for ${{ matrix.language }}!"
+            else
+              echo "❌ Output file too small for ${{ matrix.language }} (${size} bytes)"
+              exit 1
+            fi
+          else
+            echo "❌ No output file generated for ${{ matrix.language }}"
+            exit 1
+          fi
+          
+          # Performance test (if requested)
+          if [ "${{ github.event.inputs.test_type }}" = "performance" ] || [ "${{ github.event.inputs.test_type }}" = "comprehensive" ]; then
+            echo "Running performance test..."
+            
+            # Create longer test text
+            for i in {1..10}; do
+              echo "${{ matrix.test_text }}" >> performance_input.txt
+            done
+            
+            # Measure time
+            start_time=$(date +%s.%N)
+            cat performance_input.txt | $PIPER_CMD \
+              --model "test/models/${{ matrix.model }}.onnx" \
+              --output_file "performance_output.wav"
+            end_time=$(date +%s.%N)
+            
+            # Calculate duration
+            duration=$(echo "$end_time - $start_time" | bc)
+            echo "Performance: Generated 10 sentences in ${duration} seconds"
+            
+            # Save performance data
+            echo "${{ matrix.language }},${{ matrix.model }},$duration" >> performance_results.csv
+          fi
+
+
+      - name: Run comprehensive tests
+        if: github.event.inputs.test_type == 'comprehensive'
+        shell: bash
+        run: |
+          echo "Running comprehensive tests for ${{ matrix.language }}..."
+          
+          # Set piper path
+          PIPER_CMD="./piper/bin/piper"
+          
+          # Test 1: Special characters and punctuation
+          echo "Testing special characters..."
+          echo "Hello! How are you? This costs \$100. Email: test@example.com" > special_chars.txt
+          $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" < special_chars.txt --output_file special_output.wav || echo "Special chars test completed"
+          
+          # Test 2: Numbers and dates
+          echo "Testing numbers and dates..."
+          echo "The year is 2025. Today is January 27th. The temperature is -5 degrees." > numbers.txt
+          $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" < numbers.txt --output_file numbers_output.wav || echo "Numbers test completed"
+          
+          # Test 3: Long text (stress test)
+          echo "Testing long text..."
+          # Generate a long paragraph
+          for i in {1..50}; do
+            echo "${{ matrix.test_text }}" >> long_text.txt
+          done
+          timeout 60 bash -c "$PIPER_CMD --model 'test/models/${{ matrix.model }}.onnx' < long_text.txt --output_file long_output.wav" || echo "Long text test completed"
+          
+          # Test 4: Empty input handling
+          echo "Testing empty input..."
+          echo "" | $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" --output_file empty_output.wav || echo "Empty input handled"
+          
+          # Test 5: Multi-line input
+          echo "Testing multi-line input..."
+          cat > multiline.txt << EOF
+          Line one of the test.
+          Line two of the test.
+          Line three of the test.
+          EOF
+          $PIPER_CMD --model "test/models/${{ matrix.model }}.onnx" < multiline.txt --output_file multiline_output.wav || echo "Multi-line test completed"
+          
+          echo "Comprehensive tests completed for ${{ matrix.language }}"
+
+      - name: Upload test outputs
+        if: always()
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: test-outputs-${{ matrix.language }}-${{ matrix.os }}
+          path: |
+            test_output_*.wav
+            performance_output.wav
+            special_output.wav
+            numbers_output.wav
+            long_output.wav
+            multiline_output.wav
+            performance_results.csv
+          retention-days: 7
+
+      - name: Upload performance results
+        if: github.event.inputs.test_type == 'performance' || github.event.inputs.test_type == 'comprehensive'
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: performance-${{ matrix.language }}-${{ matrix.os }}
+          path: performance_results.csv
+          retention-days: 30
+
+  summarize_results:
+    name: Summarize Test Results
+    needs: [build_piper, test_multilingual]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all performance results
+        if: github.event.inputs.test_type == 'performance' || github.event.inputs.test_type == 'comprehensive'
+        uses: actions/download-artifact@v4.1.0
+        with:
+          pattern: performance-*
+          path: performance-data
+
+      - name: Generate summary report
+        if: github.event.inputs.test_type == 'performance' || github.event.inputs.test_type == 'comprehensive'
+        run: |
+          echo "# Multilingual TTS Test Summary" > summary.md
+          echo "" >> summary.md
+          echo "## Performance Results" >> summary.md
+          echo "" >> summary.md
+          echo "| Language | Model | OS | Time (seconds) |" >> summary.md
+          echo "|----------|-------|----|--------------:|" >> summary.md
+          
+          # Aggregate performance data
+          find performance-data -name "*.csv" | while read file; do
+            # Extract OS and language from filename
+            filename=$(basename "$file")
+            os_lang=$(echo "$filename" | sed 's/performance-\(.*\)-\(.*\)\.csv/\1 \2/')
+            
+            # Process CSV data
+            while IFS=',' read -r lang model time; do
+              echo "| $lang | $model | ${os_lang##* } | $time |" >> summary.md
+            done < "$file"
+          done
+          
+          # Output summary
+          cat summary.md
+

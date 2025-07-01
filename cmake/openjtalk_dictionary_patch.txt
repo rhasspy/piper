@@ -1,0 +1,19 @@
+--- a/mecab/src/dictionary.cpp
++++ b/mecab/src/dictionary.cpp
+@@ -65,8 +65,14 @@
+ 
+ namespace {
+ template <typename T1, typename T2>
++#if __cplusplus >= 201703L
++struct pair_1st_cmp {
++  typedef T1 first_argument_type;
++  typedef T2 second_argument_type;
++  typedef bool result_type;
++#else
+ struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {
+-  bool operator()(const std::pair<T1, T2> &x1,
++#endif
++  bool operator()(const std::pair<T1, T2> &x1,
+                   const std::pair<T1, T2> &x2) {
+     return x1.first < x2.first;
+   }

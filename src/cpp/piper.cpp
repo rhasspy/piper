@@ -4,6 +4,8 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <filesystem>
+#include <unordered_map>
 
 #include <espeak-ng/speak_lib.h>
 #include <onnxruntime_cxx_api.h>
@@ -13,6 +15,28 @@
 #include "piper.hpp"
 #include "utf8.h"
 #include "wavfile.hpp"
+
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <io.h>
+#define access _access
+#define F_OK 0
+#else
+#include <unistd.h>
+#endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
+// Include OpenJTalk on all platforms
+#include "openjtalk_phonemize.hpp"
 
 namespace piper {
 
@@ -27,6 +51,31 @@ const std::string VERSION = "";
 
 // Maximum value for 16-bit signed WAV sample
 const float MAX_WAV_VALUE = 32767.0f;
+
+// PUA to multi-char phoneme mapping for display
+static const std::unordered_map<char32_t, std::string> puaToPhoneme = {
+    {0xE000, "a:"}, {0xE001, "i:"}, {0xE002, "u:"}, {0xE003, "e:"}, {0xE004, "o:"},
+    {0xE005, "cl"}, {0xE006, "ky"}, {0xE007, "kw"}, {0xE008, "gy"}, {0xE009, "gw"},
+    {0xE00A, "ty"}, {0xE00B, "dy"}, {0xE00C, "py"}, {0xE00D, "by"}, {0xE00E, "ch"},
+    {0xE00F, "ts"}, {0xE010, "sh"}, {0xE011, "zy"}, {0xE012, "hy"}, {0xE013, "ny"},
+    {0xE014, "my"}, {0xE015, "ry"}
+};
+
+// Convert phoneme to readable string for logging
+static std::string phonemeToString(Phoneme ph) {
+    // Check if it's a PUA character
+    if (ph >= 0xE000 && ph <= 0xF8FF) {
+        auto it = puaToPhoneme.find(ph);
+        if (it != puaToPhoneme.end()) {
+            return it->second;
+        }
+    }
+    
+    // Convert regular character to string
+    std::string result;
+    utf8::append(ph, std::back_inserter(result));
+    return result;
+}
 
 const std::string instanceName{"piper"};
 
@@ -69,6 +118,10 @@ void parsePhonemizeConfig(json &configRoot, PhonemizeConfig &phonemizeConfig) {
     auto phonemeTypeStr = configRoot["phoneme_type"].get<std::string>();
     if (phonemeTypeStr == "text") {
       phonemizeConfig.phonemeType = TextPhonemes;
+    } else if (phonemeTypeStr == "openjtalk") {
+      phonemizeConfig.phonemeType = OpenJTalkPhonemes;
+      // OpenJTalk models don't use padding between phonemes
+      phonemizeConfig.interspersePad = false;
     }
   }
 
@@ -213,20 +266,115 @@ void parseModelConfig(json &configRoot, ModelConfig &modelConfig) {
 
 } /* parseModelConfig */
 
+// Helper function to find espeak-ng data directory
+std::string findEspeakDataPath() {
+    // First, check environment variable
+    const char* env_path = getenv("ESPEAK_DATA_PATH");
+    if (env_path && access(env_path, F_OK) == 0) {
+        spdlog::debug("Using ESPEAK_DATA_PATH from environment: {}", env_path);
+        return env_path;
+    }
+    
+    // Try to find data relative to executable
+    char exe_path[4096] = {0};
+    
+#ifdef _WIN32
+    DWORD size = ::GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
+    if (size == 0 || size >= sizeof(exe_path)) {
+        exe_path[0] = '\0';
+    }
+#elif defined(__APPLE__)
+    uint32_t size = sizeof(exe_path);
+    if (_NSGetExecutablePath(exe_path, &size) != 0) {
+        exe_path[0] = '\0';
+    }
+#elif defined(__linux__)
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len > 0) {
+        exe_path[len] = '\0';
+    } else {
+        exe_path[0] = '\0';
+    }
+#endif
+    
+    if (exe_path[0] != '\0') {
+        std::filesystem::path exePath(exe_path);
+        std::filesystem::path exeDir = exePath.parent_path();
+        
+        // Try different relative locations
+        std::vector<std::filesystem::path> candidates = {
+            exeDir / "espeak-ng-data",                    // Same directory as exe
+            exeDir / ".." / "share" / "espeak-ng-data",   // Installed location
+            exeDir / ".." / "espeak-ng-data",             // Alternative location
+#ifdef _WIN32
+            // Additional Windows-specific search paths
+            exeDir / ".." / "lib" / "espeak-ng-data",     // lib directory (for distribution)
+            exeDir / "share" / "espeak-ng-data",          // share subdirectory
+            "C:\\espeak-ng-data",                          // Common installation path
+            "C:\\Program Files\\eSpeak NG\\espeak-ng-data" // Default eSpeak NG path
+#else
+            exeDir / ".." / "lib" / "espeak-ng-data"      // Another alternative for Unix
+#endif
+        };
+        
+        for (const auto& candidate : candidates) {
+            auto absPath = std::filesystem::absolute(candidate);
+            if (std::filesystem::exists(absPath)) {
+                spdlog::debug("Found espeak-ng-data at: {}", absPath.string());
+                return absPath.string();
+            }
+        }
+    }
+    
+    // If nothing found, return empty string (espeak will use its default)
+    spdlog::warn("Could not find espeak-ng-data directory; espeak-ng will use its built-in default");
+    return "";
+}
+
 void initialize(PiperConfig &config) {
   if (config.useESpeak) {
     // Set up espeak-ng for calling espeak_TextToPhonemesWithTerminator
     // See: https://github.com/rhasspy/espeak-ng
     spdlog::debug("Initializing eSpeak");
+    
+    // If no path was provided, try to find it automatically
+    if (config.eSpeakDataPath.empty()) {
+        config.eSpeakDataPath = findEspeakDataPath();
+    }
+    
+    const char* espeak_path = config.eSpeakDataPath.empty() ? nullptr : config.eSpeakDataPath.c_str();
+    
+    spdlog::debug("Calling espeak_Initialize with path: {}", 
+                  espeak_path ? espeak_path : "(null)");
+    
+#ifdef _WIN32
+    // On Windows, add extra debugging for DLL loading issues
+    spdlog::debug("Current DLL directory: {}", 
+                  []() -> std::string {
+                      wchar_t buffer[MAX_PATH] = {0};
+                      DWORD result = ::GetDllDirectoryW(MAX_PATH, buffer);
+                      if (result > 0 && result < MAX_PATH) {
+                          return std::filesystem::path(buffer).string();
+                      }
+                      return "(not set)";
+                  }());
+#endif
+    
     int result = espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS,
                                    /*buflength*/ 0,
-                                   /*path*/ config.eSpeakDataPath.c_str(),
+                                   /*path*/ espeak_path,
                                    /*options*/ 0);
     if (result < 0) {
+      spdlog::error("espeak_Initialize failed with code: {}", result);
+#ifdef _WIN32
+      DWORD lastError = ::GetLastError();
+      spdlog::error("Windows last error code: {} (0x{:X})", lastError, lastError);
+#endif
       throw std::runtime_error("Failed to initialize eSpeak-ng");
     }
 
-    spdlog::debug("Initialized eSpeak");
+    spdlog::debug("Initialized eSpeak with data path: {}", 
+                  espeak_path ? espeak_path : "(default)");
   }
 
   // Load onnx model for libtashkeel
@@ -260,10 +408,16 @@ void terminate(PiperConfig &config) {
 }
 
 void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
-  spdlog::debug("Loading onnx model from {}", modelPath);
-  session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
-                         instanceName.c_str());
-  session.env.DisableTelemetryEvents();
+  spdlog::debug("loadModel called with path: {}", modelPath);
+  spdlog::debug("Creating ONNX Runtime environment");
+  try {
+    session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
+                           instanceName.c_str());
+    session.env.DisableTelemetryEvents();
+  } catch (const std::exception& e) {
+    spdlog::error("Failed to create ONNX Runtime environment: {}", e.what());
+    throw;
+  }
 
   if (useCuda) {
     // Use CUDA provider
@@ -309,8 +463,12 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,
                std::optional<SpeakerId> &speakerId, bool useCuda) {
+  spdlog::debug("loadVoice called with modelPath={}, configPath={}", modelPath, modelConfigPath);
   spdlog::debug("Parsing voice config at {}", modelConfigPath);
   std::ifstream modelConfigFile(modelConfigPath);
+  if (!modelConfigFile.is_open()) {
+    throw std::runtime_error("Failed to open model config file: " + modelConfigPath);
+  }
   voice.configRoot = json::parse(modelConfigFile);
 
   parsePhonemizeConfig(voice.configRoot, voice.phonemizeConfig);
@@ -472,6 +630,15 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     eSpeakPhonemeConfig eSpeakConfig;
     eSpeakConfig.voice = voice.phonemizeConfig.eSpeak.voice;
     phonemize_eSpeak(text, eSpeakConfig, phonemes);
+  } else if (voice.phonemizeConfig.phonemeType == OpenJTalkPhonemes) {
+    // Japanese OpenJTalk phonemizer
+    phonemize_openjtalk(text, phonemes);
+    
+    // If OpenJTalk failed, we cannot process Japanese text
+    if (phonemes.empty()) {
+      throw std::runtime_error("OpenJTalk is not available or failed to process Japanese text. "
+                               "Cannot synthesize Japanese without OpenJTalk.");
+    }
   } else {
     // Use UTF-8 codepoints as "phonemes"
     CodepointsPhonemeConfig codepointsConfig;
@@ -486,10 +653,15 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     std::vector<Phoneme> &sentencePhonemes = *phonemesIter;
 
     if (spdlog::should_log(spdlog::level::debug)) {
-      // DEBUG log for phonemes
+      // DEBUG log for phonemes in readable format
       std::string phonemesStr;
       for (auto phoneme : sentencePhonemes) {
-        utf8::append(phoneme, std::back_inserter(phonemesStr));
+        phonemesStr += phonemeToString(phoneme);
+        phonemesStr += " ";
+      }
+      // Remove trailing space
+      if (!phonemesStr.empty()) {
+        phonemesStr.pop_back();
       }
 
       spdlog::debug("Converting {} phoneme(s) to ids: {}",
@@ -504,6 +676,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     PhonemeIdConfig idConfig;
     idConfig.phonemeIdMap =
         std::make_shared<PhonemeIdMap>(voice.phonemizeConfig.phonemeIdMap);
+    idConfig.interspersePad = voice.phonemizeConfig.interspersePad;
 
     if (voice.synthesisConfig.phonemeSilenceSeconds) {
       // Split into phrases

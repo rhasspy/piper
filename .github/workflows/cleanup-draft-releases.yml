@@ -1,0 +1,60 @@
+name: Cleanup draft releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      protect_pattern:
+        description: '残したい tag 名の prefix (空なら全削除)'
+        required: false
+        default: ''
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # delete tag refs
+
+    steps:
+      - name: Delete draft releases
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+            const protect = `${{ inputs.protect_pattern }}`; // 空文字なら無視
+
+            const perPage = 100;
+            let page = 1;
+            let deleted = 0;
+
+            while (true) {
+              const { data: releases } = await github.rest.repos.listReleases({
+                owner, repo, per_page: perPage, page
+              });
+              if (releases.length === 0) break;
+
+              for (const rel of releases) {
+                if (!rel.draft) continue;                // 対象は draft のみ
+                if (protect && rel.tag_name.startsWith(protect)) continue; // 保護
+
+                console.log(`Deleting draft release: ${rel.name || rel.tag_name} (id=${rel.id})`);
+                await github.rest.repos.deleteRelease({ owner, repo, release_id: rel.id });
+
+                // 関連タグも削除
+                try {
+                  await github.rest.git.deleteRef({ owner, repo, ref: `tags/${rel.tag_name}` });
+                  console.log(`Deleted tag: ${rel.tag_name}`);
+                } catch (err) {
+                  if (err.status === 422) {
+                    console.log(`Tag not found: ${rel.tag_name}`);
+                  } else {
+                    throw err;
+                  }
+                }
+                deleted++;
+              }
+              page++;
+            }
+
+            console.log(`Total draft releases deleted: ${deleted}`); 
