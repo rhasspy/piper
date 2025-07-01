@@ -262,20 +262,9 @@ if(NOT DEFINED HTS_ENGINE_DIR)
             ${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenJTalk_CMakeLists.txt 
             <SOURCE_DIR>/CMakeLists.txt
           COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/openjtalk_dictionary_patch.txt
-            <SOURCE_DIR>/dictionary.patch
-          COMMAND ${CMAKE_COMMAND} -E echo "Applying C++17 compatibility patch..."
-          COMMAND powershell -Command "
-            $content = Get-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Raw;
-            if (-not ($content -match '__cplusplus.*201703L')) {
-              $content = $content -replace 
-                '(namespace\\s*\\{[\\r\\n]+template\\s*<typename\\s+T1,\\s*typename\\s+T2>[\\r\\n]+)(struct\\s+pair_1st_cmp:\\s*public\\s+std::binary_function<bool,\\s*T1,\\s*T2>\\s*\\{)',
-                '$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$2`r`n#endif';
-              Set-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Value $content -NoNewline;
-              Write-Host 'Applied C++17 compatibility patch';
-            } else {
-              Write-Host 'File already patched';
-            }"
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/apply_openjtalk_patch.ps1
+            <SOURCE_DIR>/apply_patch.ps1
+          COMMAND powershell -ExecutionPolicy Bypass -File <SOURCE_DIR>/apply_patch.ps1 -SourceDir <SOURCE_DIR>
         BUILD_BYPRODUCTS
           ${OPENJTALK_DIR}/bin/open_jtalk.exe
         DEPENDS hts_engine_external
