@@ -264,13 +264,14 @@ if(NOT DEFINED HTS_ENGINE_DIR)
           COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/cmake/openjtalk_dictionary_patch.txt
             <SOURCE_DIR>/dictionary.patch
+          COMMAND ${CMAKE_COMMAND} -E echo "Applying C++17 compatibility patch..."
           COMMAND powershell -Command "
-            $$content = Get-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Raw;
-            if (-not ($$content -match '__cplusplus.*201703L')) {
-              $$content = $$content -replace 
+            $content = Get-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Raw;
+            if (-not ($content -match '__cplusplus.*201703L')) {
+              $content = $content -replace 
                 '(namespace\\s*\\{[\\r\\n]+template\\s*<typename\\s+T1,\\s*typename\\s+T2>[\\r\\n]+)(struct\\s+pair_1st_cmp:\\s*public\\s+std::binary_function<bool,\\s*T1,\\s*T2>\\s*\\{)',
-                '$$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$$2`r`n#endif';
-              Set-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Value $$content -NoNewline;
+                '$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$2`r`n#endif';
+              Set-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Value $content -NoNewline;
               Write-Host 'Applied C++17 compatibility patch';
             } else {
               Write-Host 'File already patched';
