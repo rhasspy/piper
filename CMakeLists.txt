@@ -257,9 +257,24 @@ if(NOT DEFINED HTS_ENGINE_DIR)
           -DHTS_ENGINE_LIB:FILEPATH=${HTS_ENGINE_DIR}/lib/HTSEngine.lib
           -DCMAKE_MSVC_RUNTIME_LIBRARY:STRING=${CMAKE_MSVC_RUNTIME_LIBRARY}
           ${EXTERNAL_CMAKE_ARGS}
-        PATCH_COMMAND ${CMAKE_COMMAND} -E copy 
-          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenJTalk_CMakeLists.txt 
-          <SOURCE_DIR>/CMakeLists.txt
+        PATCH_COMMAND 
+          ${CMAKE_COMMAND} -E copy 
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenJTalk_CMakeLists.txt 
+            <SOURCE_DIR>/CMakeLists.txt
+          COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/openjtalk_dictionary_patch.txt
+            <SOURCE_DIR>/dictionary.patch
+          COMMAND powershell -Command "
+            $$content = Get-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Raw;
+            if (-not ($$content -match '__cplusplus.*201703L')) {
+              $$content = $$content -replace 
+                '(namespace\s*\{[\r\n]+template\s*<typename\s+T1,\s*typename\s+T2>[\r\n]+)(struct\s+pair_1st_cmp:\s*public\s+std::binary_function<bool,\s*T1,\s*T2>\s*\{)',
+                '$$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$$2`r`n#endif';
+              Set-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Value $$content -NoNewline;
+              Write-Host 'Applied C++17 compatibility patch';
+            } else {
+              Write-Host 'File already patched';
+            }"
         BUILD_BYPRODUCTS
           ${OPENJTALK_DIR}/bin/open_jtalk.exe
         DEPENDS hts_engine_external
