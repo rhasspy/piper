@@ -9,39 +9,18 @@ set(CMAKE_CXX_STANDARD 98)
 
 # Configuration options
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-set(CHARSET "UTF-8" CACHE STRING "Character encoding (UTF-8 or EUC-JP)")
+
+# Version information
+set(OPEN_JTALK_VERSION "1.11")
+set(OPEN_JTALK_VERSION_MAJOR 1)
+set(OPEN_JTALK_VERSION_MINOR 11)
 
 # Find HTSEngine
 if(NOT HTS_ENGINE_INCLUDE_DIR OR NOT HTS_ENGINE_LIB)
-  message(FATAL_ERROR "HTSEngine include directory and library must be specified")
+  message(FATAL_ERROR "HTSEngine not found. Please set HTS_ENGINE_INCLUDE_DIR and HTS_ENGINE_LIB")
 endif()
 
-# Version information
-set(OPENJTALK_VERSION "1.11")
-set(OPENJTALK_VERSION_MAJOR 1)
-set(OPENJTALK_VERSION_MINOR 11)
-
-# Configure charset
-if(CHARSET STREQUAL "EUC-JP")
-  set(MECAB_CHARSET "euc-jp")
-  add_definitions(-DCHARSET_EUC_JP)
-elseif(CHARSET STREQUAL "UTF-8")
-  set(MECAB_CHARSET "utf-8")
-  add_definitions(-DCHARSET_UTF_8)
-else()
-  message(FATAL_ERROR "Unknown charset: ${CHARSET}")
-endif()
-
-# Windows-specific definitions
-if(WIN32)
-  add_definitions(
-    -DWIN32
-    -D_CRT_SECURE_NO_WARNINGS
-    -D_CRT_NONSTDC_NO_WARNINGS
-  )
-endif()
-
-# mecab sources
+# Source files for mecab
 set(MECAB_SOURCES
   mecab/src/char_property.cpp
   mecab/src/connector.cpp
@@ -67,140 +46,142 @@ set(MECAB_SOURCES
   mecab/src/writer.cpp
 )
 
-# mecab2njd sources
-set(MECAB2NJD_SOURCES
-  mecab2njd/mecab2njd.c
-)
-
-# njd sources
+# Source files for njd
 set(NJD_SOURCES
   njd/njd.c
   njd/njd_node.c
-)
-
-# njd_set_pronunciation sources
-set(NJD_SET_PRONUNCIATION_SOURCES
-  njd_set_pronunciation/njd_set_pronunciation.c
-)
-
-# njd_set_digit sources
-set(NJD_SET_DIGIT_SOURCES
-  njd_set_digit/njd_set_digit.c
-)
-
-# njd_set_accent_phrase sources
-set(NJD_SET_ACCENT_PHRASE_SOURCES
   njd_set_accent_phrase/njd_set_accent_phrase.c
-)
-
-# njd_set_accent_type sources
-set(NJD_SET_ACCENT_TYPE_SOURCES
   njd_set_accent_type/njd_set_accent_type.c
-)
-
-# njd_set_unvoiced_vowel sources
-set(NJD_SET_UNVOICED_VOWEL_SOURCES
+  njd_set_digit/njd_set_digit.c
+  njd_set_long_vowel/njd_set_long_vowel.c
+  njd_set_pronunciation/njd_set_pronunciation.c
   njd_set_unvoiced_vowel/njd_set_unvoiced_vowel.c
 )
 
-# njd_set_long_vowel sources
-set(NJD_SET_LONG_VOWEL_SOURCES
-  njd_set_long_vowel/njd_set_long_vowel.c
-)
-
-# njd2jpcommon sources
-set(NJD2JPCOMMON_SOURCES
-  njd2jpcommon/njd2jpcommon.c
-)
-
-# jpcommon sources
+# Source files for jpcommon
 set(JPCOMMON_SOURCES
   jpcommon/jpcommon.c
-  jpcommon/jpcommon_node.c
   jpcommon/jpcommon_label.c
+  jpcommon/jpcommon_node.c
 )
 
-# text2mecab sources
+# Source files for text2mecab
 set(TEXT2MECAB_SOURCES
   text2mecab/text2mecab.c
 )
 
-# Create static library
-add_library(openjtalk STATIC
-  ${MECAB_SOURCES}
-  ${MECAB2NJD_SOURCES}
-  ${NJD_SOURCES}
-  ${NJD_SET_PRONUNCIATION_SOURCES}
-  ${NJD_SET_DIGIT_SOURCES}
-  ${NJD_SET_ACCENT_PHRASE_SOURCES}
-  ${NJD_SET_ACCENT_TYPE_SOURCES}
-  ${NJD_SET_UNVOICED_VOWEL_SOURCES}
-  ${NJD_SET_LONG_VOWEL_SOURCES}
-  ${NJD2JPCOMMON_SOURCES}
-  ${JPCOMMON_SOURCES}
-  ${TEXT2MECAB_SOURCES}
+# Source files for mecab2njd
+set(MECAB2NJD_SOURCES
+  mecab2njd/mecab2njd.c
 )
 
-# Include directories
-target_include_directories(openjtalk
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/jpcommon>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mecab/src>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mecab2njd>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd2jpcommon>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd_set_accent_phrase>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd_set_accent_type>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd_set_digit>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd_set_long_vowel>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd_set_pronunciation>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/njd_set_unvoiced_vowel>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/text2mecab>
-    $<BUILD_INTERFACE:${HTS_ENGINE_INCLUDE_DIR}>
-    $<INSTALL_INTERFACE:include>
+# Create mecab library
+add_library(mecab STATIC ${MECAB_SOURCES})
+target_include_directories(mecab PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# Link HTSEngine
-target_link_libraries(openjtalk PUBLIC ${HTS_ENGINE_LIB})
-
-# Platform-specific settings
-if(MSVC)
-  set_property(TARGET openjtalk PROPERTY MSVC_RUNTIME_LIBRARY ${CMAKE_MSVC_RUNTIME_LIBRARY})
-  # Disable specific warnings
-  target_compile_options(openjtalk PRIVATE /wd4996 /wd4267 /wd4244)
+# Windows-specific definitions for mecab
+if(WIN32)
+  target_compile_definitions(mecab PRIVATE
+    DIC_VERSION=102
+    HAVE_WINDOWS_H
+    PACKAGE="open_jtalk"
+    VERSION="${OPEN_JTALK_VERSION}"
+    MECAB_DEFAULT_RC=""
+    _CRT_SECURE_NO_WARNINGS
+  )
+  
+  # Add Windows compatibility
+  target_sources(mecab PRIVATE mecab/src/winmain.h)
+else()
+  target_compile_definitions(mecab PRIVATE
+    DIC_VERSION=102
+    HAVE_UNISTD_H
+    HAVE_DIRENT_H
+    HAVE_FCNTL_H
+    HAVE_SYS_STAT_H
+    HAVE_SYS_TYPES_H
+    HAVE_SYS_MMAN_H
+    PACKAGE="open_jtalk"
+    VERSION="${OPEN_JTALK_VERSION}"
+    MECAB_DEFAULT_RC=""
+  )
 endif()
 
-# Build executable
-add_executable(open_jtalk bin/open_jtalk.c)
-target_link_libraries(open_jtalk PRIVATE openjtalk)
+# Create OpenJTalk library
+add_library(openjtalk STATIC
+  ${NJD_SOURCES}
+  ${JPCOMMON_SOURCES}
+  ${TEXT2MECAB_SOURCES}
+  ${MECAB2NJD_SOURCES}
+)
 
+target_include_directories(openjtalk PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_accent_phrase
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_accent_type
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_digit
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_long_vowel
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_pronunciation
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_unvoiced_vowel
+  ${CMAKE_CURRENT_SOURCE_DIR}/jpcommon
+  ${CMAKE_CURRENT_SOURCE_DIR}/text2mecab
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab2njd
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab/src
+  ${HTS_ENGINE_INCLUDE_DIR}
+)
+
+target_link_libraries(openjtalk PUBLIC mecab)
+
+# Windows-specific settings
 if(WIN32)
-  target_link_libraries(open_jtalk PRIVATE winmm)
-else()
+  target_compile_definitions(openjtalk PRIVATE
+    _CRT_SECURE_NO_WARNINGS
+    ASCII_HEADER
+  )
+  
+  # Use same runtime library as parent project
+  if(MSVC)
+    set_property(TARGET mecab PROPERTY MSVC_RUNTIME_LIBRARY ${CMAKE_MSVC_RUNTIME_LIBRARY})
+    set_property(TARGET openjtalk PROPERTY MSVC_RUNTIME_LIBRARY ${CMAKE_MSVC_RUNTIME_LIBRARY})
+  endif()
+endif()
+
+# Build open_jtalk executable
+add_executable(open_jtalk bin/open_jtalk.c)
+target_link_libraries(open_jtalk PRIVATE
+  openjtalk
+  mecab
+  ${HTS_ENGINE_LIB}
+)
+
+if(NOT WIN32)
   target_link_libraries(open_jtalk PRIVATE m)
 endif()
 
+target_include_directories(open_jtalk PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${HTS_ENGINE_INCLUDE_DIR}
+)
+
 # Install configuration
-install(TARGETS openjtalk open_jtalk
+install(TARGETS openjtalk mecab
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
+install(TARGETS open_jtalk
+  RUNTIME DESTINATION bin
+)
+
 # Install headers
-install(FILES
+install(FILES 
+  njd/njd.h
   jpcommon/jpcommon.h
   mecab/src/mecab.h
-  mecab2njd/mecab2njd.h
-  njd/njd.h
-  njd2jpcommon/njd2jpcommon.h
-  njd_set_accent_phrase/njd_set_accent_phrase.h
-  njd_set_accent_type/njd_set_accent_type.h
-  njd_set_digit/njd_set_digit.h
-  njd_set_long_vowel/njd_set_long_vowel.h
-  njd_set_pronunciation/njd_set_pronunciation.h
-  njd_set_unvoiced_vowel/njd_set_unvoiced_vowel.h
-  text2mecab/text2mecab.h
-  DESTINATION include/openjtalk
+  DESTINATION include
 )

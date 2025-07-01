@@ -10,12 +10,16 @@
 #include <windows.h>
 #include <shlobj.h>
 #include <direct.h>
+#include <io.h>
 #define mkdir(path, mode) _mkdir(path)
 #define access(path, mode) _access(path, mode)
 #define R_OK 4
 #define strcasecmp _stricmp
 #define popen _popen
 #define pclose _pclose
+#define unlink(path) _unlink(path)
+#define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
+#define S_ISREG(mode) (((mode) & _S_IFMT) == _S_IFREG)
 #else
 #include <unistd.h>
 #include <pwd.h>

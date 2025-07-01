@@ -61,19 +61,17 @@ if(BUILD_TESTS)
   add_subdirectory(src/cpp/tests)
 endif()
 
-# Add OpenJTalk support on Unix platforms (not Windows)
-if(NOT WIN32 AND NOT MSVC)
-  target_sources(piper PRIVATE
-    src/cpp/openjtalk_phonemize.cpp
-    src/cpp/openjtalk_wrapper.c
-    src/cpp/openjtalk_dictionary_manager.c
-  )
-  target_sources(test_piper PRIVATE
-    src/cpp/openjtalk_phonemize.cpp
-    src/cpp/openjtalk_wrapper.c
-    src/cpp/openjtalk_dictionary_manager.c
-  )
-endif()
+# Add OpenJTalk support on all platforms
+target_sources(piper PRIVATE
+  src/cpp/openjtalk_phonemize.cpp
+  src/cpp/openjtalk_wrapper.c
+  src/cpp/openjtalk_dictionary_manager.c
+)
+target_sources(test_piper PRIVATE
+  src/cpp/openjtalk_phonemize.cpp
+  src/cpp/openjtalk_wrapper.c
+  src/cpp/openjtalk_dictionary_manager.c
+)
 
 
 # Configure RPATH for macOS
@@ -184,9 +182,13 @@ if(WIN32)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_onnxruntime_windows.cmake)
 endif()
 
-# ---- HTSEngine (Unix platforms only) ---
+# ---- HTSEngine ---
 
-if(NOT WIN32 AND NOT MSVC)
+if(WIN32)
+  # Use CMake-based build for Windows
+  include(cmake/HTSEngine.cmake)
+  include(cmake/OpenJTalk.cmake)
+elseif(NOT WIN32 AND NOT MSVC)
   if(NOT DEFINED HTS_ENGINE_DIR)
     set(HTS_ENGINE_DIR "${CMAKE_CURRENT_BINARY_DIR}/he")
     set(HTS_ENGINE_VERSION "1.10")
@@ -291,7 +293,18 @@ else()
 endif()
 
 # Link OpenJTalk and HTS_Engine libraries
-if(NOT WIN32 AND NOT MSVC)
+if(WIN32)
+  # Windows: Link HTSEngine and OpenJTalk
+  add_dependencies(piper hts_engine_external openjtalk_external)
+  add_dependencies(test_piper hts_engine_external openjtalk_external)
+  
+  target_link_libraries(piper
+    ${HTS_ENGINE_DIR}/lib/HTSEngine.lib
+  )
+  target_link_libraries(test_piper
+    ${HTS_ENGINE_DIR}/lib/HTSEngine.lib
+  )
+elseif(NOT WIN32 AND NOT MSVC)
   # Ensure libraries are built before linking
   add_dependencies(piper openjtalk_external hts_engine_external)
   add_dependencies(test_piper openjtalk_external hts_engine_external)
@@ -327,7 +340,17 @@ if(WIN32 AND ONNXRUNTIME_INCLUDE_DIR)
   target_include_directories(test_piper PUBLIC ${ONNXRUNTIME_INCLUDE_DIR})
 endif()
 
-if(NOT WIN32 AND NOT MSVC)
+# Include OpenJTalk and HTSEngine headers
+if(WIN32)
+  target_include_directories(piper PUBLIC
+    ${OPENJTALK_DIR}/include
+    ${HTS_ENGINE_DIR}/include
+  )
+  target_include_directories(test_piper PUBLIC
+    ${OPENJTALK_DIR}/include
+    ${HTS_ENGINE_DIR}/include
+  )
+elseif(NOT WIN32 AND NOT MSVC)
   target_include_directories(piper PUBLIC
     ${OPENJTALK_DIR}/include
     ${HTS_ENGINE_DIR}/include
@@ -342,8 +365,12 @@ endif()
 
 target_compile_definitions(piper PUBLIC _PIPER_VERSION=${piper_version})
 
-# Add OpenJTalk dictionary path definition on Unix platforms
-if(NOT WIN32 AND NOT MSVC)
+# Add OpenJTalk dictionary path definition
+if(WIN32)
+  # Windows: Use environment variable or relative path
+  target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="../share/open_jtalk/dic")
+  target_compile_definitions(test_piper PUBLIC OPENJTALK_DIC_PATH="${CMAKE_CURRENT_BINARY_DIR}/naist-jdic")
+elseif(NOT WIN32 AND NOT MSVC)
   # Dictionary will be downloaded by CI/CD or provided by user
   # Use relative path from binary location for better portability
   target_compile_definitions(piper PUBLIC OPENJTALK_DIC_PATH="../share/open_jtalk/dic")

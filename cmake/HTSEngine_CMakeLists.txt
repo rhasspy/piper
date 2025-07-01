@@ -49,12 +49,10 @@ target_include_directories(HTSEngine
 # Platform-specific settings
 if(WIN32)
   target_compile_definitions(HTSEngine PRIVATE
-    AUDIO_PLAY_WIN32
+    AUDIO_PLAY_NONE  # Disable audio playback on Windows to avoid SDK issues
     _CRT_SECURE_NO_WARNINGS
+    WIN32_LEAN_AND_MEAN
   )
-  
-  # Link Windows audio libraries
-  target_link_libraries(HTSEngine PRIVATE winmm)
   
   # Use same runtime library as parent project
   if(MSVC)
@@ -86,9 +84,7 @@ option(BUILD_HTS_ENGINE_EXECUTABLE "Build hts_engine executable" ON)
 if(BUILD_HTS_ENGINE_EXECUTABLE)
   add_executable(hts_engine bin/hts_engine.c)
   target_link_libraries(hts_engine PRIVATE HTSEngine)
-  if(WIN32)
-    target_link_libraries(hts_engine PRIVATE winmm)
-  else()
+  if(NOT WIN32)
     target_link_libraries(hts_engine PRIVATE m)
   endif()
   
