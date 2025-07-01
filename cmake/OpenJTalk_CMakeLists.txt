@@ -155,12 +155,17 @@ endif()
 if(WIN32 AND CMAKE_CXX_STANDARD GREATER_EQUAL 17)
   # Apply patch to dictionary.cpp for C++17 compatibility
   message(STATUS "Applying C++17 compatibility patch to MeCab dictionary.cpp")
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${CMAKE_CURRENT_SOURCE_DIR}/../openjtalk_dictionary_patch.txt
-      ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.patch
-    RESULT_VARIABLE patch_copy_result
-  )
+  # Copy patch file from cmake directory
+  set(PATCH_SOURCE "${CMAKE_SOURCE_DIR}/cmake/openjtalk_dictionary_patch.txt")
+  set(PATCH_DEST "${CMAKE_CURRENT_SOURCE_DIR}/dictionary.patch")
+  
+  if(EXISTS "${PATCH_SOURCE}")
+    configure_file("${PATCH_SOURCE}" "${PATCH_DEST}" COPYONLY)
+    set(patch_copy_result 0)
+  else()
+    message(WARNING "Patch file not found at ${PATCH_SOURCE}")
+    set(patch_copy_result 1)
+  endif()
   
   if(NOT patch_copy_result EQUAL 0)
     message(WARNING "Failed to copy patch file")
