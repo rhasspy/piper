@@ -15,7 +15,9 @@
 #include "piper.hpp"
 #include "utf8.h"
 #include "wavfile.hpp"
+#if !defined(_WIN32) && !defined(_MSC_VER)
 #include "openjtalk_phonemize.hpp"
+#endif
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -637,6 +639,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
     phonemize_eSpeak(text, eSpeakConfig, phonemes);
 #if !defined(_WIN32) && !defined(_MSC_VER)
   } else if (voice.phonemizeConfig.phonemeType == OpenJTalkPhonemes) {
+#if !defined(_WIN32) && !defined(_MSC_VER)
     // Japanese OpenJTalk phonemizer
     phonemize_openjtalk(text, phonemes);
     
@@ -645,6 +648,9 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       throw std::runtime_error("OpenJTalk is not available or failed to process Japanese text. "
                                "Cannot synthesize Japanese without OpenJTalk.");
     }
+#else
+    throw std::runtime_error("OpenJTalk is not yet supported on Windows.");
+#endif
 #endif
   } else {
     // Use UTF-8 codepoints as "phonemes"

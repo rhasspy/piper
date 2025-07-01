@@ -130,9 +130,15 @@ TEST_F(DictionaryManagerTest, CheckDictionary) {
     snprintf(unk_dic, sizeof(unk_dic), "%s/unk.dic", test_dict_path);
     
     FILE* fp = fopen(sys_dic, "w");
-    if (fp) fclose(fp);
+    if (fp) {
+        fprintf(fp, "dummy dictionary content\n");
+        fclose(fp);
+    }
     fp = fopen(unk_dic, "w");
-    if (fp) fclose(fp);
+    if (fp) {
+        fprintf(fp, "dummy dictionary content\n");
+        fclose(fp);
+    }
     
     // With dictionary files
     EXPECT_EQ(openjtalk_check_dictionary(test_dict_path), 1);
