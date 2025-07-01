@@ -268,7 +268,7 @@ if(NOT DEFINED HTS_ENGINE_DIR)
             $$content = Get-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Raw;
             if (-not ($$content -match '__cplusplus.*201703L')) {
               $$content = $$content -replace 
-                '(namespace\s*\{[\r\n]+template\s*<typename\s+T1,\s*typename\s+T2>[\r\n]+)(struct\s+pair_1st_cmp:\s*public\s+std::binary_function<bool,\s*T1,\s*T2>\s*\{)',
+                '(namespace\\s*\\{[\\r\\n]+template\\s*<typename\\s+T1,\\s*typename\\s+T2>[\\r\\n]+)(struct\\s+pair_1st_cmp:\\s*public\\s+std::binary_function<bool,\\s*T1,\\s*T2>\\s*\\{)',
                 '$$1#if __cplusplus >= 201703L`r`nstruct pair_1st_cmp {`r`n  typedef T1 first_argument_type;`r`n  typedef T2 second_argument_type;`r`n  typedef bool result_type;`r`n#else`r`n$$2`r`n#endif';
               Set-Content -Path '<SOURCE_DIR>/mecab/src/dictionary.cpp' -Value $$content -NoNewline;
               Write-Host 'Applied C++17 compatibility patch';
