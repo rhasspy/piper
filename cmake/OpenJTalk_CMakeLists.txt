@@ -153,23 +153,61 @@ endif()
 
 # Apply C++17 compatibility patch for MeCab
 if(WIN32 AND CMAKE_CXX_STANDARD GREATER_EQUAL 17)
-  # Create patched dictionary.cpp if needed
-  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary_patched.cpp")
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary.cpp" DICT_CONTENT)
-    # Replace std::binary_function usage
-    string(REPLACE 
-      "struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {"
-      "struct pair_1st_cmp {
+  # Apply patch to dictionary.cpp for C++17 compatibility
+  message(STATUS "Applying C++17 compatibility patch to MeCab dictionary.cpp")
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_CURRENT_SOURCE_DIR}/../openjtalk_dictionary_patch.txt
+      ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.patch
+    RESULT_VARIABLE patch_copy_result
+  )
+  
+  if(NOT patch_copy_result EQUAL 0)
+    message(WARNING "Failed to copy patch file")
+  else()
+    # Try to apply the patch
+    find_program(PATCH_EXECUTABLE patch)
+    if(PATCH_EXECUTABLE)
+      execute_process(
+        COMMAND ${PATCH_EXECUTABLE} -p1 -N -s
+        INPUT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.patch
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE patch_result
+        OUTPUT_QUIET
+        ERROR_QUIET
+      )
+      if(patch_result EQUAL 0)
+        message(STATUS "Successfully applied C++17 compatibility patch")
+      endif()
+    else()
+      message(WARNING "patch command not found, using sed fallback")
+      # Fallback: Use CMake to modify the file directly
+      file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary.cpp" DICT_CONTENT)
+      # Check if already patched
+      if(NOT DICT_CONTENT MATCHES "__cplusplus >= 201703L")
+        # Replace the struct definition
+        string(REPLACE
+          "namespace {
+template <typename T1, typename T2>
+struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {
+  bool operator()(const std::pair<T1, T2> &x1,"
+          "namespace {
+template <typename T1, typename T2>
+#if __cplusplus >= 201703L
+struct pair_1st_cmp {
   typedef T1 first_argument_type;
   typedef T2 second_argument_type;
-  typedef bool result_type;"
-      DICT_CONTENT "${DICT_CONTENT}")
-    file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary_patched.cpp" "${DICT_CONTENT}")
+  typedef bool result_type;
+#else
+struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {
+#endif
+  bool operator()(const std::pair<T1, T2> &x1,"
+          DICT_CONTENT "${DICT_CONTENT}")
+        file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/mecab/src/dictionary.cpp" "${DICT_CONTENT}")
+        message(STATUS "Applied C++17 compatibility patch using CMake")
+      endif()
+    endif()
   endif()
-  
-  # Replace dictionary.cpp with patched version in MECAB_SOURCES
-  list(REMOVE_ITEM MECAB_SOURCES mecab/src/dictionary.cpp)
-  list(APPEND MECAB_SOURCES mecab/src/dictionary_patched.cpp)
 endif()
 
 # Build open_jtalk executable
