@@ -31,7 +31,7 @@ set(HTS_ENGINE_SOURCES
 # Header files  
 set(HTS_ENGINE_HEADERS
   include/HTS_engine.h
-  include/HTS_hidden.h
+  # HTS_hidden.h is internal and should not be installed
 )
 
 # Create library
