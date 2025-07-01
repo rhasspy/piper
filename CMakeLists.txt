@@ -511,101 +511,25 @@ if(WIN32)
   # First, copy specific DLLs we know we need
   set(PIPER_PHONEMIZE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/p/src/piper_phonemize_external-build")
   
-  # Copy DLLs with a simpler approach - try all locations sequentially
-  # Use a PowerShell script on Windows to handle file existence checks
+  # Copy DLLs from installed locations
+  # Both espeak-ng.dll and piper_phonemize.dll should be installed to ${PIPER_PHONEMIZE_DIR}/bin
   
-  # espeak-ng.dll copying for piper
   add_custom_command(TARGET piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying espeak-ng.dll..."
-    COMMAND powershell -Command "
-      \$locations = @(
-        '${PIPER_PHONEMIZE_BUILD_DIR}/e/src/espeak_ng_external-build/src/Release/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/src/Release/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/Release/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/e/src/espeak_ng_external-build/src/Debug/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/src/Debug/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/Debug/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_DIR}/bin/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.dll'
-      );
-      foreach (\$loc in \$locations) {
-        if (Test-Path \$loc) {
-          Write-Host \"Found espeak-ng.dll at: \$loc\";
-          Copy-Item -Path \$loc -Destination '$<TARGET_FILE_DIR:piper>' -Force;
-          break;
-        }
-      }
-    "
-    VERBATIM
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying DLLs for piper..."
+    # Copy from installed location
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/bin"
+      "$<TARGET_FILE_DIR:piper>/"
+    COMMENT "Copying piper-phonemize DLLs..."
   )
   
-  # espeak-ng.dll copying for test_piper
   add_custom_command(TARGET test_piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying espeak-ng.dll for tests..."
-    COMMAND powershell -Command "
-      \$locations = @(
-        '${PIPER_PHONEMIZE_BUILD_DIR}/e/src/espeak_ng_external-build/src/Release/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/src/Release/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/Release/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/e/src/espeak_ng_external-build/src/Debug/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/src/Debug/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/_deps/espeak_ng-build/Debug/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_DIR}/bin/espeak-ng.dll',
-        '${PIPER_PHONEMIZE_DIR}/lib/espeak-ng.dll'
-      );
-      foreach (\$loc in \$locations) {
-        if (Test-Path \$loc) {
-          Write-Host \"Found espeak-ng.dll at: \$loc\";
-          Copy-Item -Path \$loc -Destination '$<TARGET_FILE_DIR:test_piper>' -Force;
-          break;
-        }
-      }
-    "
-    VERBATIM
-  )
-  
-  # piper_phonemize.dll copying for piper
-  add_custom_command(TARGET piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying piper_phonemize.dll..."
-    COMMAND powershell -Command "
-      \$locations = @(
-        '${PIPER_PHONEMIZE_BUILD_DIR}/Release/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/Debug/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_DIR}/bin/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.dll'
-      );
-      foreach (\$loc in \$locations) {
-        if (Test-Path \$loc) {
-          Write-Host \"Found piper_phonemize.dll at: \$loc\";
-          Copy-Item -Path \$loc -Destination '$<TARGET_FILE_DIR:piper>' -Force;
-          break;
-        }
-      }
-    "
-    VERBATIM
-  )
-  
-  # piper_phonemize.dll copying for test_piper
-  add_custom_command(TARGET test_piper POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying piper_phonemize.dll for tests..."
-    COMMAND powershell -Command "
-      \$locations = @(
-        '${PIPER_PHONEMIZE_BUILD_DIR}/Release/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/Debug/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_BUILD_DIR}/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_DIR}/bin/piper_phonemize.dll',
-        '${PIPER_PHONEMIZE_DIR}/lib/piper_phonemize.dll'
-      );
-      foreach (\$loc in \$locations) {
-        if (Test-Path \$loc) {
-          Write-Host \"Found piper_phonemize.dll at: \$loc\";
-          Copy-Item -Path \$loc -Destination '$<TARGET_FILE_DIR:test_piper>' -Force;
-          break;
-        }
-      }
-    "
-    VERBATIM
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying DLLs for test_piper..."
+    # Copy from installed location
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${PIPER_PHONEMIZE_DIR}/bin"
+      "$<TARGET_FILE_DIR:test_piper>/"
+    COMMENT "Copying piper-phonemize DLLs for tests..."
   )
   
   
