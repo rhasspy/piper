@@ -142,6 +142,7 @@ The following example writes two sentences with different speakers to different 
 
 Piper has been used in the following projects/papers:
 
+* [POTaTOS](https://www.youtube.com/watch?v=Dz95q6XYjwY)
 * [Home Assistant](https://github.com/home-assistant/addons/blob/master/piper/README.md)
 * [Rhasspy 3](https://github.com/rhasspy/rhasspy3/)
 * [NVDA - NonVisual Desktop Access](https://www.nvaccess.org/post/in-process-8th-may-2023/#voices)
