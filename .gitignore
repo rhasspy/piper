@@ -1,22 +1,104 @@
+# =====================
+# System & Editor Files
+# =====================
 .DS_Store
-.idea
-*.log
-tmp/
+Thumbs.db
+*.swp
+*.swo
+*.tmp
 
+# =====================
+# Python & Build
+# =====================
+__pycache__/
 *.py[cod]
-*.egg
+*.pyd
+*.pyo
+*.spec
 *.egg-info/
-build
-htmlcov
+*.dist-info/
+build/
+dist/
+*.log
+*.bak
+*.old
 
-/data/
-/build/
-/local/
-/dist/
-/lib/
-/install/
-/download/
-*.so
+# =====================
+# Executables & Installer
+# =====================
+*.exe
+*.dll
+*.bat
+*.vbs
+*.sh
+*.msi
+*.app
+*.deb
 
-.venv/
-lightning_logs/
+# =====================
+# Compiled or bundled files
+# =====================
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+
+# =====================
+# Environment / Secrets
+# =====================
+*.env
+.env/
+*.key
+*.enc
+*.pem
+api_key.*
+fernet_key.*
+
+# =====================
+# VSCode / IDE
+# =====================
+.vscode/
+.idea/
+*.code-workspace
+
+# =====================
+# Output / Auto-generated
+# =====================
+*.html
+*.png
+*.webp
+*.ico
+*.wav
+*.mp3
+
+# =====================
+# Data & Cache
+# =====================
+*.json
+*.sqlite
+*.db
+*.cache
+*.pickle
+*.pt
+*.pkl
+
+# =====================
+# Node/npm (falls vorhanden)
+# =====================
+node_modules/
+
+# =====================
+# JetBrains / PyCharm
+# =====================
+.idea/
+*.iml
+
+# =====================
+# System Interna
+# =====================
+jawris-env/
+Jawris.exe
+JawrisInstaller.exe
+JawrisSystemInstaller_Autostart.exe
+jawris_gui_control_hub_v3.exe
