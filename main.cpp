@@ -62,6 +62,7 @@ struct RunConfig {
   optional<float> noiseScale;
   
   // Audio output volume
+  //optional<std::String> speakerId;
   optional<float> volumeLevel;
 
   // Speed of speaking (1 = normal, < 1 is faster, > 1 is slower)
