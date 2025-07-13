@@ -116,16 +116,18 @@ void terminate(PiperConfig &config);
 // Load Onnx model and JSON config file
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,
-               std::optional<SpeakerId> &speakerId, bool useCuda);
+               std::optional<SpeakerId> &speakerId);
 
 // Phonemize text and synthesize audio
 void textToAudio(PiperConfig &config, Voice &voice, std::string text,
                  std::vector<int16_t> &audioBuffer, SynthesisResult &result,
-                 const std::function<void()> &audioCallback);
+                 const std::function<void()> &audioCallback,
+                 const std::function<void(uint16_t, size_t)> &progressCallback);
 
 // Phonemize text and synthesize audio to WAV file
 void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
-                   std::ostream &audioFile, SynthesisResult &result);
+                   std::ostream &audioFile, SynthesisResult &result,
+                   const std::function<void(uint16_t, size_t)>& progressCallback);
 
 } // namespace piper
 

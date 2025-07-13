@@ -259,17 +259,20 @@ void terminate(PiperConfig &config) {
   spdlog::info("Terminated piper");
 }
 
-void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
+void loadModel(std::string modelPath, ModelSession &session) {
   spdlog::debug("Loading onnx model from {}", modelPath);
   session.env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING,
                          instanceName.c_str());
   session.env.DisableTelemetryEvents();
 
-  if (useCuda) {
-    // Use CUDA provider
-    OrtCUDAProviderOptions cuda_options{};
-    cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
+  // Try to Use CUDA provider
+  OrtCUDAProviderOptions cuda_options{};
+  cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
+  try {
     session.options.AppendExecutionProvider_CUDA(cuda_options);
+  }
+  catch (std::exception) {
+    spdlog::warn("CUDA not available - defaulting to CPU.");
   }
 
   // Slows down performance by ~2x
@@ -308,10 +311,15 @@ void loadModel(std::string modelPath, ModelSession &session, bool useCuda) {
 // Load Onnx model and JSON config file
 void loadVoice(PiperConfig &config, std::string modelPath,
                std::string modelConfigPath, Voice &voice,
-               std::optional<SpeakerId> &speakerId, bool useCuda) {
+               std::optional<SpeakerId> &speakerId) {
   spdlog::debug("Parsing voice config at {}", modelConfigPath);
   std::ifstream modelConfigFile(modelConfigPath);
-  voice.configRoot = json::parse(modelConfigFile);
+  try {
+    voice.configRoot = json::parse(modelConfigFile);
+  } catch (json::parse_error e) {
+    spdlog::critical("Error parsing model config at {}: {}", modelConfigPath, e.what());
+    return;
+  }
 
   parsePhonemizeConfig(voice.configRoot, voice.phonemizeConfig);
   parseSynthesisConfig(voice.configRoot, voice.synthesisConfig);
@@ -329,7 +337,7 @@ void loadVoice(PiperConfig &config, std::string modelPath,
 
   spdlog::debug("Voice contains {} speaker(s)", voice.modelConfig.numSpeakers);
 
-  loadModel(modelPath, voice.session, useCuda);
+  loadModel(modelPath, voice.session);
 
 } /* loadVoice */
 
@@ -445,7 +453,8 @@ void synthesize(std::vector<PhonemeId> &phonemeIds,
 // Phonemize text and synthesize audio
 void textToAudio(PiperConfig &config, Voice &voice, std::string text,
                  std::vector<int16_t> &audioBuffer, SynthesisResult &result,
-                 const std::function<void()> &audioCallback) {
+                 const std::function<void()> &audioCallback,
+                 const std::function<void(uint16_t, size_t)>& progressCallback) {
 
   std::size_t sentenceSilenceSamples = 0;
   if (voice.synthesisConfig.sentenceSilenceSeconds > 0) {
@@ -479,6 +488,7 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
   }
 
   // Synthesize each sentence independently.
+  uint16_t progress = 0;
   std::vector<PhonemeId> phonemeIds;
   std::map<Phoneme, std::size_t> missingPhonemes;
   for (auto phonemesIter = phonemes.begin(); phonemesIter != phonemes.end();
@@ -594,6 +604,12 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
       audioBuffer.clear();
     }
 
+    if (progressCallback) {
+      // Call back for show phonemizing progress
+      progress++;
+      progressCallback(progress, phonemes.size());
+    }
+
     phonemeIds.clear();
   }
 
@@ -617,10 +633,11 @@ void textToAudio(PiperConfig &config, Voice &voice, std::string text,
 
 // Phonemize text and synthesize audio to WAV file
 void textToWavFile(PiperConfig &config, Voice &voice, std::string text,
-                   std::ostream &audioFile, SynthesisResult &result) {
+                   std::ostream &audioFile, SynthesisResult &result,
+                   const std::function<void(uint16_t, size_t)>& progressCallback) {
 
   std::vector<int16_t> audioBuffer;
-  textToAudio(config, voice, text, audioBuffer, result, NULL);
+  textToAudio(config, voice, text, audioBuffer, result, NULL, progressCallback);
 
   // Write WAV
   auto synthesisConfig = voice.synthesisConfig;
