@@ -306,6 +306,10 @@ int main(int argc, char *argv[]) {
       cout << outputPath.string() << endl;
     } else if (outputType == OUTPUT_STDOUT) {
       // Output WAV to stdout
+#ifdef _WIN32
+      // Needed on Windows to avoid terminal conversions
+      _setmode(_fileno(stdout), O_BINARY);
+#endif
       piper::textToWavFile(piperConfig, voice, line, cout, result);
     } else if (outputType == OUTPUT_RAW) {
       // Raw output to stdout
@@ -318,8 +322,8 @@ int main(int argc, char *argv[]) {
 
 #ifdef _WIN32
       // Needed on Windows to avoid terminal conversions
-      setmode(fileno(stdout), O_BINARY);
-      setmode(fileno(stdin), O_BINARY);
+      _setmode(_fileno(stdout), O_BINARY);
+      _setmode(_fileno(stdin), O_BINARY);
 #endif
 
       thread rawOutputThread(rawOutputProc, ref(sharedAudioBuffer),

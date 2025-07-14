@@ -196,7 +196,7 @@ void parseSynthesisConfig(json &configRoot, SynthesisConfig &synthesisConfig) {
 
 void parseModelConfig(json &configRoot, ModelConfig &modelConfig) {
 
-  modelConfig.numSpeakers = configRoot["num_speakers"].get<SpeakerId>();
+  modelConfig.numSpeakers = static_cast<int>(configRoot["num_speakers"].get<SpeakerId>());
 
   if (configRoot.contains("speaker_id_map")) {
     if (!modelConfig.speakerIdMap) {
