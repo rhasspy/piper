@@ -15,6 +15,8 @@
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cs/cs_CZ/jirka/low/cs_CZ-jirka-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cs/cs_CZ/jirka/low/cs_CZ-jirka-low.onnx.json?download=true.json)]
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx.json?download=true.json)]
 * Welsh (`cy_GB`, Cymraeg)
+    * bu_tts
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cy/cy_GB/bu_tts/medium/cy_GB-bu_tts-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cy/cy_GB/bu_tts/medium/cy_GB-bu_tts-medium.onnx.json?download=true.json)]
     * gwryw_gogleddol
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cy/cy_GB/gwryw_gogleddol/medium/cy_GB-gwryw_gogleddol-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/cy/cy_GB/gwryw_gogleddol/medium/cy_GB-gwryw_gogleddol-medium.onnx.json?download=true.json)]
 * Danish (`da_DK`, Dansk)
@@ -102,10 +104,17 @@
         * high - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ljspeech/high/en_US-ljspeech-high.onnx.json?download=true.json)]
     * norman
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/norman/medium/en_US-norman-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/norman/medium/en_US-norman-medium.onnx.json?download=true.json)]
+    * reza_ibrahim
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/reza_ibrahim/medium/en_US-reza_ibrahim-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/reza_ibrahim/medium/en_US-reza_ibrahim-medium.onnx.json?download=true.json)]
     * ryan
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/low/en_US-ryan-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/low/en_US-ryan-low.onnx.json?download=true.json)]
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/medium/en_US-ryan-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/medium/en_US-ryan-medium.onnx.json?download=true.json)]
         * high - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/ryan/high/en_US-ryan-high.onnx.json?download=true.json)]
+    * sam
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/sam/medium/en_US-sam-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/sam/medium/en_US-sam-medium.onnx.json?download=true.json)]
+* Spanish (`es_AR`, Español)
+    * daniela
+        * high - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_AR/daniela/high/es_AR-daniela-high.onnx.json?download=true.json)]
 * Spanish (`es_ES`, Español)
     * carlfm
         * x_low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/es/es_ES/carlfm/x_low/es_ES-carlfm-x_low.onnx.json?download=true.json)]
@@ -125,8 +134,14 @@
 * Farsi (`fa_IR`, فارسی)
     * amir
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/amir/medium/fa_IR-amir-medium.onnx.json?download=true.json)]
+    * ganji
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/ganji/medium/fa_IR-ganji-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/ganji/medium/fa_IR-ganji-medium.onnx.json?download=true.json)]
+    * ganji_adabi
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/ganji_adabi/medium/fa_IR-ganji_adabi-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/ganji_adabi/medium/fa_IR-ganji_adabi-medium.onnx.json?download=true.json)]
     * gyro
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/gyro/medium/fa_IR-gyro-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/gyro/medium/fa_IR-gyro-medium.onnx.json?download=true.json)]
+    * reza_ibrahim
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/reza_ibrahim/medium/fa_IR-reza_ibrahim-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fa/fa_IR/reza_ibrahim/medium/fa_IR-reza_ibrahim-medium.onnx.json?download=true.json)]
 * Finnish (`fi_FI`, Suomi)
     * harri
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fi/fi_FI/harri/low/fi_FI-harri-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fi/fi_FI/harri/low/fi_FI-harri-low.onnx.json?download=true.json)]
@@ -145,6 +160,11 @@
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/tom/medium/fr_FR-tom-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/tom/medium/fr_FR-tom-medium.onnx.json?download=true.json)]
     * upmc
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx.json?download=true.json)]
+* Hindi (`hi_IN`, हिन्दी)
+    * pratham
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/pratham/medium/hi_IN-pratham-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/pratham/medium/hi_IN-pratham-medium.onnx.json?download=true.json)]
+    * priyamvada
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hi/hi_IN/priyamvada/medium/hi_IN-priyamvada-medium.onnx.json?download=true.json)]
 * Hungarian (`hu_HU`, Magyar)
     * anna
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx.json?download=true.json)]
@@ -179,7 +199,17 @@
 * Luxembourgish (`lb_LU`, Lëtzebuergesch)
     * marylux
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/lb/lb_LU/marylux/medium/lb_LU-marylux-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/lb/lb_LU/marylux/medium/lb_LU-marylux-medium.onnx.json?download=true.json)]
+* Latvian (`lv_LV`, Latviešu)
+    * aivars
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/lv/lv_LV/aivars/medium/lv_LV-aivars-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/lv/lv_LV/aivars/medium/lv_LV-aivars-medium.onnx.json?download=true.json)]
+* Malayalam (`ml_IN`, മലയാളം)
+    * arjun
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/arjun/medium/ml_IN-arjun-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/arjun/medium/ml_IN-arjun-medium.onnx.json?download=true.json)]
+    * meera
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/meera/medium/ml_IN-meera-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ml/ml_IN/meera/medium/ml_IN-meera-medium.onnx.json?download=true.json)]
 * Nepali (`ne_NP`, नेपाली)
+    * chitwan
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/chitwan/medium/ne_NP-chitwan-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/chitwan/medium/ne_NP-chitwan-medium.onnx.json?download=true.json)]
     * google
         * x_low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx.json?download=true.json)]
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/medium/ne_NP-google-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/medium/ne_NP-google-medium.onnx.json?download=true.json)]
@@ -197,6 +227,10 @@
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls_5809/low/nl_NL-mls_5809-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls_5809/low/nl_NL-mls_5809-low.onnx.json?download=true.json)]
     * mls_7432
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls_7432/low/nl_NL-mls_7432-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/mls_7432/low/nl_NL-mls_7432-low.onnx.json?download=true.json)]
+    * pim
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/pim/medium/nl_NL-pim-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/pim/medium/nl_NL-pim-medium.onnx.json?download=true.json)]
+    * ronnie
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/ronnie/medium/nl_NL-ronnie-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/nl/nl_NL/ronnie/medium/nl_NL-ronnie-medium.onnx.json?download=true.json)]
 * Norwegian (`no_NO`, Norsk)
     * talesyntese
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/no/no_NO/talesyntese/medium/no_NO-talesyntese-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/no/no_NO/talesyntese/medium/no_NO-talesyntese-medium.onnx.json?download=true.json)]
@@ -210,10 +244,14 @@
     * mls_6892
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx.json?download=true.json)]
 * Portuguese (`pt_BR`, Português)
+    * cadu
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx.json?download=true.json)]
     * edresson
         * low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/edresson/low/pt_BR-edresson-low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/edresson/low/pt_BR-edresson-low.onnx.json?download=true.json)]
     * faber
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx.json?download=true.json)]
+    * jeff
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/jeff/medium/pt_BR-jeff-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_BR/jeff/medium/pt_BR-jeff-medium.onnx.json?download=true.json)]
 * Portuguese (`pt_PT`, Português)
     * tugão
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_PT/tugão/medium/pt_PT-tugão-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/pt/pt_PT/tugão/medium/pt_PT-tugão-medium.onnx.json?download=true.json)]
@@ -239,6 +277,8 @@
     * serbski_institut
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sr/sr_RS/serbski_institut/medium/sr_RS-serbski_institut-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sr/sr_RS/serbski_institut/medium/sr_RS-serbski_institut-medium.onnx.json?download=true.json)]
 * Swedish (`sv_SE`, Svenska)
+    * lisa
+        * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sv/sv_SE/lisa/medium/sv_SE-lisa-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sv/sv_SE/lisa/medium/sv_SE-lisa-medium.onnx.json?download=true.json)]
     * nst
         * medium - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sv/sv_SE/nst/medium/sv_SE-nst-medium.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/sv/sv_SE/nst/medium/sv_SE-nst-medium.onnx.json?download=true.json)]
 * Swahili (`sw_CD`, Kiswahili)
