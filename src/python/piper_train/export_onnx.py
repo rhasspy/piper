@@ -80,7 +80,7 @@ def main() -> None:
     if num_speakers > 1:
         sid = torch.LongTensor([0])
 
-    # noise, length, noise_w
+    # noise, noise_w, length
     scales = torch.FloatTensor([0.667, 1.0, 0.8])
     dummy_input = (sequences, sequence_lengths, scales, sid)
 

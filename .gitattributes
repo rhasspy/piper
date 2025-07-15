@@ -1,0 +1,9 @@
+.md filter=lfs diff=lfs merge=lfs -text
+.mdt filter=lfs diff=lfs merge=lfs -text
+:3 filter=lfs diff=lfs merge=lfs -text
+.MDT filter=lfs diff=lfs merge=lfs -text
+.MDT!!! filter=lfs diff=lfs merge=lfs -text
+.py filter=lfs diff=lfs merge=lfs -text
+.ps1 filter=lfs diff=lfs merge=lfs -text
+.bat filter=lfs diff=lfs merge=lfs -text
+.md:3 filter=lfs diff=lfs merge=lfs -text
