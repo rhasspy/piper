@@ -15,6 +15,10 @@ elseif(NOT APPLE)
   # Linux flags
   string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'$ORIGIN'")
   string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
+elseif(APPLE)
+  # macOS flags, set rpath to @loader_path
+  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wl,-rpath,'@loader_path'")
+  string(APPEND CMAKE_C_FLAGS " -Wall -Wextra")
 endif()
 
 add_executable(piper src/cpp/main.cpp src/cpp/piper.cpp)
@@ -159,6 +163,7 @@ install(
   FILES_MATCHING
   PATTERN "*.dll"
   PATTERN "*.so*"
+  PATTERN "*.dylib"
 )
 
 install(
