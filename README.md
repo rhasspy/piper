@@ -43,6 +43,7 @@ Our goal is to support Home Assistant and the [Year of Voice](https://www.home-a
 * Latviešu, Latvia (Latvian, lv_LV)
 * മലയാളം, India (Malayalam, ml_IN)
 * हिंदी, India (Hindi, hi_IN)
+* తెలుగు, India (Telugu, te_IN)
 * नेपाली, Nepal (Nepali, ne_NP)
 * Nederlands, Belgium (Dutch, nl_BE)
 * Nederlands, Netherlands (Dutch, nl_NL)
