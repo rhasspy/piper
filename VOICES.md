@@ -204,6 +204,11 @@
         * medium - [[model](Link for model hi_IN-pratham-medium.onnx (after you add that from my request in Hugging Face)] [[config](Link for model hi_IN-pratham-medium.onnx.json (after you add that from my request in Hugging Face))]
     * priyamvada
         * medium - [[model](Link for model hi_IN-priyamvada-medium.onnx (after you add that from my request in Hugging Face))] [[config](Link for model hi_IN-priyamvada-medium.onnx.json (after you add that from my request in Hugging Face))]
+* Telugu (`te_IN`, తెలుగు)
+    * venkatesh
+        * medium - [[model](Link for model hi_IN-pratham-medium.onnx (after you add that from my request in Hugging Face)] [[config](Link for model hi_IN-pratham-medium.onnx.json (after you add that from my request in Hugging Face))]
+    * padmavathi
+        * medium - [[model](Link for model hi_IN-priyamvada-medium.onnx (after you add that from my request in Hugging Face))] [[config](Link for model hi_IN-priyamvada-medium.onnx.json (after you add that from my request in Hugging Face))]
 * Nepali (`ne_NP`, नेपाली)
     * google
         * x_low - [[model](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx?download=true)] [[config](https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/ne/ne_NP/google/x_low/ne_NP-google-x_low.onnx.json?download=true.json)]
