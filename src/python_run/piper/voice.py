@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import onnxruntime
-from piper_phonemize import phonemize_codepoints, phonemize_espeak, tashkeel_run
 
 from .config import PhonemeType, PiperConfig
 from .const import BOS, EOS, PAD
@@ -54,17 +53,26 @@ class PiperVoice:
             ),
         )
 
-    def phonemize(self, text: str) -> List[List[str]]:
+    def phonemize(self, text: str, phoneme_input: bool = False) -> List[List[str]]:
         """Text to phonemes grouped by sentence."""
+        if phoneme_input or self.config.phoneme_type == PhonemeType.PHONEMES:
+            if "-" in text:
+                return [word.split("-") for word in text.split()]
+            return [list(word) for word in text.split()]
+
         if self.config.phoneme_type == PhonemeType.ESPEAK:
-            if self.config.espeak_voice == "ar":
+            from piper_phonemize import phonemize_espeak, tashkeel_run
+
+            if self.config.voice == "ar":
                 # Arabic diacritization
                 # https://github.com/mush42/libtashkeel/
                 text = tashkeel_run(text)
 
-            return phonemize_espeak(text, self.config.espeak_voice)
+            return phonemize_espeak(text, self.config.voice)
 
         if self.config.phoneme_type == PhonemeType.TEXT:
+            from piper_phonemize import phonemize_codepoints
+
             return phonemize_codepoints(text)
 
         raise ValueError(f"Unexpected phoneme type: {self.config.phoneme_type}")
@@ -90,6 +98,7 @@ class PiperVoice:
         self,
         text: str,
         wav_file: wave.Wave_write,
+        phoneme_input: bool,
         speaker_id: Optional[int] = None,
         length_scale: Optional[float] = None,
         noise_scale: Optional[float] = None,
@@ -103,6 +112,7 @@ class PiperVoice:
 
         for audio_bytes in self.synthesize_stream_raw(
             text,
+            phoneme_input=phoneme_input,
             speaker_id=speaker_id,
             length_scale=length_scale,
             noise_scale=noise_scale,
@@ -114,6 +124,7 @@ class PiperVoice:
     def synthesize_stream_raw(
         self,
         text: str,
+        phoneme_input: bool,
         speaker_id: Optional[int] = None,
         length_scale: Optional[float] = None,
         noise_scale: Optional[float] = None,
@@ -121,7 +132,7 @@ class PiperVoice:
         sentence_silence: float = 0.0,
     ) -> Iterable[bytes]:
         """Synthesize raw audio per sentence from text."""
-        sentence_phonemes = self.phonemize(text)
+        sentence_phonemes = self.phonemize(text, phoneme_input)
 
         # 16-bit mono
         num_silence_samples = int(sentence_silence * self.config.sample_rate)
@@ -165,7 +176,7 @@ class PiperVoice:
         args = {
             "input": phoneme_ids_array,
             "input_lengths": phoneme_ids_lengths,
-            "scales": scales
+            "scales": scales,
         }
 
         if self.config.num_speakers <= 1:
@@ -180,6 +191,6 @@ class PiperVoice:
             args["sid"] = sid
 
         # Synthesize through Onnx
-        audio = self.session.run(None, args, )[0].squeeze((0, 1))
+        audio = self.session.run(None, args)[0].squeeze((0, 1))
         audio = audio_float_to_int16(audio.squeeze())
         return audio.tobytes()

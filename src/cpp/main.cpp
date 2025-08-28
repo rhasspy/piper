@@ -49,6 +49,9 @@ struct RunConfig {
   // Default is to write a WAV file in the current directory.
   OutputType outputType = OUTPUT_DIRECTORY;
 
+  // Use pure phonemes as input
+  bool phonemeInput = false;
+
   // Path for output
   optional<filesystem::path> outputPath = filesystem::path(".");
 
@@ -90,14 +93,14 @@ struct RunConfig {
   bool useCuda = false;
 };
 
-void parseArgs(int argc, char *argv[], RunConfig &runConfig);
-void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
-                   condition_variable &cvAudio, bool &audioReady,
-                   bool &audioFinished);
+void parseArgs(int argc, char* argv[], RunConfig& runConfig);
+void rawOutputProc(vector<int16_t>& sharedAudioBuffer, mutex& mutAudio,
+  condition_variable& cvAudio, bool& audioReady,
+  bool& audioFinished);
 
 // ----------------------------------------------------------------------------
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   spdlog::set_default_logger(spdlog::stderr_color_st("piper"));
 
   RunConfig runConfig;
@@ -112,33 +115,33 @@ int main(int argc, char *argv[]) {
   piper::Voice voice;
 
   spdlog::debug("Loading voice from {} (config={})",
-                runConfig.modelPath.string(),
-                runConfig.modelConfigPath.string());
+    runConfig.modelPath.string(),
+    runConfig.modelConfigPath.string());
 
   auto startTime = chrono::steady_clock::now();
   loadVoice(piperConfig, runConfig.modelPath.string(),
-            runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
-            runConfig.useCuda);
+    runConfig.modelConfigPath.string(), voice, runConfig.speakerId,
+    runConfig.useCuda);
   auto endTime = chrono::steady_clock::now();
   spdlog::info("Loaded voice in {} second(s)",
-               chrono::duration<double>(endTime - startTime).count());
+    chrono::duration<double>(endTime - startTime).count());
 
   // Get the path to the piper executable so we can locate espeak-ng-data, etc.
   // next to it.
 #ifdef _MSC_VER
   auto exePath = []() {
-    wchar_t moduleFileName[MAX_PATH] = {0};
+    wchar_t moduleFileName[MAX_PATH] = { 0 };
     GetModuleFileNameW(nullptr, moduleFileName, std::size(moduleFileName));
     return filesystem::path(moduleFileName);
-  }();
+    }();
 #else
 #ifdef __APPLE__
   auto exePath = []() {
-    char moduleFileName[PATH_MAX] = {0};
+    char moduleFileName[PATH_MAX] = { 0 };
     uint32_t moduleFileNameSize = std::size(moduleFileName);
     _NSGetExecutablePath(moduleFileName, &moduleFileNameSize);
     return filesystem::path(moduleFileName);
-  }();
+    }();
 #else
   auto exePath = filesystem::canonical("/proc/self/exe");
 #endif
@@ -146,7 +149,7 @@ int main(int argc, char *argv[]) {
 
   if (voice.phonemizeConfig.phonemeType == piper::eSpeakPhonemes) {
     spdlog::debug("Voice uses eSpeak phonemes ({})",
-                  voice.phonemizeConfig.eSpeak.voice);
+      voice.phonemizeConfig.eSpeak.voice);
 
     if (runConfig.eSpeakDataPath) {
       // User provided path
@@ -154,36 +157,40 @@ int main(int argc, char *argv[]) {
     } else {
       // Assume next to piper executable
       piperConfig.eSpeakDataPath =
-          std::filesystem::absolute(
-              exePath.parent_path().append("espeak-ng-data"))
-              .string();
+        std::filesystem::absolute(
+          exePath.parent_path().append("espeak-ng-data"))
+        .string();
 
       spdlog::debug("espeak-ng-data directory is expected at {}",
-                    piperConfig.eSpeakDataPath);
+        piperConfig.eSpeakDataPath);
+    }
+
+    // Enable libtashkeel for Arabic
+    if (voice.phonemizeConfig.eSpeak.voice == "ar") {
+      piperConfig.useTashkeel = true;
+      if (runConfig.tashkeelModelPath) {
+        // User provided path
+        piperConfig.tashkeelModelPath =
+          runConfig.tashkeelModelPath.value().string();
+      } else {
+        // Assume next to piper executable
+        piperConfig.tashkeelModelPath =
+          std::filesystem::absolute(
+            exePath.parent_path().append("libtashkeel_model.ort"))
+          .string();
+
+        spdlog::debug("libtashkeel model is expected at {}",
+          piperConfig.tashkeelModelPath.value());
+      }
     }
   } else {
     // Not using eSpeak
     piperConfig.useESpeak = false;
   }
-
-  // Enable libtashkeel for Arabic
-  if (voice.phonemizeConfig.eSpeak.voice == "ar") {
-    piperConfig.useTashkeel = true;
-    if (runConfig.tashkeelModelPath) {
-      // User provided path
-      piperConfig.tashkeelModelPath =
-          runConfig.tashkeelModelPath.value().string();
-    } else {
-      // Assume next to piper executable
-      piperConfig.tashkeelModelPath =
-          std::filesystem::absolute(
-              exePath.parent_path().append("libtashkeel_model.ort"))
-              .string();
-
-      spdlog::debug("libtashkeel model is expected at {}",
-                    piperConfig.tashkeelModelPath.value());
-    }
+  if (runConfig.phonemeInput) {
+    piperConfig.phonemeInput = true;
   }
+
 
   piper::initialize(piperConfig);
 
@@ -202,20 +209,20 @@ int main(int argc, char *argv[]) {
 
   if (runConfig.sentenceSilenceSeconds) {
     voice.synthesisConfig.sentenceSilenceSeconds =
-        runConfig.sentenceSilenceSeconds.value();
+      runConfig.sentenceSilenceSeconds.value();
   }
 
   if (runConfig.phonemeSilenceSeconds) {
     if (!voice.synthesisConfig.phonemeSilenceSeconds) {
       // Overwrite
       voice.synthesisConfig.phonemeSilenceSeconds =
-          runConfig.phonemeSilenceSeconds;
+        runConfig.phonemeSilenceSeconds;
     } else {
       // Merge
-      for (const auto &[phoneme, silenceSeconds] :
-           *runConfig.phonemeSilenceSeconds) {
+      for (const auto& [phoneme, silenceSeconds] :
+        *runConfig.phonemeSilenceSeconds) {
         voice.synthesisConfig.phonemeSilenceSeconds->try_emplace(
-            phoneme, silenceSeconds);
+          phoneme, silenceSeconds);
       }
     }
 
@@ -244,20 +251,20 @@ int main(int argc, char *argv[]) {
         // Override output WAV file path
         outputType = OUTPUT_FILE;
         maybeOutputPath =
-            filesystem::path(lineRoot["output_file"].get<std::string>());
+          filesystem::path(lineRoot["output_file"].get<std::string>());
       }
 
       if (lineRoot.contains("speaker_id")) {
         // Override speaker id
         voice.synthesisConfig.speakerId =
-            lineRoot["speaker_id"].get<piper::SpeakerId>();
+          lineRoot["speaker_id"].get<piper::SpeakerId>();
       } else if (lineRoot.contains("speaker")) {
         // Resolve to id using speaker id map
         auto speakerName = lineRoot["speaker"].get<std::string>();
         if ((voice.modelConfig.speakerIdMap) &&
-            (voice.modelConfig.speakerIdMap->count(speakerName) > 0)) {
+          (voice.modelConfig.speakerIdMap->count(speakerName) > 0)) {
           voice.synthesisConfig.speakerId =
-              (*voice.modelConfig.speakerIdMap)[speakerName];
+            (*voice.modelConfig.speakerIdMap)[speakerName];
         } else {
           spdlog::warn("No speaker named: {}", speakerName);
         }
@@ -267,8 +274,8 @@ int main(int argc, char *argv[]) {
     // Timestamp is used for path to output WAV file
     const auto now = chrono::system_clock::now();
     const auto timestamp =
-        chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
-            .count();
+      chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch())
+      .count();
 
     if (outputType == OUTPUT_DIRECTORY) {
       // Generate path using timestamp
@@ -323,21 +330,21 @@ int main(int argc, char *argv[]) {
 #endif
 
       thread rawOutputThread(rawOutputProc, ref(sharedAudioBuffer),
-                             ref(mutAudio), ref(cvAudio), ref(audioReady),
-                             ref(audioFinished));
+        ref(mutAudio), ref(cvAudio), ref(audioReady),
+        ref(audioFinished));
       auto audioCallback = [&audioBuffer, &sharedAudioBuffer, &mutAudio,
-                            &cvAudio, &audioReady]() {
+        &cvAudio, &audioReady]() {
         // Signal thread that audio is ready
-        {
-          unique_lock lockAudio(mutAudio);
-          copy(audioBuffer.begin(), audioBuffer.end(),
-               back_inserter(sharedAudioBuffer));
-          audioReady = true;
-          cvAudio.notify_one();
-        }
-      };
+          {
+            unique_lock lockAudio(mutAudio);
+            copy(audioBuffer.begin(), audioBuffer.end(),
+              back_inserter(sharedAudioBuffer));
+            audioReady = true;
+            cvAudio.notify_one();
+          }
+        };
       piper::textToAudio(piperConfig, voice, line, audioBuffer, result,
-                         audioCallback);
+        audioCallback);
 
       // Signal thread that there is no more audio
       {
@@ -353,8 +360,8 @@ int main(int argc, char *argv[]) {
     }
 
     spdlog::info("Real-time factor: {} (infer={} sec, audio={} sec)",
-                 result.realTimeFactor, result.inferSeconds,
-                 result.audioSeconds);
+      result.realTimeFactor, result.inferSeconds,
+      result.audioSeconds);
 
     // Restore config (--json-input)
     voice.synthesisConfig.speakerId = speakerId;
@@ -368,13 +375,13 @@ int main(int argc, char *argv[]) {
 
 // ----------------------------------------------------------------------------
 
-void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
-                   condition_variable &cvAudio, bool &audioReady,
-                   bool &audioFinished) {
+void rawOutputProc(vector<int16_t>& sharedAudioBuffer, mutex& mutAudio,
+  condition_variable& cvAudio, bool& audioReady,
+  bool& audioFinished) {
   vector<int16_t> internalAudioBuffer;
   while (true) {
     {
-      unique_lock lockAudio{mutAudio};
+      unique_lock lockAudio{ mutAudio };
       cvAudio.wait(lockAudio, [&audioReady] { return audioReady; });
 
       if (sharedAudioBuffer.empty() && audioFinished) {
@@ -382,7 +389,7 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
       }
 
       copy(sharedAudioBuffer.begin(), sharedAudioBuffer.end(),
-           back_inserter(internalAudioBuffer));
+        back_inserter(internalAudioBuffer));
 
       sharedAudioBuffer.clear();
 
@@ -391,8 +398,8 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
       }
     }
 
-    cout.write((const char *)internalAudioBuffer.data(),
-               sizeof(int16_t) * internalAudioBuffer.size());
+    cout.write((const char*)internalAudioBuffer.data(),
+      sizeof(int16_t) * internalAudioBuffer.size());
     cout.flush();
     internalAudioBuffer.clear();
   }
@@ -401,7 +408,7 @@ void rawOutputProc(vector<int16_t> &sharedAudioBuffer, mutex &mutAudio,
 
 // ----------------------------------------------------------------------------
 
-void printUsage(char *argv[]) {
+void printUsage(char* argv[]) {
   cerr << endl;
   cerr << "usage: " << argv[0] << " [options]" << endl;
   cerr << endl;
@@ -409,44 +416,45 @@ void printUsage(char *argv[]) {
   cerr << "   -h        --help              show this message and exit" << endl;
   cerr << "   -m  FILE  --model       FILE  path to onnx model file" << endl;
   cerr << "   -c  FILE  --config      FILE  path to model config file "
-          "(default: model path + .json)"
-       << endl;
+    "(default: model path + .json)"
+    << endl;
   cerr << "   -f  FILE  --output_file FILE  path to output WAV file ('-' for "
-          "stdout)"
-       << endl;
+    "stdout)"
+    << endl;
   cerr << "   -d  DIR   --output_dir  DIR   path to output directory (default: "
-          "cwd)"
-       << endl;
+    "cwd)"
+    << endl;
+  cerr << "   -p   --phoneme-input          Uuse pure phonemes as input" << endl;
   cerr << "   --output_raw                  output raw audio to stdout as it "
-          "becomes available"
-       << endl;
+    "becomes available"
+    << endl;
   cerr << "   -s  NUM   --speaker     NUM   id of speaker (default: 0)" << endl;
   cerr << "   --noise_scale           NUM   generator noise (default: 0.667)"
-       << endl;
+    << endl;
   cerr << "   --length_scale          NUM   phoneme length (default: 1.0)"
-       << endl;
+    << endl;
   cerr << "   --noise_w               NUM   phoneme width noise (default: 0.8)"
-       << endl;
+    << endl;
   cerr << "   --sentence_silence      NUM   seconds of silence after each "
-          "sentence (default: 0.2)"
-       << endl;
+    "sentence (default: 0.2)"
+    << endl;
   cerr << "   --espeak_data           DIR   path to espeak-ng data directory"
-       << endl;
+    << endl;
   cerr << "   --tashkeel_model        FILE  path to libtashkeel onnx model "
-          "(arabic)"
-       << endl;
+    "(arabic)"
+    << endl;
   cerr << "   --json-input                  stdin input is lines of JSON "
-          "instead of plain text"
-       << endl;
+    "instead of plain text"
+    << endl;
   cerr << "   --use-cuda                    use CUDA execution provider"
-       << endl;
+    << endl;
   cerr << "   --debug                       print DEBUG messages to the console"
-       << endl;
+    << endl;
   cerr << "   -q       --quiet              disable logging" << endl;
   cerr << endl;
 }
 
-void ensureArg(int argc, char *argv[], int argi) {
+void ensureArg(int argc, char* argv[], int argi) {
   if ((argi + 1) >= argc) {
     printUsage(argv);
     exit(0);
@@ -454,7 +462,7 @@ void ensureArg(int argc, char *argv[], int argi) {
 }
 
 // Parse command-line arguments
-void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
+void parseArgs(int argc, char* argv[], RunConfig& runConfig) {
   optional<filesystem::path> modelConfigPath;
 
   for (int i = 1; i < argc; i++) {
@@ -467,7 +475,7 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       ensureArg(argc, argv, i);
       modelConfigPath = filesystem::path(argv[++i]);
     } else if (arg == "-f" || arg == "--output_file" ||
-               arg == "--output-file") {
+      arg == "--output-file") {
       ensureArg(argc, argv, i);
       std::string filePath = argv[++i];
       if (filePath == "-") {
@@ -483,6 +491,8 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       runConfig.outputPath = filesystem::path(argv[++i]);
     } else if (arg == "--output_raw" || arg == "--output-raw") {
       runConfig.outputType = OUTPUT_RAW;
+    } else if (arg == "-p" || arg == "--phoneme-input") {
+      runConfig.phonemeInput = true;
     } else if (arg == "-s" || arg == "--speaker") {
       ensureArg(argc, argv, i);
       runConfig.speakerId = (piper::SpeakerId)stol(argv[++i]);
@@ -502,13 +512,6 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
       ensureArg(argc, argv, i);
       ensureArg(argc, argv, i + 1);
       auto phonemeStr = std::string(argv[++i]);
-      if (!piper::isSingleCodepoint(phonemeStr)) {
-        std::cerr << "Phoneme '" << phonemeStr
-                  << "' is not a single codepoint (--phoneme_silence)"
-                  << std::endl;
-        exit(1);
-      }
-
       if (!runConfig.phonemeSilenceSeconds) {
         runConfig.phonemeSilenceSeconds.emplace();
       }
@@ -548,7 +551,7 @@ void parseArgs(int argc, char *argv[], RunConfig &runConfig) {
 
   if (!modelConfigPath) {
     runConfig.modelConfigPath =
-        filesystem::path(runConfig.modelPath.string() + ".json");
+      filesystem::path(runConfig.modelPath.string() + ".json");
   } else {
     runConfig.modelConfigPath = modelConfigPath.value();
   }
